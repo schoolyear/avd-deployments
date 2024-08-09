@@ -3,5 +3,5 @@ package main
 import "log/slog"
 
 func main() {
-	slog.Info("hello world")
+	slog.Info("hello world test")
 }
