@@ -1,0 +1,57 @@
+name: AVD cmd
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - 'avd/cmd/**'
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'avd/cmd/**'
+
+jobs:
+  test-build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '^1.22'
+
+      - name: Go test
+        run: 'go test ./...'
+
+      - name: Static check
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: "latest"
+
+      - name: Build linux amd64
+        run: 'GOOS=linux GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-linux-amd64'
+
+      - name: Build linux arm64
+        run: 'GOOS=linux GOARCH=arm64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-linux-arm64'
+
+      - name: Build windows amd64
+        run: 'GOOS=windows GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-windows-amd64.exe'
+
+      - name: Build windows arm64
+        run: 'GOOS=windows GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-windows-arm64.exe'
+
+      - name: Build darwin amd64
+        run: 'GOOS=darwin GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-macos-amd64'
+
+      - name: Build darwin arm64
+        run: 'GOOS=darwin GOARCH=arm64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-macos-arm64'
+
+      - name: Upload builds to Github
+        uses: actions/upload-artifact@v4
+        with:
+          name: avdcmd
+          path: avd/cmd/bin/**
+          retention-days: 14
