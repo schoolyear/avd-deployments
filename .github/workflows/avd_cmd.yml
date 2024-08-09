@@ -32,22 +32,22 @@ jobs:
           version: "latest"
 
       - name: Build linux amd64
-        run: 'GOOS=linux GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-linux-amd64'
+        run: 'GOOS=linux GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-linux-amd64 ./avd/cmd '
 
       - name: Build linux arm64
-        run: 'GOOS=linux GOARCH=arm64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-linux-arm64'
+        run: 'GOOS=linux GOARCH=arm64 go build -o ./avd/cmd/bin/avdcmd-linux-arm64 ./avd/cmd'
 
       - name: Build windows amd64
-        run: 'GOOS=windows GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-windows-amd64.exe'
+        run: 'GOOS=windows GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-windows-amd64.exe ./avd/cmd'
 
       - name: Build windows arm64
-        run: 'GOOS=windows GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-windows-arm64.exe'
+        run: 'GOOS=windows GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-windows-arm64.exe ./avd/cmd'
 
       - name: Build darwin amd64
-        run: 'GOOS=darwin GOARCH=amd64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-macos-amd64'
+        run: 'GOOS=darwin GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-macos-amd64 ./avd/cmd'
 
       - name: Build darwin arm64
-        run: 'GOOS=darwin GOARCH=arm64 go build ./avd/cmd -o ./avd/cmd/bin/avdcmd-macos-arm64'
+        run: 'GOOS=darwin GOARCH=arm64 go build -o ./avd/cmd/bin/avdcmd-macos-arm64 ./avd/cmd'
 
       - name: Upload builds to Github
         uses: actions/upload-artifact@v4
