@@ -1,0 +1,1 @@
+<<include any resources/scripts that will be accessed during the image building process>>

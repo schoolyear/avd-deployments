@@ -1,0 +1,1924 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "userCapacity": {
+      "type": "int"
+    },
+    "startTime": {
+      "type": "string"
+    },
+    "endTime": {
+      "type": "string"
+    },
+    "deployConfig": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "examId": {
+      "type": "string"
+    },
+    "instanceId": {
+      "type": "string"
+    },
+    "trustedProxySecret": {
+      "type": "securestring"
+    },
+    "userGroupId": {
+      "type": "string"
+    },
+    "apiBaseUrl": {
+      "type": "string"
+    },
+    "entraAuthority": {
+      "type": "string"
+    },
+    "entraClientId": {
+      "type": "string"
+    },
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "[newGuid()]"
+    },
+    "tokenExpirationTime": {
+      "type": "string",
+      "defaultValue": "[dateTimeAdd(utcNow(), 'P1D')]"
+    },
+    "vmAdminUser": {
+      "type": "string",
+      "defaultValue": "syadmin"
+    },
+    "vmAdminPassword": {
+      "type": "securestring",
+      "defaultValue": "Bb#GoPsT8Lrvrf"
+    },
+    "trustedProxyBinaryBaseUrl": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "defaultNamingPrefix": "[resourceGroup().name]",
+    "natIpName": "[concat(variables('defaultNamingPrefix'), 'ip')]",
+    "natName": "[concat(variables('defaultNamingPrefix'), 'nat')]",
+    "vnetName": "[concat(variables('defaultNamingPrefix'), 'vnet')]",
+    "vnetSubnet": "10.0.0.0/19",
+    "sessionhostsSubnet": "10.0.0.0/20",
+    "servicesSubnet": "10.0.16.0/20",
+    "hostpoolName": "[concat(variables('defaultNamingPrefix'), 'pool')]",
+    "appGroupName": "[concat(variables('defaultNamingPrefix'), 'dag')]",
+    "workspaceName": "[concat(variables('defaultNamingPrefix'), 'ws')]",
+    "vmNumberOfInstances": "[parameters('userCapacity')]",
+    "maxSessionLimit": "[max(parameters('userCapacity'), 1)]",
+    "proxyIpName": "[concat(variables('defaultNamingPrefix'), 'proxy-ip')]",
+    "proxyNsgName": "[concat(variables('defaultNamingPrefix'), 'proxy-nsg')]",
+    "proxyNicName": "[concat(variables('defaultNamingPrefix'), 'proxy-nic')]",
+    "proxyVmName": "[concat(variables('defaultNamingPrefix'), 'proxy-vm')]",
+    "vmNamePrefix": "[concat(substring(parameters('examId'), 0, 8), 'vm')]",
+    "vmCustomImageSourceId": "/subscriptions/[[subscriptionId]]/resourceGroups/[[rg]]/providers/Microsoft.Compute/galleries/[[gallery]]/images/[[image]]/versions/[[version]]",
+    "privatelinkZoneName": "privatelink.wvd.microsoft.com",
+    "privateEndpointConnectionName": "schoolyear-secure-endpoint-connection",
+    "privateEndpointConnectionNicName": "[format('{0}-nic', variables('privateEndpointConnectionName'))]",
+    "privateEndpointFeedName": "schoolyear-secure-endpoint-feed",
+    "privateEndpointFeedNicName": "[format('{0}-nic', variables('privateEndpointFeedName'))]",
+    "deploymentName": "avdDeployment",
+    "deploymentResourceId": "[resourceId('Microsoft.Resources/deployments', variables('deploymentName'))]",
+    "sessionhostsSubnetName": "sessionhosts",
+    "servicesSubnetName": "services",
+    "proxyAdminUsername": "syuser",
+    "sshPubKey": "ssh-rsa [[public key]] azure",
+    "proxyVmSize": "Standard_D1_v2",
+    "keyVaultResourceGroup": "[[schoolyear]]",
+    "keyVaultName": "[[avdvault]]",
+    "keyVaultCertificateName": "[[proxycert]]",
+    "keyVaultRoleAssignmentDeploymentName": "keyvaultRoleAssignment",
+    "dnsZoneResourceGroup": "[[schoolyear]]",
+    "dnsZoneName": "[[proxy.example.com]]",
+    "proxyDnsEntryDeploymentName": "proxyDnsEntry",
+    "proxyInstallScriptUrl": "[[proxyinstallscripturl]]",
+    "proxyInstallScriptName": "[[proxyinstallscriptname]]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('natIpName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Static",
+        "idleTimeoutInMinutes": 4,
+        "ipTags": [],
+        "ddosSettings": {
+          "protectionMode": "VirtualNetworkInherited"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('natName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "idleTimeoutInMinutes": 4,
+        "publicIpAddresses": [
+          {
+            "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('natIpName'))]"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('natIpName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('vnetName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnetSubnet')]"
+          ]
+        },
+        "encryption": {
+          "enabled": false,
+          "enforcement": "AllowUnencrypted"
+        },
+        "subnets": [
+          {
+            "name": "[variables('sessionhostsSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('sessionhostsSubnet')]",
+              "natGateway": {
+                "id": "[resourceId('Microsoft.Network/natGateways', variables('natName'))]"
+              },
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled",
+              "defaultOutboundAccess": true
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          },
+          {
+            "name": "[variables('servicesSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('servicesSubnet')]",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled",
+              "defaultOutboundAccess": true
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          }
+        ],
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/natGateways', variables('natName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2018-09-01",
+      "name": "[variables('privatelinkZoneName')]",
+      "location": "global",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2018-09-01",
+      "name": "[concat(variables('privatelinkZoneName'), '/vnetLink')]",
+      "location": "global",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privatelinkZoneName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ],
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2022-09-01",
+      "name": "[variables('deploymentName')]",
+      "type": "Microsoft.Resources/deployments",
+      "resourceGroup": "[resourceGroup().name]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privatelinkZoneName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "expressionEvaluationOptions": {
+          "scope": "Inner"
+        },
+        "parameters": {
+          "hciArtifactsLocation": {
+            "value": "https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/HCIScripts_1.0.02566.260/HciCustomScript.ps1"
+          },
+          "artifactsLocation": {
+            "value": "https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip"
+          },
+          "hostpoolName": {
+            "value": "[variables('hostpoolName')]"
+          },
+          "hostpoolDescription": {
+            "value": "Created by Schoolyear"
+          },
+          "location": {
+            "value": "[variables('location')]"
+          },
+          "hostpoolType": {
+            "value": "Pooled"
+          },
+          "loadBalancerType": {
+            "value": "BreadthFirst"
+          },
+          "preferredAppGroupType": {
+            "value": "Desktop"
+          },
+          "vmResourceGroup": {
+            "value": "[resourceGroup().name]"
+          },
+          "vmNamePrefix": {
+            "value": "[variables('vmNamePrefix')]"
+          },
+          "vmLocation": {
+            "value": "[variables('location')]"
+          },
+          "vmImageType": {
+            "value": "CustomImage"
+          },
+          "vmSize": {
+            "value": "Standard_D2s_v4"
+          },
+          "vmNumberOfInstances": {
+            "value": "[variables('vmNumberOfInstances')]"
+          },
+          "vmDiskType": {
+            "value": "StandardSSD_LRS"
+          },
+          "vmDiskSizeGB": {
+            "value": 128
+          },
+          "vmCustomImageSourceId": {
+            "value": "[variables('vmCustomImageSourceId')]"
+          },
+          "vmGalleryImageOffer": {
+            "value": "office-365"
+          },
+          "vmGalleryImagePublisher": {
+            "value": "microsoftwindowsdesktop"
+          },
+          "vmGalleryImageSKU": {
+            "value": "win10-22h2-avd-m365-g2"
+          },
+          "vmGalleryImageHasPlan": {
+            "value": false
+          },
+          "maxSessionLimit": {
+            "value": "[variables('maxSessionLimit')]"
+          },
+          "existingVnetName": {
+            "value": "[variables('vnetName')]"
+          },
+          "virtualNetworkResourceGroupName": {
+            "value": "[resourceGroup().name]"
+          },
+          "existingSubnetName": {
+            "value": "[variables('sessionhostsSubnetName')]"
+          },
+          "aadJoin": {
+            "value": true
+          },
+          "addToWorkspace": {
+            "value": true
+          },
+          "apiVersion": {
+            "value": "2022-10-14-preview"
+          },
+          "deploymentId": {
+            "value": "[parameters('deploymentId')]"
+          },
+          "workspaceResourceGroup": {
+            "value": "[resourceGroup().name]"
+          },
+          "workSpaceName": {
+            "value": "[variables('workspaceName')]"
+          },
+          "workspaceLocation": {
+            "value": "[variables('location')]"
+          },
+          "isNewWorkspace": {
+            "value": true
+          },
+          "systemData": {
+            "value": {
+              "aadJoinPreview": false,
+              "sessionHostConfigurationVersion": "",
+              "firstPartyExtension": false
+            }
+          },
+          "nestedTemplatesLocation": {
+            "value": "https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/armtemplates/Hostpool_1.0.02566.260/nestedTemplates/"
+          },
+          "tokenExpirationTime": {
+            "value": "[parameters('tokenExpirationTime')]"
+          },
+          "vmTemplate": {
+            "value": "{\"domain\":\"\",\"galleryImageOffer\":\"office-365\",\"galleryImagePublisher\":\"microsoftwindowsdesktop\",\"galleryImageSKU\":\"win10-22h2-avd-m365-g2\",\"imageType\":\"Gallery\",\"customImageId\":null,\"namePrefix\":\"fp1\",\"osDiskType\":\"StandardSSD_LRS\",\"vmSize\":{\"id\":\"Standard_D2s_v4\",\"cores\":2,\"ram\":8},\"galleryItemId\":\"microsoftwindowsdesktop.office-365win10-22h2-avd-m365-g2\",\"hibernate\":false,\"diskSizeGB\":128,\"securityType\":\"Standard\",\"secureBoot\":false,\"vTPM\":false,\"vmInfrastructureType\":\"Cloud\",\"virtualProcessorCount\":null,\"memoryGB\":null,\"maximumMemoryGB\":null,\"minimumMemoryGB\":null,\"dynamicMemoryConfig\":false}"
+          },
+          "availabilityOption": {
+            "value": "AvailabilityZone"
+          },
+          "availabilityZones": {
+            "value": [
+              1,
+              2,
+              3
+            ]
+          },
+          "vmAdministratorAccountUsername": {
+            "value": "[parameters('vmAdminUser')]"
+          },
+          "vmAdministratorAccountPassword": {
+            "value": "[parameters('vmAdminPassword')]"
+          },
+          "appGroupName": {
+            "value": "[variables('appGroupName')]"
+          },
+          "customRdpProperty": {
+            "value": "drivestoredirect:s:*;audiomode:i:0;videoplaybackmode:i:1;redirectclipboard:i:1;redirectprinters:i:1;devicestoredirect:s:*;redirectcomports:i:1;redirectsmartcards:i:1;usbdevicestoredirect:s:*;enablecredsspsupport:i:1;redirectwebauthn:i:1;use multimon:i:1;enablerdsaadauth:i:1;"
+          },
+          "publicNetworkAccess": {
+            "value": "Disabled"
+          },
+          "servicesSubnetResourceId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('servicesSubnetName'))]"
+          },
+          "privateLinkZoneName": {
+            "value": "[variables('privatelinkZoneName')]"
+          },
+          "virtualMachineTags": {
+            "value": {
+              "apiBaseUrl": "[parameters('apiBaseUrl')]",
+              "examId": "[parameters('examId')]",
+              "instanceId": "[parameters('instanceId')]",
+              "entraAuthority": "[parameters('entraAuthority')]",
+              "entraClientId": "[parameters('entraClientId')]",
+              "proxyVmIpAddr": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('proxyNicName')), '2024-01-01', 'Full').properties.ipConfigurations[0].properties.privateIPAddress]"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "nestedTemplatesLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "The base URI where artifacts required by this template are located."
+              }
+            },
+            "artifactsLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "The base URI where the Azure artifacts required by this template are located."
+              }
+            },
+            "hciArtifactsLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "The base URI where the Azure Stack HCI artifacts required by this template are located."
+              },
+              "defaultValue": ""
+            },
+            "hostpoolName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Hostpool to be created."
+              }
+            },
+            "hostpoolFriendlyName": {
+              "type": "string",
+              "metadata": {
+                "description": "The friendly name of the Hostpool to be created."
+              },
+              "defaultValue": ""
+            },
+            "hostpoolDescription": {
+              "type": "string",
+              "metadata": {
+                "description": "The description of the Hostpool to be created."
+              },
+              "defaultValue": ""
+            },
+            "hostpoolDiagnosticSettingsStorageAccount": {
+              "type": "string",
+              "metadata": {
+                "description": "The storage uri to put the diagnostic logs"
+              },
+              "defaultValue": ""
+            },
+            "hostpoolDiagnosticSettingsLogAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The description of the Hostpool to be created."
+              },
+              "defaultValue": ""
+            },
+            "hostpoolDiagnosticSettingsEventHubName": {
+              "type": "string",
+              "metadata": {
+                "description": "The event hub name to send logs to"
+              },
+              "defaultValue": ""
+            },
+            "hostpoolDiagnosticSettingsEventHubAuthorizationId": {
+              "type": "string",
+              "metadata": {
+                "description": "The event hub policy to use"
+              },
+              "defaultValue": ""
+            },
+            "hostpoolDiagnosticSettingsLogCategories": {
+              "type": "array",
+              "metadata": {
+                "description": "Categories of logs to be created for hostpools"
+              },
+              "defaultValue": [
+                "Checkpoint",
+                "Error",
+                "Management",
+                "Connection",
+                "HostRegistration",
+                "AgentHealthStatus",
+                "NetworkData",
+                "SessionHostManagement"
+              ]
+            },
+            "appGroupDiagnosticSettingsLogCategories": {
+              "type": "array",
+              "metadata": {
+                "description": "Categories of logs to be created for app groups"
+              },
+              "defaultValue": [
+                "Checkpoint",
+                "Error",
+                "Management"
+              ]
+            },
+            "workspaceDiagnosticSettingsLogCategories": {
+              "type": "array",
+              "metadata": {
+                "description": "Categories of logs to be created for workspaces"
+              },
+              "defaultValue": [
+                "Checkpoint",
+                "Error",
+                "Management",
+                "Feed"
+              ]
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location where the resources will be deployed."
+              }
+            },
+            "workSpaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the workspace to be attach to new Applicaiton Group."
+              },
+              "defaultValue": ""
+            },
+            "workspaceLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "The location of the workspace."
+              },
+              "defaultValue": ""
+            },
+            "workspaceResourceGroup": {
+              "type": "string",
+              "metadata": {
+                "description": "The workspace resource group Name."
+              },
+              "defaultValue": ""
+            },
+            "isNewWorkspace": {
+              "type": "bool",
+              "metadata": {
+                "description": "True if the workspace is new. False if there is no workspace added or adding to an existing workspace."
+              },
+              "defaultValue": false
+            },
+            "allApplicationGroupReferences": {
+              "type": "string",
+              "metadata": {
+                "description": "The existing app groups references of the workspace selected."
+              },
+              "defaultValue": ""
+            },
+            "addToWorkspace": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether to add applicationGroup to workspace."
+              }
+            },
+            "administratorAccountUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "A username in the domain that has privileges to join the session hosts to the domain. For example, 'vmjoiner@contoso.com'."
+              },
+              "defaultValue": ""
+            },
+            "administratorAccountPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "The password that corresponds to the existing domain username."
+              },
+              "defaultValue": ""
+            },
+            "vmAdministratorAccountUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "A username to be used as the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
+              },
+              "defaultValue": ""
+            },
+            "vmAdministratorAccountPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
+              },
+              "defaultValue": ""
+            },
+            "availabilityOption": {
+              "type": "string",
+              "metadata": {
+                "description": "Select the availability options for the VMs."
+              },
+              "defaultValue": "None",
+              "allowedValues": [
+                "None",
+                "AvailabilitySet",
+                "AvailabilityZone"
+              ]
+            },
+            "availabilitySetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of availability set to be used when create the VMs."
+              },
+              "defaultValue": ""
+            },
+            "createAvailabilitySet": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether to create a new availability set for the VMs."
+              },
+              "defaultValue": false
+            },
+            "availabilitySetUpdateDomainCount": {
+              "type": "int",
+              "metadata": {
+                "description": "The platform update domain count of availability set to be created."
+              },
+              "defaultValue": 5,
+              "allowedValues": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20
+              ]
+            },
+            "availabilitySetFaultDomainCount": {
+              "type": "int",
+              "metadata": {
+                "description": "The platform fault domain count of availability set to be created."
+              },
+              "defaultValue": 2,
+              "allowedValues": [
+                1,
+                2,
+                3
+              ]
+            },
+            "availabilityZones": {
+              "type": "array",
+              "metadata": {
+                "description": "The availability zones to equally distribute VMs amongst"
+              },
+              "defaultValue": []
+            },
+            "vmResourceGroup": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource group of the session host VMs."
+              },
+              "defaultValue": ""
+            },
+            "vmLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "The location of the session host VMs."
+              },
+              "defaultValue": ""
+            },
+            "vmExtendedLocation": {
+              "type": "object",
+              "metadata": {
+                "description": "The EdgeZone extended location of the session host VMs."
+              },
+              "defaultValue": {}
+            },
+            "vmSize": {
+              "type": "string",
+              "metadata": {
+                "description": "The size of the session host VMs."
+              },
+              "defaultValue": ""
+            },
+            "vmDiskSizeGB": {
+              "type": "int",
+              "metadata": {
+                "description": "The size of the session host VMs in GB. If the value of this parameter is 0, the disk will be created with the default size set in the image."
+              },
+              "defaultValue": 0
+            },
+            "vmHibernate": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether the VMs created will be hibernate enabled"
+              },
+              "defaultValue": false
+            },
+            "vmNumberOfInstances": {
+              "type": "int",
+              "metadata": {
+                "description": "Number of session hosts that will be created and added to the hostpool."
+              },
+              "defaultValue": 0
+            },
+            "vmNamePrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "This prefix will be used in combination with the VM number to create the VM name. If using 'rdsh' as the prefix, VMs would be named 'rdsh-0', 'rdsh-1', etc. You should use a unique prefix to reduce name collisions in Active Directory."
+              },
+              "defaultValue": ""
+            },
+            "vmImageType": {
+              "type": "string",
+              "metadata": {
+                "description": "Select the image source for the session host vms. VMs from a Gallery image will be created with Managed Disks."
+              },
+              "defaultValue": "Gallery",
+              "allowedValues": [
+                "CustomImage",
+                "Gallery"
+              ]
+            },
+            "vmGalleryImageOffer": {
+              "type": "string",
+              "metadata": {
+                "description": "(Required when vmImageType = Gallery) Gallery image Offer."
+              },
+              "defaultValue": ""
+            },
+            "vmGalleryImagePublisher": {
+              "type": "string",
+              "metadata": {
+                "description": "(Required when vmImageType = Gallery) Gallery image Publisher."
+              },
+              "defaultValue": ""
+            },
+            "vmGalleryImageHasPlan": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether the VM has plan or not"
+              },
+              "defaultValue": false
+            },
+            "vmGalleryImageSKU": {
+              "type": "string",
+              "metadata": {
+                "description": "(Required when vmImageType = Gallery) Gallery image SKU."
+              },
+              "defaultValue": ""
+            },
+            "vmGalleryImageVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "(Required when vmImageType = Gallery) Gallery image version."
+              },
+              "defaultValue": ""
+            },
+            "vmCustomImageSourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "(Required when vmImageType = CustomImage) Resource ID of the image"
+              },
+              "defaultValue": ""
+            },
+            "vmDiskType": {
+              "type": "string",
+              "allowedValues": [
+                "Premium_LRS",
+                "StandardSSD_LRS",
+                "Standard_LRS"
+              ],
+              "metadata": {
+                "description": "The VM disk type for the VM: HDD or SSD."
+              },
+              "defaultValue": "StandardSSD_LRS"
+            },
+            "existingVnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the virtual network the VMs will be connected to."
+              },
+              "defaultValue": ""
+            },
+            "existingSubnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The subnet the VMs will be placed in."
+              },
+              "defaultValue": ""
+            },
+            "virtualNetworkResourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource group containing the existing virtual network."
+              },
+              "defaultValue": ""
+            },
+            "createNetworkSecurityGroup": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether to create a new network security group or use an existing one"
+              },
+              "defaultValue": false
+            },
+            "networkSecurityGroupId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource id of an existing network security group"
+              },
+              "defaultValue": ""
+            },
+            "networkSecurityGroupRules": {
+              "type": "array",
+              "metadata": {
+                "description": "The rules to be given to the new network security group"
+              },
+              "defaultValue": []
+            },
+            "hostpoolType": {
+              "type": "string",
+              "allowedValues": [
+                "Personal",
+                "Pooled"
+              ],
+              "metadata": {
+                "description": "Set this parameter to Personal if you would like to enable Persistent Desktop experience. Defaults to false."
+              }
+            },
+            "personalDesktopAssignmentType": {
+              "type": "string",
+              "allowedValues": [
+                "Automatic",
+                "Direct",
+                ""
+              ],
+              "metadata": {
+                "description": "Set the type of assignment for a Personal hostpool type"
+              },
+              "defaultValue": ""
+            },
+            "maxSessionLimit": {
+              "type": "int",
+              "metadata": {
+                "description": "Maximum number of sessions."
+              },
+              "defaultValue": 99999
+            },
+            "loadBalancerType": {
+              "type": "string",
+              "allowedValues": [
+                "BreadthFirst",
+                "DepthFirst",
+                "Persistent",
+                "MultiplePersistent"
+              ],
+              "metadata": {
+                "description": "Type of load balancer algorithm."
+              },
+              "defaultValue": "BreadthFirst"
+            },
+            "customRdpProperty": {
+              "type": "string",
+              "metadata": {
+                "description": "Hostpool rdp properties"
+              },
+              "defaultValue": ""
+            },
+            "vmTemplate": {
+              "type": "string",
+              "metadata": {
+                "description": "The necessary information for adding more VMs to this Hostpool"
+              },
+              "defaultValue": ""
+            },
+            "tokenExpirationTime": {
+              "type": "string",
+              "metadata": {
+                "description": "Hostpool token expiration time"
+              }
+            },
+            "hostpoolTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the hostpool"
+              },
+              "defaultValue": {}
+            },
+            "applicationGroupTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the application group"
+              },
+              "defaultValue": {}
+            },
+            "availabilitySetTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the availability set"
+              },
+              "defaultValue": {}
+            },
+            "networkInterfaceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the network interfaces"
+              },
+              "defaultValue": {}
+            },
+            "networkSecurityGroupTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the network security groups"
+              },
+              "defaultValue": {}
+            },
+            "virtualMachineTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the virtual machines"
+              },
+              "defaultValue": {}
+            },
+            "imageTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the images"
+              },
+              "defaultValue": {}
+            },
+            "workspaceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "The tags to be assigned to the workspace"
+              },
+              "defaultValue": {}
+            },
+            "apiVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "WVD api version"
+              },
+              "defaultValue": "2019-12-10-preview"
+            },
+            "deploymentId": {
+              "type": "string",
+              "metadata": {
+                "description": "GUID for the deployment"
+              },
+              "defaultValue": ""
+            },
+            "validationEnvironment": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether to use validation enviroment."
+              },
+              "defaultValue": false
+            },
+            "preferredAppGroupType": {
+              "type": "string",
+              "metadata": {
+                "description": "Preferred App Group type to display"
+              },
+              "defaultValue": "Desktop"
+            },
+            "ouPath": {
+              "type": "string",
+              "metadata": {
+                "description": "OUPath for the domain join"
+              },
+              "defaultValue": ""
+            },
+            "domain": {
+              "type": "string",
+              "metadata": {
+                "description": "Domain to join"
+              },
+              "defaultValue": ""
+            },
+            "aadJoin": {
+              "type": "bool",
+              "metadata": {
+                "description": "True if AAD Join, false if AD join"
+              },
+              "defaultValue": false
+            },
+            "intune": {
+              "type": "bool",
+              "metadata": {
+                "description": "True if intune enrollment is selected. False otherwise"
+              },
+              "defaultValue": false
+            },
+            "bootDiagnostics": {
+              "type": "object",
+              "metadata": {
+                "description": "Boot diagnostics object taken as body of Diagnostics Profile in VM creation"
+              },
+              "defaultValue": {
+                "enabled": false
+              }
+            },
+            "userAssignedIdentity": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of user assigned identity that will assigned to the VMs. This is an optional parameter."
+              },
+              "defaultValue": ""
+            },
+            "customConfigurationScriptUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "PowerShell script URL to be run after the Virtual Machines are created."
+              },
+              "defaultValue": ""
+            },
+            "systemData": {
+              "type": "object",
+              "metadata": {
+                "description": "System data is used for internal purposes, such as support preview features."
+              },
+              "defaultValue": {}
+            },
+            "securityType": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the SecurityType of the virtual machine. It is set as TrustedLaunch to enable UefiSettings. Default: UefiSettings will not be enabled unless this property is set as TrustedLaunch."
+              },
+              "allowedValues": [
+                "Standard",
+                "TrustedLaunch",
+                "ConfidentialVM"
+              ],
+              "defaultValue": "Standard"
+            },
+            "secureBoot": {
+              "type": "bool",
+              "metadata": {
+                "description": "Specifies whether secure boot should be enabled on the virtual machine."
+              },
+              "defaultValue": false
+            },
+            "vTPM": {
+              "type": "bool",
+              "metadata": {
+                "description": "Specifies whether vTPM (Virtual Trusted Platform Module) should be enabled on the virtual machine."
+              },
+              "defaultValue": false
+            },
+            "managedDiskSecurityEncryptionType": {
+              "type": "string",
+              "defaultValue": "VMGuestStateOnly",
+              "allowedValues": [
+                "VMGuestStateOnly",
+                "DiskWithVMGuestState"
+              ],
+              "metadata": {
+                "description": "Managed disk security encryption type."
+              }
+            },
+            "integrityMonitoring": {
+              "type": "bool",
+              "metadata": {
+                "description": "Specifies whether integrity monitoring will be added to the virtual machine."
+              },
+              "defaultValue": false
+            },
+            "firstPartyExtensionAutoUpdate": {
+              "type": "object",
+              "metadata": {
+                "description": "A dictionary containing a list of supported first party extensions and their enabled/disabled state."
+              },
+              "defaultValue": {}
+            },
+            "publicNetworkAccess": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies which network routes are permitted for end users connecting to resources for this host pool and session hosts."
+              },
+              "allowedValues": [
+                "Disabled",
+                "Enabled",
+                "EnabledForSessionHostsOnly",
+                "EnabledForClientsOnly"
+              ],
+              "defaultValue": "Enabled"
+            },
+            "vmInfrastructureType": {
+              "type": "string",
+              "metadata": {
+                "description": "The infrastructure type for the virtual machines. Can be OnPremises or Cloud"
+              },
+              "allowedValues": [
+                "OnPremises",
+                "Cloud"
+              ],
+              "defaultValue": "Cloud"
+            },
+            "customLocationId": {
+              "type": "string",
+              "metadata": {
+                "description": "A deployment target created and customized by your organization for creating virtual machines. The custom location is associated to an Azure Stack HCI cluster. E.g., /subscriptions/<subscriptionID>/resourcegroups/Contoso-rg/providers/microsoft.extendedlocation/customlocations/Contoso-CL."
+              },
+              "defaultValue": ""
+            },
+            "hciImageId": {
+              "type": "string",
+              "metadata": {
+                "description": "Full ARM resource ID of the AzureStackHCI virtual machine image used for the VMs. E.g., /subscriptions/<subscriptionID>/resourceGroups/Contoso-rg/providers/microsoft.azurestackhci/marketplacegalleryimages/Contoso-Win11image."
+              },
+              "defaultValue": ""
+            },
+            "hciLogicalNetworkId": {
+              "type": "string",
+              "metadata": {
+                "description": "Full ARM resource ID of the AzureStackHCI virtual network used for the VMs. E.g., /subscriptions/<subscriptionID>/resourceGroups/Contoso-rg/providers/Microsoft.AzureStackHCI/virtualnetworks/Contoso-virtualnetwork."
+              },
+              "defaultValue": ""
+            },
+            "virtualProcessorCount": {
+              "type": "int",
+              "metadata": {
+                "description": "Virtual Processor Count. Default is 4."
+              },
+              "defaultValue": 4
+            },
+            "memoryMB": {
+              "type": "int",
+              "metadata": {
+                "description": "Memory in GB. Default is 8."
+              },
+              "defaultValue": 8
+            },
+            "maximumMemoryMB": {
+              "type": "int",
+              "metadata": {
+                "description": "This parameter is optional and only used if dynamicMemory = true. When using dynamic memory this setting is the maximum GB given to the VM."
+              },
+              "defaultValue": 0
+            },
+            "minimumMemoryMB": {
+              "type": "int",
+              "metadata": {
+                "description": "This parameter is optional and only used if dynamicMemory = true. When using dynamic memory this setting is the minimum GB given to the VM."
+              },
+              "defaultValue": 0
+            },
+            "dynamicMemoryConfig": {
+              "type": "bool",
+              "metadata": {
+                "description": "Dynamic memory for virtual machine from a range for amount of memory."
+              },
+              "defaultValue": false
+            },
+            "targetMemoryBuffer": {
+              "type": "int",
+              "metadata": {
+                "description": "This parameter is optional and only used if dynamicMemory = true. When using dynamic memory this setting is the buffer of extra memory given to the VM."
+              },
+              "defaultValue": 0
+            },
+            "appGroupName": {
+              "type": "string"
+            },
+            "servicesSubnetResourceId": {
+              "type": "string"
+            },
+            "privateLinkZoneName": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "createVMs": "[greater(parameters('vmNumberOfInstances'),0)]",
+            "rdshPrefix": "[concat(parameters('vmNamePrefix'),'-')]",
+            "vhds": "[concat('vhds','/', variables('rdshPrefix'))]",
+            "subnet-id": "[resourceId(parameters('virtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets',parameters('existingVnetName'), parameters('existingSubnetName'))]",
+            "hostpoolName": "[replace(parameters('hostpoolName'),'\"','')]",
+            "vmTemplateName": "[concat( 'managedDisks-', toLower(replace(parameters('vmImageType'),' ', '')), 'vm')]",
+            "vmTemplateUri": "[concat(parameters('nestedTemplatesLocation'), variables('vmTemplateName'),'.json')]",
+            "azureStackHciTemplateUri": "[concat(parameters('nestedTemplatesLocation'), 'azurestackhci-vm','.json')]",
+            "rdshVmNamesOutput": {
+              "copy": [
+                {
+                  "name": "rdshVmNamesCopy",
+                  "count": "[if(variables('createVMs'), parameters('vmNumberOfInstances'), 1)]",
+                  "input": {
+                    "name": "[concat(variables('rdshPrefix'),copyIndex('rdshVmNamesCopy'))]"
+                  }
+                }
+              ]
+            },
+            "appGroupResourceId": "[createArray(resourceId('Microsoft.DesktopVirtualization/applicationgroups/', parameters('appGroupName')))]",
+            "workspaceResourceGroup": "[if(empty(parameters('workspaceResourceGroup')), resourceGroup().name, parameters('workspaceResourceGroup'))]",
+            "applicationGroupReferencesArr": "[if(equals('',parameters('allApplicationGroupReferences')), variables('appGroupResourceId'), concat(split(parameters('allApplicationGroupReferences'),','), variables('appGroupResourceId')))]",
+            "hostpoolProps": {
+              "friendlyName": "[parameters('hostpoolFriendlyName')]",
+              "description": "[parameters('hostpoolDescription')]",
+              "hostpoolType": "[parameters('hostpoolType')]",
+              "personalDesktopAssignmentType": "[parameters('personalDesktopAssignmentType')]",
+              "maxSessionLimit": "[parameters('maxSessionLimit')]",
+              "loadBalancerType": "[parameters('loadBalancerType')]",
+              "validationEnvironment": "[parameters('validationEnvironment')]",
+              "preferredAppGroupType": "[parameters('preferredAppGroupType')]",
+              "ring": null,
+              "registrationInfo": {
+                "expirationTime": "[parameters('tokenExpirationTime')]",
+                "registrationTokenOperation": "Update"
+              },
+              "vmTemplate": "[parameters('vmTemplate')]",
+              "customRdpProperty": "[if(empty(parameters('customRdpProperty')), null(), parameters('customRdpProperty'))]",
+              "customConfigurationScriptUrl": "[if(empty(parameters('customConfigurationScriptUrl')), null(), parameters('customConfigurationScriptUrl'))]",
+              "firstPartyExtensionAutoUpdate": "[parameters('firstPartyExtensionAutoUpdate')]",
+              "publicNetworkAccess": "[parameters('publicNetworkAccess')]",
+              "managementType": "Standard"
+            },
+            "workspacePublicNetworkAccess": "[if(equals(parameters('publicNetworkAccess'), 'EnabledForClientsOnly'), 'Enabled', parameters('publicNetworkAccess'))]",
+            "sendLogsToStorageAccount": "[not(empty(parameters('hostpoolDiagnosticSettingsStorageAccount')))]",
+            "sendLogsToLogAnalytics": "[not(empty(parameters('hostpoolDiagnosticSettingsLogAnalyticsWorkspaceId')))]",
+            "sendLogsToEventHub": "[not(empty(parameters('hostpoolDiagnosticSettingsEventHubName')))]",
+            "storageAccountIdProperty": "[if(variables('sendLogsToStorageAccount'), parameters('hostpoolDiagnosticSettingsStorageAccount'), null())]",
+            "copy": [
+              {
+                "name": "hostpoolDiagnosticSettingsLogProperties",
+                "count": "[length(parameters('hostpoolDiagnosticSettingsLogCategories'))]",
+                "input": {
+                  "category": "[parameters('hostpoolDiagnosticSettingsLogCategories')[copyIndex('hostpoolDiagnosticSettingsLogProperties')]]",
+                  "enabled": true,
+                  "retentionPolicy": {
+                    "enabled": false,
+                    "days": 0
+                  }
+                }
+              },
+              {
+                "name": "appGroupDiagnosticSettingsLogProperties",
+                "count": "[length(parameters('appGroupDiagnosticSettingsLogCategories'))]",
+                "input": {
+                  "category": "[parameters('appGroupDiagnosticSettingsLogCategories')[copyIndex('appGroupDiagnosticSettingsLogProperties')]]",
+                  "enabled": true,
+                  "retentionPolicy": {
+                    "enabled": false,
+                    "days": 0
+                  }
+                }
+              },
+              {
+                "name": "workspaceDiagnosticSettingsLogProperties",
+                "count": "[length(parameters('workspaceDiagnosticSettingsLogCategories'))]",
+                "input": {
+                  "category": "[parameters('workspaceDiagnosticSettingsLogCategories')[copyIndex('workspaceDiagnosticSettingsLogProperties')]]",
+                  "enabled": true,
+                  "retentionPolicy": {
+                    "enabled": false,
+                    "days": 0
+                  }
+                }
+              }
+            ],
+            "privateEndpointZoneLinkName": "default",
+            "privateEndpointConnectionName": "schoolyear-secure-endpoint-connection",
+            "privateEndpointConnectionNicName": "[format('{0}-nic', variables('privateEndpointConnectionName'))]",
+            "privateEndpointConnectionZoneLink": "[format('{0}/{1}', variables('privateEndpointConnectionName'), variables('privateEndpointZoneLinkName'))]",
+            "privateEndpointFeedName": "schoolyear-secure-endpoint-feed",
+            "privateEndpointFeedNicName": "[format('{0}-nic', variables('privateEndpointFeedName'))]",
+            "privateEndpointFeedZoneLink": "[format('{0}/{1}', variables('privateEndpointFeedName'), variables('privateEndpointZoneLinkName'))]"
+          },
+          "resources": [
+            {
+              "name": "[parameters('hostpoolName')]",
+              "apiVersion": "[parameters('apiVersion')]",
+              "type": "Microsoft.DesktopVirtualization/hostpools",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('hostpoolTags')]",
+              "properties": "[variables('hostpoolProps')]"
+            },
+            {
+              "name": "[parameters('appGroupName')]",
+              "apiVersion": "[parameters('apiVersion')]",
+              "type": "Microsoft.DesktopVirtualization/applicationgroups",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('applicationGroupTags')]",
+              "properties": {
+                "hostpoolarmpath": "[resourceId('Microsoft.DesktopVirtualization/hostpools/', parameters('hostpoolName'))]",
+                "friendlyName": "Default Desktop",
+                "description": "Desktop Application Group created by Schoolyear",
+                "applicationGroupType": "Desktop"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/hostpools/', parameters('hostpoolName'))]"
+              ]
+            },
+            {
+              "apiVersion": "2023-09-05",
+              "name": "[parameters('workSpaceName')]",
+              "type": "Microsoft.DesktopVirtualization/workspaces",
+              "tags": "[parameters('workspaceTags')]",
+              "location": "[parameters('location')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationgroups/', parameters('appGroupName'))]"
+              ],
+              "properties": {
+                "applicationGroupReferences": "[variables('applicationGroupReferencesArr')]",
+                "publicNetworkAccess": "[variables('workspacePublicNetworkAccess')]",
+                "friendlyName": "Safe Exam Workspace"
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2021-05-01",
+              "name": "[variables('privateEndpointConnectionName')]",
+              "location": "[parameters('location')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/hostpools', parameters('hostpoolName'))]"
+              ],
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('servicesSubnetResourceId')]"
+                },
+                "customNetworkInterfaceName": "[variables('privateEndpointConnectionNicName')]",
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[variables('privateEndpointConnectionName')]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.DesktopVirtualization/hostPools', parameters('hostpoolName'))]",
+                      "groupIds": [
+                        "connection"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2021-05-01",
+              "name": "[variables('privateEndpointConnectionZoneLink')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', variables('privateEndpointConnectionName'))]"
+              ],
+              "properties": {
+                "privateDnsZoneConfigs": [
+                  {
+                    "name": "privatelink-wvd-microsoft-com",
+                    "properties": {
+                      "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateLinkZoneName'))]"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2021-05-01",
+              "name": "[variables('privateEndpointFeedName')]",
+              "location": "[parameters('location')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/workspaces', parameters('workSpaceName'))]"
+              ],
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('servicesSubnetResourceId')]"
+                },
+                "customNetworkInterfaceName": "[variables('privateEndpointFeedNicName')]",
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[variables('privateEndpointFeedName')]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.DesktopVirtualization/workspaces', parameters('workSpaceName'))]",
+                      "groupIds": [
+                        "feed"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2021-05-01",
+              "name": "[variables('privateEndpointFeedZoneLink')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', variables('privateEndpointFeedName'))]"
+              ],
+              "properties": {
+                "privateDnsZoneConfigs": [
+                  {
+                    "name": "privatelink-wvd-microsoft-com",
+                    "properties": {
+                      "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateLinkZoneName'))]"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "apiVersion": "2018-05-01",
+              "name": "[concat('vmCreation-linkedTemplate-', parameters('deploymentId'))]",
+              "type": "Microsoft.Resources/deployments",
+              "condition": "[and(equals(parameters('vmInfrastructureType'), 'Cloud'), variables('createVMs'))]",
+              "resourceGroup": "[parameters('vmResourceGroup')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', variables('privateEndpointConnectionName'), variables('privateEndpointZoneLinkName'))]"
+              ],
+              "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                  "uri": "[variables('vmTemplateUri')]",
+                  "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                  "artifactsLocation": {
+                    "value": "[parameters('artifactsLocation')]"
+                  },
+                  "availabilityOption": {
+                    "value": "[parameters('availabilityOption')]"
+                  },
+                  "availabilitySetName": {
+                    "value": "[parameters('availabilitySetName')]"
+                  },
+                  "availabilityZones": {
+                    "value": "[parameters('availabilityZones')]"
+                  },
+                  "vmGalleryImageOffer": {
+                    "value": "[parameters('vmGalleryImageOffer')]"
+                  },
+                  "vmGalleryImagePublisher": {
+                    "value": "[parameters('vmGalleryImagePublisher')]"
+                  },
+                  "vmGalleryImageHasPlan": {
+                    "value": "[parameters('vmGalleryImageHasPlan')]"
+                  },
+                  "vmGalleryImageSKU": {
+                    "value": "[parameters('vmGalleryImageSKU')]"
+                  },
+                  "vmGalleryImageVersion": {
+                    "value": "[parameters('vmGalleryImageVersion')]"
+                  },
+                  "rdshPrefix": {
+                    "value": "[variables('rdshPrefix')]"
+                  },
+                  "rdshNumberOfInstances": {
+                    "value": "[parameters('vmNumberOfInstances')]"
+                  },
+                  "rdshVMDiskType": {
+                    "value": "[parameters('vmDiskType')]"
+                  },
+                  "rdshVmSize": {
+                    "value": "[parameters('vmSize')]"
+                  },
+                  "rdshVmDiskSizeGB": {
+                    "value": "[parameters('vmDiskSizeGB')]"
+                  },
+                  "rdshHibernate": {
+                    "value": "[parameters('vmHibernate')]"
+                  },
+                  "enableAcceleratedNetworking": {
+                    "value": false
+                  },
+                  "vmAdministratorAccountUsername": {
+                    "value": "[parameters('vmAdministratorAccountUsername')]"
+                  },
+                  "vmAdministratorAccountPassword": {
+                    "value": "[parameters('vmAdministratorAccountPassword')]"
+                  },
+                  "administratorAccountUsername": {
+                    "value": "[parameters('administratorAccountUsername')]"
+                  },
+                  "administratorAccountPassword": {
+                    "value": "[parameters('administratorAccountPassword')]"
+                  },
+                  "subnet-id": {
+                    "value": "[variables('subnet-id')]"
+                  },
+                  "vhds": {
+                    "value": "[variables('vhds')]"
+                  },
+                  "rdshImageSourceId": {
+                    "value": "[parameters('vmCustomImageSourceId')]"
+                  },
+                  "location": {
+                    "value": "[parameters('vmLocation')]"
+                  },
+                  "extendedLocation": {
+                    "value": "[parameters('vmExtendedLocation')]"
+                  },
+                  "createNetworkSecurityGroup": {
+                    "value": "[parameters('createNetworkSecurityGroup')]"
+                  },
+                  "networkSecurityGroupId": {
+                    "value": "[parameters('networkSecurityGroupId')]"
+                  },
+                  "networkSecurityGroupRules": {
+                    "value": "[parameters('networkSecurityGroupRules')]"
+                  },
+                  "networkInterfaceTags": {
+                    "value": "[parameters('networkInterfaceTags')]"
+                  },
+                  "networkSecurityGroupTags": {
+                    "value": "[parameters('networkSecurityGroupTags')]"
+                  },
+                  "virtualMachineTags": {
+                    "value": "[parameters('virtualMachineTags')]"
+                  },
+                  "imageTags": {
+                    "value": "[parameters('imageTags')]"
+                  },
+                  "hostpoolToken": {
+                    "value": "[reference(parameters('hostpoolName')).registrationInfo.token]"
+                  },
+                  "hostpoolName": {
+                    "value": "[parameters('hostpoolName')]"
+                  },
+                  "domain": {
+                    "value": "[parameters('domain')]"
+                  },
+                  "ouPath": {
+                    "value": "[parameters('ouPath')]"
+                  },
+                  "aadJoin": {
+                    "value": "[parameters('aadJoin')]"
+                  },
+                  "intune": {
+                    "value": "[parameters('intune')]"
+                  },
+                  "bootDiagnostics": {
+                    "value": "[parameters('bootDiagnostics')]"
+                  },
+                  "_guidValue": {
+                    "value": "[parameters('deploymentId')]"
+                  },
+                  "userAssignedIdentity": {
+                    "value": "[parameters('userAssignedIdentity')]"
+                  },
+                  "customConfigurationScriptUrl": {
+                    "value": "[parameters('customConfigurationScriptUrl')]"
+                  },
+                  "systemData": {
+                    "value": "[parameters('systemData')]"
+                  },
+                  "securityType": {
+                    "value": "[parameters('securityType')]"
+                  },
+                  "secureBoot": {
+                    "value": "[parameters('secureBoot')]"
+                  },
+                  "vTPM": {
+                    "value": "[parameters('vTPM')]"
+                  },
+                  "managedDiskSecurityEncryptionType": {
+                    "value": "[parameters('managedDiskSecurityEncryptionType')]"
+                  },
+                  "integrityMonitoring": {
+                    "value": "[parameters('integrityMonitoring')]"
+                  }
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "name": "[format('{0}/scheduleReboot', variables('rdshVmNamesOutput').rdshVmNamesCopy[copyIndex('rebootLoop')].name)]",
+              "copy": {
+                "name": "rebootLoop",
+                "count": "[length(variables('rdshVmNamesOutput').rdshVmNamesCopy)]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', concat('vmCreation-linkedTemplate-', parameters('deploymentId')))]"
+              ],
+              "apiVersion": "2022-03-01",
+              "location": "[resourceGroup().location]",
+              "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.10",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                  "commandToExecute": "powershell -ExecutionPolicy Unrestricted -Command \"& { . 'C:\\Init\\initialize_sessionhost.ps1'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute 'PowerShell' -Argument '-Command Restart-Computer -Force') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName 'reboot' }\""
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "rdshVmNamesObject": {
+              "value": "[variables('rdshVmNamesOutput')]",
+              "type": "object"
+            },
+            "workspaceId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.DesktopVirtualization/workspaces', parameters('workSpaceName')), '2023-09-05').objectId]"
+            },
+            "hostpoolId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.DesktopVirtualization/hostpools', parameters('hostpoolName')), '2023-09-05').objectId]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.DesktopVirtualization/applicationGroups/{0}', variables('appGroupName'))]",
+      "name": "[guid(resourceId('Microsoft.DesktopVirtualization/applicationGroups', variables('appGroupName')), parameters('userGroupId'), '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')]",
+        "principalId": "[parameters('userGroupId')]",
+        "principalType": "Group"
+      },
+      "dependsOn": [
+        "[variables('deploymentResourceId')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(resourceGroup().id, parameters('userGroupId'), 'fb879df8-f326-4884-b1cf-06f3ad86be52')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'fb879df8-f326-4884-b1cf-06f3ad86be52')]",
+        "principalId": "[parameters('userGroupId')]",
+        "scope": "[resourceGroup().id]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-04-01",
+      "name": "[variables('proxyIpName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Static",
+        "idleTimeoutInMinutes": 4,
+        "ddosSettings": {
+          "protectionMode": "VirtualNetworkInherited"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-04-01",
+      "name": "[variables('proxyNsgName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowAnySSHInbound",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "properties": {
+              "protocol": "TCP",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAnyHTTPSInbound",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "properties": {
+              "protocol": "TCP",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('proxyNicName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('proxyIpName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('proxyNsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "[format('{0}-nic-ipconfig', variables('proxyVmName'))]",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('proxyIpName'))]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('servicesSubnetName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('proxyNsgName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-03-01",
+      "name": "[variables('proxyVmName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('proxyNicName'))]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('proxyVmSize')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('proxyNicName'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('proxyVmName')]",
+          "adminUsername": "[variables('proxyAdminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "keyData": "[variables('sshPubKey')]",
+                  "path": "[format('/home/{0}/.ssh/authorized_keys', variables('proxyAdminUsername'))]"
+                }
+              ]
+            }
+          }
+        },
+        "storageProfile": {
+          "osDisk": {
+            "deleteOption": "Delete",
+            "createOption": "FromImage"
+          },
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[variables('keyVaultRoleAssignmentDeploymentName')]",
+      "apiVersion": "2022-09-01",
+      "resourceGroup": "[variables('keyVaultResourceGroup')]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('proxyVmName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id, variables('proxyVmName'), '4633458b-17de-408a-b874-0445c86b69e6')]",
+              "scope": "[resourceId(variables('keyVaultResourceGroup'), 'Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+                "principalId": "[reference(resourceId('Microsoft.Compute/virtualMachines', variables('proxyVmName')), '2023-09-01', 'Full').identity.principalId]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ],
+          "outputs": {
+            "resourceUrl": {
+              "type": "string",
+              "value": "[format('https://management.azure.com/subscriptions/{0}/resourcegroups/{1}/providers/Microsoft.KeyVault/vaults/{2}/providers/Microsoft.Authorization/roleAssignments/{3}?api-version=2022-04-01', subscription().subscriptionId, variables('keyVaultResourceGroup'), variables('keyVaultName'), guid(resourceGroup().id, variables('proxyVmName'), '4633458b-17de-408a-b874-0445c86b69e6'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[variables('proxyDnsEntryDeploymentName')]",
+      "apiVersion": "2022-09-01",
+      "resourceGroup": "[variables('dnsZoneResourceGroup')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('proxyIpName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "expressionEvaluationOptions": {
+          "scope": "Inner"
+        },
+        "parameters": {
+          "ipv4": {
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('proxyIpName'))).ipAddress]"
+          },
+          "dnsZoneName": {
+            "value": "[variables('dnsZoneName')]"
+          },
+          "dnsRecord": {
+            "value": "[parameters('examId')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "ipv4": {
+              "type": "string"
+            },
+            "dnsZoneName": {
+              "type": "string"
+            },
+            "dnsRecord": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/dnsZones/A",
+              "apiVersion": "2018-05-01",
+              "name": "[format('{0}/{1}', parameters('dnsZoneName'), parameters('dnsRecord'))]",
+              "properties": {
+                "TTL": 3600,
+                "ARecords": [
+                  {
+                    "ipv4Address": "[parameters('ipv4')]"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "domain": {
+              "type": "string",
+              "value": "[substring(reference(resourceId('Microsoft.Network/dnsZones/A', parameters('dnsZoneName'), parameters('dnsRecord'))).fqdn, 0, sub(length(reference(resourceId('Microsoft.Network/dnsZones/A', parameters('dnsZoneName'), parameters('dnsRecord'))).fqdn), 1))]"
+            },
+            "resourceUrl": {
+              "type": "string",
+              "value": "[format('https://management.azure.com{0}?api-version=2018-05-01', resourceId('Microsoft.Network/dnsZones/A', parameters('dnsZoneName'), parameters('dnsRecord')))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('proxyVmName'), '/CustomScriptExtensionName')]",
+      "apiVersion": "2023-03-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('proxyVmName'))]",
+        "[resourceId(variables('keyVaultResourceGroup'), 'Microsoft.Resources/deployments', variables('keyVaultRoleAssignmentDeploymentName'))]",
+        "[resourceId('Microsoft.Resources/deployments', variables('deploymentName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "skipDos2Unix": true,
+          "fileUris": [
+            "[variables('proxyInstallScriptUrl')]"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[format('bash {0} \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\"', variables('proxyInstallScriptName'), format('{0}.*.wvd.microsoft.com:*,{1}.*.wvd.microsoft.com:*', reference(resourceId('Microsoft.Resources/deployments', variables('deploymentName')), '2022-09-01').outputs.hostpoolId.value, reference(resourceId('Microsoft.Resources/deployments', variables('deploymentName')), '2022-09-01').outputs.workspaceId.value), parameters('trustedProxySecret'), variables('keyVaultName'), variables('keyVaultCertificateName'), parameters('apiBaseUrl'))]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "publicIps": {
+      "type": "array",
+      "value": [
+        "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('natIpName')), '2023-05-01').ipAddress]"
+      ]
+    },
+    "proxyConfig": {
+      "type": "object",
+      "value": {
+        "domains": [
+          {
+            "matcher": "*-*-*-*-*.*.wvd.microsoft.com",
+            "proxy": "[reference(resourceId(variables('dnsZoneResourceGroup'), 'Microsoft.Resources/deployments', variables('proxyDnsEntryDeploymentName')), '2022-09-01').outputs.domain.value]"
+          },
+          {
+            "matcher": "*-*-*-*-*.*.wvd.microsoft.com",
+            "proxy": "[reference(resourceId(variables('dnsZoneResourceGroup'), 'Microsoft.Resources/deployments', variables('proxyDnsEntryDeploymentName')), '2022-09-01').outputs.domain.value]"
+          }
+        ]
+      }
+    },
+    "resourceUrlsToDelete": {
+      "type": "array",
+      "value": [
+        "[reference(resourceId(variables('dnsZoneResourceGroup'), 'Microsoft.Resources/deployments', variables('proxyDnsEntryDeploymentName')), '2022-09-01').outputs.resourceUrl.value]",
+        "[reference(resourceId(variables('keyVaultResourceGroup'), 'Microsoft.Resources/deployments', variables('keyVaultRoleAssignmentDeploymentName')), '2022-09-01').outputs.resourceUrl.value]"
+      ]
+    },
+    "proxyIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('proxyIpName')), '2023-05-01').ipAddress]"
+    },
+    "hostpoolName": {
+      "type": "string",
+      "value": "[variables('hostpoolName')]"
+    },
+    "vmNumberOfInstances": {
+      "type": "int",
+      "value": "[variables('vmNumberOfInstances')]"
+    }
+  }
+}

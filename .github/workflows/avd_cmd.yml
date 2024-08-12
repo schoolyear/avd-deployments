@@ -1,14 +1,14 @@
-name: AVD cmd
+name: AVD cli
 
 on:
   push:
     branches: ['main']
     paths:
-      - 'avd/cmd/**'
+      - 'avd/cli/**'
   pull_request:
     branches: ['main']
     paths:
-      - 'avd/cmd/**'
+      - 'avd/cli/**'
 
 jobs:
   test-build:
@@ -32,26 +32,26 @@ jobs:
           version: "latest"
 
       - name: Build linux amd64
-        run: 'GOOS=linux GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-linux-amd64 ./avd/cmd '
+        run: 'GOOS=linux GOARCH=amd64 go build -o ./avd/cli/bin/avdcli-linux-amd64 ./avd/cli '
 
       - name: Build linux arm64
-        run: 'GOOS=linux GOARCH=arm64 go build -o ./avd/cmd/bin/avdcmd-linux-arm64 ./avd/cmd'
+        run: 'GOOS=linux GOARCH=arm64 go build -o ./avd/cli/bin/avdcli-linux-arm64 ./avd/cli'
 
       - name: Build windows amd64
-        run: 'GOOS=windows GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-windows-amd64.exe ./avd/cmd'
+        run: 'GOOS=windows GOARCH=amd64 go build -o ./avd/cli/bin/avdcli-windows-amd64.exe ./avd/cli'
 
       - name: Build windows arm64
-        run: 'GOOS=windows GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-windows-arm64.exe ./avd/cmd'
+        run: 'GOOS=windows GOARCH=amd64 go build -o ./avd/cli/bin/avdcli-windows-arm64.exe ./avd/cli'
 
       - name: Build darwin amd64
-        run: 'GOOS=darwin GOARCH=amd64 go build -o ./avd/cmd/bin/avdcmd-macos-amd64 ./avd/cmd'
+        run: 'GOOS=darwin GOARCH=amd64 go build -o ./avd/cli/bin/avdcli-macos-amd64 ./avd/cli'
 
       - name: Build darwin arm64
-        run: 'GOOS=darwin GOARCH=arm64 go build -o ./avd/cmd/bin/avdcmd-macos-arm64 ./avd/cmd'
+        run: 'GOOS=darwin GOARCH=arm64 go build -o ./avd/cli/bin/avdcli-macos-arm64 ./avd/cli'
 
       - name: Upload builds to Github
         uses: actions/upload-artifact@v4
         with:
-          name: avdcmd
-          path: avd/cmd/bin/**
+          name: avdcli
+          path: avd/cli/bin/**
           retention-days: 14
