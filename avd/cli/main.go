@@ -18,9 +18,12 @@ func main() {
 		Suggest: true,
 		Commands: cli.Commands{
 			{
-				Name:        "image",
-				Usage:       "manage images",
-				Subcommands: commands.ImageNewCommand,
+				Name:  "image",
+				Usage: "manage images",
+				Subcommands: cli.Commands{
+					commands.ImageNewCommand,
+					commands.ImageBuildCommand,
+				},
 			},
 		},
 		Flags: []cli.Flag{

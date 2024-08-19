@@ -4,62 +4,43 @@ import (
 	"fmt"
 	"github.com/friendsofgo/errors"
 	"github.com/schoolyear/secure-apps-scripts/avd/cli/embeddedfiles"
+	"github.com/schoolyear/secure-apps-scripts/avd/cli/lib"
 	"github.com/urfave/cli/v2"
-	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 )
 
-var ImageNewCommand = cli.Commands{
-	{
-		Name:  "new",
-		Usage: "create a new image folder structure",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "name",
-				Usage:    "path-safe name of the new image",
-				Required: true,
-			},
-			&cli.PathFlag{
-				Name:  "base-path",
-				Value: "./",
-				Usage: "Path in which the new image folder should be created",
-			},
+var ImageNewCommand = &cli.Command{
+	Name:  "new",
+	Usage: "create a new image folder structure",
+	Flags: []cli.Flag{
+		&cli.PathFlag{
+			Name:    "output",
+			Value:   "./",
+			Usage:   "Path in which the new image folder should be created",
+			Aliases: []string{"o"},
 		},
-		Action: func(c *cli.Context) error {
-			name := c.String("name")
-			basePath := c.Path("base-path")
+	},
+	Action: func(c *cli.Context) error {
+		targetPath := c.Path("output")
 
-			targetPath := path.Join(basePath, name)
+		if err := lib.EnsureEmptyDirectory(targetPath); err != nil {
+			return errors.Wrap(err, "failed to create target directory")
+		}
 
-			fileInfo, err := os.Stat(targetPath)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					return errors.Wrapf(err, "failed to check new folder path: %s", targetPath)
-				}
-			} else {
-				if fileInfo.IsDir() {
-					return fmt.Errorf("target directory already exists: %s", targetPath)
-				} else {
-					return fmt.Errorf("target directory is already a file: %s", targetPath)
-				}
-			}
+		absTargetPath, err := filepath.Abs(targetPath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to convert target path to absolute path")
+		}
 
-			absTargetPath, err := filepath.Abs(targetPath)
-			if err != nil {
-				return errors.Wrapf(err, "failed to convert target path to absolute path")
-			}
+		if err := copyDirectory(embeddedfiles.ImageTemplate, embeddedfiles.ImageTemplateBasePath, targetPath); err != nil {
+			return errors.Wrap(err, "failed to copy image template directory")
+		}
 
-			if err := copyDirectory(embeddedfiles.ImageTemplate, embeddedfiles.ImageTemplateBasePath, targetPath); err != nil {
-				return errors.Wrap(err, "failed to copy image template directory")
-			}
+		fmt.Println("created new image folder at", absTargetPath)
 
-			fmt.Println("created new image folder at", absTargetPath)
-
-			return nil
-		},
+		return nil
 	},
 }
 
@@ -91,20 +72,8 @@ func copyDirectory(sourceFs fs.FS, sourceBasePath string, targetBasePath string)
 			fmt.Printf(" - OK\n")
 		} else {
 			fmt.Printf("[FILE]: %s", filepath.Join(targetPathBase, rel))
-			sourceFile, err := sourceFs.Open(sourcePath)
-			if err != nil {
-				return errors.Wrapf(err, "failed to open source file for copying %s", targetPath)
-			}
-			defer sourceFile.Close()
-
-			targetFile, err := os.Create(targetPath)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create new file %s", targetPath)
-			}
-			defer targetFile.Close()
-
-			if _, err := io.Copy(targetFile, sourceFile); err != nil {
-				return errors.Wrapf(err, "failed to write template file %s", targetPath)
+			if err := lib.CopyFile(sourceFs, sourcePath, targetPath); err != nil {
+				return errors.Wrap(err, "failed to copy file")
 			}
 			fmt.Printf(" - OK\n")
 		}

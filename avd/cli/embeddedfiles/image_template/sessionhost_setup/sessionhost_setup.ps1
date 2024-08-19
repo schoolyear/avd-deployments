@@ -1,0 +1,1 @@
+& (Join-Path -Path $PSScriptRoot -ChildPath "../network/firewall_rules.ps1") # execute firewall rules
