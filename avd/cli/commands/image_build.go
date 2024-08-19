@@ -43,6 +43,12 @@ var ImageBuildCommand = &cli.Command{
 		outputPath := c.Path("output")
 		dryRun := c.Bool("dry-run")
 
+		cwd, err := os.Getwd()
+		if err != nil {
+			return errors.Wrap(err, "failed to get current working directory")
+		}
+		fullOutputPath := filepath.Join(cwd, outputPath)
+
 		layerPaths := []string{
 			imagePath,
 			baseLayerPath,
@@ -114,7 +120,7 @@ var ImageBuildCommand = &cli.Command{
 				return errors.Wrap(err, "failed to execute merge")
 			}
 
-			fmt.Printf("Created %d files in %s\n", len(fileMappings), outputPath)
+			fmt.Printf("Created %d files in %s\n", len(fileMappings), fullOutputPath)
 		}
 		return nil
 	},
