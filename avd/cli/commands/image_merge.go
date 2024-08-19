@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 )
 
-var ImageBuildCommand = &cli.Command{
-	Name:  "build",
-	Usage: "Build image package by merging all layers",
+var ImageMergeCommand = &cli.Command{
+	Name:  "Merge",
+	Usage: "Merge image package",
 	Flags: []cli.Flag{
 		&cli.PathFlag{
 			Name:     "image",

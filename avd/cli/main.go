@@ -14,7 +14,7 @@ func main() {
 	app := &cli.App{
 		Name:    "avdcli",
 		Usage:   "managed you AVD deployment",
-		Version: "1.78.1",
+		Version: "1.87.1",
 		Suggest: true,
 		Commands: cli.Commands{
 			{
@@ -22,7 +22,7 @@ func main() {
 				Usage: "manage images",
 				Subcommands: cli.Commands{
 					commands.ImageNewCommand,
-					commands.ImageBuildCommand,
+					commands.ImageMergeCommand,
 				},
 			},
 		},
