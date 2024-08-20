@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 )
 
@@ -256,10 +257,19 @@ func intBase10Length(number int) uint {
 }
 
 // mapOrderedFiles creates the file mappings for colliding ordered entries
-// the entries are assumed to be sorted by layer index
+// this function will sort the entries slice in place
 func mapOrderedFiles(entries []layerEntry, orderIndexStart int, indexLength uint) []FileMapping {
+	// sort, first by index, then by layerIdx
+	slices.SortFunc(entries, func(a, b layerEntry) int {
+		if a.orderingIndex == b.orderingIndex {
+			return a.layerIdx - b.layerIdx
+		}
+		return a.orderingIndex - b.orderingIndex
+	})
+
 	filenameFormat := fmt.Sprintf("%%0%dd_%%s", indexLength)
 	mappings := make([]FileMapping, len(entries))
+
 	for i, entry := range entries {
 		orderIndex := orderIndexStart + i
 		dirPath := filepath.Dir(entry.sourcePath)
@@ -273,57 +283,3 @@ func mapOrderedFiles(entries []layerEntry, orderIndexStart int, indexLength uint
 	}
 	return mappings
 }
-
-//
-
-//
-//func MergeDirectoryLayers(layers []fs.FS) ([]MergeMapping, error) {
-//	for layer, layerFs := range layers {
-//		fs.WalkDir(layerFs, "", func(path string, d fs.DirEntry, err error) error {
-//			d.
-//		})
-//		paths, err := fs.Glob(layerFs, "**")
-//		if err != nil {
-//			return nil, errors.Wrapf(err, "failed to list files in layer: %d", layer)
-//		}
-//
-//		fmt.Println(paths)
-//	}
-//
-//	return nil, nil
-//}
-//
-//type dirEntry struct {
-//	filepath    string
-//	isDirectory bool
-//}
-//
-//func listDirectoryRecursively(dir fs.FS, root string) ([]dirEntry, error) {
-//	var entries []dirEntry
-//
-//	fs.WalkDir(dir, root, func(path string, d fs.DirEntry, err error) error {
-//		if err != nil {
-//			return errors.Wrapf(err, "failed to scan: %s", path)
-//		}
-//
-//		fullPath := filepath.Join(root, path)
-//
-//		if !d.IsDir() {
-//			// add self
-//			entries = append(entries, dirEntry{
-//				filepath:    fullPath,
-//				isDirectory: true,
-//			})
-//
-//			// scan subdirectory
-//			subEntries, err := listDirectoryRecursively(dir, fullPath)
-//			if err != nil {
-//				return errors.Wrapf(err, "failed to list sub directory: %s", fullPath)
-//			}
-//
-//			for _, subEntry := range subEntries
-//		} else {
-//
-//		}
-//	})
-//}
