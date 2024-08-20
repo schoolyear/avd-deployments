@@ -259,12 +259,12 @@ func intBase10Length(number int) uint {
 // mapOrderedFiles creates the file mappings for colliding ordered entries
 // this function will sort the entries slice in place
 func mapOrderedFiles(entries []layerEntry, orderIndexStart int, indexLength uint) []FileMapping {
-	// sort, first by index, then by layerIdx
+	// sort, first by layerIdx, then by ordering index
 	slices.SortFunc(entries, func(a, b layerEntry) int {
-		if a.orderingIndex == b.orderingIndex {
-			return a.layerIdx - b.layerIdx
+		if a.layerIdx == b.layerIdx {
+			return a.orderingIndex - b.orderingIndex
 		}
-		return a.orderingIndex - b.orderingIndex
+		return a.layerIdx - b.layerIdx
 	})
 
 	filenameFormat := fmt.Sprintf("%%0%dd_%%s", indexLength)
