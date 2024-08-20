@@ -1,0 +1,14 @@
+// this file describes the steps performed during image building
+//
+// this file gets merged with the building_steps.json from all the other steps (first layer executed first)
+// to deviate from the default ordering, you can specify an ordering preference by placing the step in the "pre" or "post" list
+//
+// by default, you should put your installation steps in the "default" list
+{
+  pre: [],
+  // if you need to execute steps early in the build process
+  default: [],
+  // the default place to put your building steps
+  post: []
+  // if you need to execute steps late in the build process
+}
