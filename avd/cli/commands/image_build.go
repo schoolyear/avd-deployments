@@ -134,11 +134,9 @@ var ImageBuildCommand = &cli.Command{
 			return errors.Wrap(err, "failed to merge resources directories")
 		}
 
-		fmt.Println("\nMerging complete")
-		fmt.Printf("Image properties:\n%s\n", niceImagePropsJson)
-		fmt.Printf("Building steps config: %d steps\n", buildStepsConfig.TotalCount())
+		fmt.Println("Merging complete")
 
-		fmt.Printf("Resources: %d. The following files were renamed:\n", len(resourceFileMappings))
+		fmt.Println("The following ordered resource files will be renamed:")
 		renamed := 0
 		for i := range layers {
 			for _, fileMapping := range resourceFileMappings {
@@ -147,10 +145,9 @@ var ImageBuildCommand = &cli.Command{
 					renamed++
 				}
 			}
-
 		}
 		if renamed == 0 {
-			fmt.Println("\t\tNo files were renamed")
+			fmt.Println("\tNo files will be renamed")
 		}
 		fmt.Println()
 
@@ -159,12 +156,13 @@ var ImageBuildCommand = &cli.Command{
 			return nil
 		}
 
+		fmt.Println("Writing the image building package")
 		fullOutputPath := filepath.Join(cwd, outputPath)
 		if err := writeImageBuildingPackage(fullOutputPath, layers, niceImagePropsJson, niceBuildStepsConfigJson, resourceFileMappings, overwriteOutput); err != nil {
 			return errors.Wrap(err, "failed to write image building package")
 		}
 
-		fmt.Printf("Create image building package in %s\n", fullOutputPath)
+		fmt.Printf("Package written to %s\n", fullOutputPath)
 
 		return nil
 	},
@@ -263,7 +261,7 @@ func printLayers(layers []layerProps) error {
 			buildStepsCount = strconv.Itoa(layer.buildStepsConfig.TotalCount())
 		}
 
-		resourcesSize := "folder missing"
+		resourcesSize := "no resource folder"
 		if layer.hasResourcesFolder {
 			resourcesSize = bytesize.New(float64(layer.resourcesSize)).String()
 		}
@@ -383,7 +381,7 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 		return errors.Wrapf(err, "failed to write build steps config file to %s", imagePropertiesPath)
 	}
 
-	resourcesArchivePath := filepath.Join(outputPath, resourcesDirName)
+	resourcesArchivePath := filepath.Join(outputPath, resourcesDirName+".zip")
 	if err := writeResourcesArchive(resourcesArchivePath, layers, resourceFileMappings); err != nil {
 		return errors.Wrapf(err, "failed to write resources archive to %s", resourcesArchivePath)
 	}

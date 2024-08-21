@@ -5,7 +5,7 @@
       "inline": [
         "C:\\sy\\caddy_static.ps1"
       ],
-      "name": "caddy_static_install",
+      "name": "Caddy local file server",
       "runAsSystem": true,
       "runElevated": true,
       "type": "PowerShell"
