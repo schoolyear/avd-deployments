@@ -24,7 +24,7 @@ var ImageMergeCommand = &cli.Command{
 			Name:    "base-layer",
 			Usage:   "path to the base layer",
 			Aliases: []string{"b"},
-			Value:   "base/image_base",
+			Value:   "default_image_layers/scripts_setup",
 		},
 		&cli.PathFlag{
 			Name:    "output",

@@ -1,0 +1,20 @@
+{
+  default: [
+    {
+      name: "download Schoolyear VDI browser MSI",
+      destination: "C:\\AVDImage\\schoolyear-vdi-browser.exe",
+      sha256Checksum: "a4aa51803695dacfc2ef74edd2d24e2c24c9288e3d4b84853f9d7d68091ec513",
+      sourceUri: "https://exams-install-dev.s3.eu-west-1.amazonaws.com/schoolyear-exams-browser-win-3.8.0.msi",
+      type: "File"
+    },
+    {
+      name: "Install VDI browser",
+      type: "Powershell",
+      inline: [
+        "Start-Process -FilePath msiexec.exe -ArgumentList '/i','C:\\AVDImage\\schoolyear-vdi-browser.exe', '/q' -PassThru -Verb \"RunAs\"\n"
+      ],
+      runAsSystem: true,
+      runElevated: true
+    }
+  ],
+}

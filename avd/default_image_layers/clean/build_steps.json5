@@ -1,0 +1,168 @@
+{
+  default: [
+    {
+      "destination": "C:\\AVDImage\\installLanguagePacks.ps1",
+      "name": "avdBuiltInScript_installLanguagePacks",
+      "sha256Checksum": "519f1dcb41c15dc1726f28c51c11fb60876304ab9eb9535e70015cdb704a61b2",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/InstallLanguagePacks.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\installLanguagePacks.ps1 -LanguageList \"English (United States)\""
+      ],
+      "name": "avdBuiltInScript_installLanguagePacks-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_installLanguagePacks-windowsUpdate",
+      "searchCriteria": "",
+      "type": "WindowsUpdate",
+      "updateLimit": 0
+    },
+    {
+      "name": "avdBuiltInScript_installLanguagePacks-windowsRestart",
+      "restartCheckCommand": "",
+      "restartCommand": "",
+      "restartTimeout": "10m",
+      "type": "WindowsRestart"
+    },
+    {
+      "destination": "C:\\AVDImage\\setDefaultLanguage.ps1",
+      "name": "avdBuiltInScript_setDefaultLanguage",
+      "sha256Checksum": "213eb3b3cf3f15668d9d74effdb5fe69e46e91109a9dfe1cc5ce8e7edbd3ba39",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/SetDefaultLang.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\setDefaultLanguage.ps1 -Language \"English (United States)\""
+      ],
+      "name": "avdBuiltInScript_setDefaultLanguage-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_setDefaultLanguage-windowsUpdate",
+      "searchCriteria": "",
+      "type": "WindowsUpdate",
+      "updateLimit": 0
+    },
+    {
+      "name": "avdBuiltInScript_setDefaultLanguage-windowsRestart",
+      "restartCheckCommand": "",
+      "restartCommand": "",
+      "restartTimeout": "5m",
+      "type": "WindowsRestart"
+    },
+    {
+      "name": "avdBuiltInScript_disableStorageSense",
+      "runAsSystem": true,
+      "runElevated": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/DisableStorageSense.ps1",
+      "sha256Checksum": "f486df3c245f93bcf53b9c68b17741a732e6641703e2eea4234a27e30e39e983",
+      "type": "PowerShell"
+    },
+    {
+      "destination": "C:\\AVDImage\\windowsOptimization.ps1",
+      "name": "avdBuiltInScript_windowsOptimization",
+      "sha256Checksum": "3a84266be0a3fcba89f2adf284f3cc6cc2ac41242921010139d6e9514ead126f",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/WindowsOptimization.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\windowsOptimization.ps1 -Optimizations \"RemoveOneDrive\",\"RemoveLegacyIE\",\"Edge\",\"DiskCleanup\",\"Services\",\"Autologgers\",\"WindowsMediaPlayer\",\"ScheduledTasks\",\"DefaultUserSettings\""
+      ],
+      "name": "avdBuiltInScript_windowsOptimization-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_windowsOptimization-windowsUpdate",
+      "searchCriteria": "",
+      "type": "WindowsUpdate",
+      "updateLimit": 0
+    },
+    {
+      "name": "avdBuiltInScript_windowsOptimization-windowsRestart",
+      "restartCheckCommand": "",
+      "restartCommand": "",
+      "restartTimeout": "",
+      "type": "WindowsRestart"
+    },
+    {
+      "destination": "C:\\AVDImage\\removeAppxPackages.ps1",
+      "name": "avdBuiltInScript_removeAppxPackages",
+      "sha256Checksum": "db1de9f922b9e9de4a1d667e69d0324539606ae01ae182909806d9bdd5bdb518",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/RemoveAppxPackages.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\removeAppxPackages.ps1 -AppxPackages \"Microsoft.XboxApp\",\"Microsoft.ZuneVideo\",\"Microsoft.ZuneMusic\",\"Microsoft.YourPhone\",\"Microsoft.XboxSpeechToTextOverlay\",\"Microsoft.XboxIdentityProvider\",\"Microsoft.XboxGamingOverlay\",\"Microsoft.XboxGameOverlay\",\"Microsoft.Xbox.TCUI\",\"Microsoft.WindowsSoundRecorder\",\"Microsoft.WindowsMaps\",\"Microsoft.WindowsFeedbackHub\",\"Microsoft.WindowsCamera\",\"Microsoft.WindowsAlarms\",\"Microsoft.Todos\",\"Microsoft.SkypeApp\",\"Microsoft.ScreenSketch\",\"Microsoft.PowerAutomateDesktop\",\"Microsoft.People\",\"Microsoft.MicrosoftStickyNotes\",\"Microsoft.MicrosoftSolitaireCollection\",\"Microsoft.Office.OneNote\",\"Microsoft.MicrosoftOfficeHub\",\"Microsoft.Getstarted\",\"Microsoft.GetHelp\",\"Microsoft.BingWeather\",\"Microsoft.GamingApp\",\"Microsoft.BingNews\""
+      ],
+      "name": "avdBuiltInScript_removeAppxPackages-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_windowsUpdate",
+      "searchCriteria": "",
+      "type": "WindowsUpdate",
+      "updateLimit": 0
+    },
+    {
+      "name": "avdBuiltInScript_windowsUpdate-windowsRestart",
+      "restartCheckCommand": "",
+      "restartCommand": "",
+      "restartTimeout": "",
+      "type": "WindowsRestart"
+    },
+    {
+      "name": "avdBuiltInScript_timeZoneRedirection",
+      "runAsSystem": true,
+      "runElevated": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/TimezoneRedirection.ps1",
+      "sha256Checksum": "b8dbc50b02f64cc7a99f6eeb7ada676673c9e431255e69f3e7a97a027becd8d5",
+      "type": "PowerShell"
+    },
+    {
+      "destination": "C:\\AVDImage\\multiMediaRedirection.ps1",
+      "name": "avdBuiltInScript_multiMediaRedirection",
+      "sha256Checksum": "f577c9079aaa7da399121879213825a3f263f7b067951a234509e72f8b59a7fd",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/MultiMediaRedirection.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\multiMediaRedirection.ps1 -VCRedistributableLink \"https://aka.ms/vs/17/release/vc_redist.x64.exe\" -EnableEdge \"false\" -EnableChrome \"false\""
+      ],
+      "name": "avdBuiltInScript_multiMediaRedirection-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_disableAutoUpdates",
+      "runAsSystem": true,
+      "runElevated": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/DisableAutoUpdates.ps1",
+      "sha256Checksum": "eafd5e46c628b685f2061146550287255d75b7cea63f1e9dd29827c4ff7c3cb4",
+      "type": "PowerShell"
+    },
+    {
+      "name": "Uninstall Teams",
+      "runAsSystem": true,
+      "runElevated": true,
+      "scriptUri": "https://github.com/asheroto/UninstallTeams/releases/download/1.2.5/UninstallTeams.ps1",
+      "sha256Checksum": "b772a356efea373af6aff984efa9039e7586c5d57e4b1763b65fa90edf4da744",
+      "type": "PowerShell"
+    },
+  ],
+}

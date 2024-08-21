@@ -1,0 +1,11 @@
+{
+  // the name of the image, for administration purposes
+  image_name: "office365",
+  source: {
+    offer: "office-365",
+    publisher: "microsoftwindowsdesktop",
+    sku: "win10-22h2-avd-m365-g2",
+    type: "PlatformImage",
+    version: "latest (19045.4651.240709)"
+  }
+}

@@ -4,11 +4,13 @@
 // to deviate from the default ordering, you can specify an ordering preference by placing the step in the "pre" or "post" list
 //
 // by default, you should put your installation steps in the "default" list
+//
+// the steps must be formatted as Image Template Customizers: https://learn.microsoft.com/en-us/azure/templates/microsoft.virtualmachineimages/imagetemplates?pivots=deployment-language-arm-template#imagetemplatecustomizer-objects-1
 {
-  pre: [],
   // if you need to execute steps early in the build process
-  default: [],
+  pre: [],
   // the default place to put your building steps
-  post: []
+  default: [],
   // if you need to execute steps late in the build process
+  post: []
 }
