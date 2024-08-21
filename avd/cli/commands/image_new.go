@@ -25,7 +25,7 @@ var ImageNewCommand = &cli.Command{
 	Action: func(c *cli.Context) error {
 		targetPath := c.Path("output")
 
-		if err := lib.EnsureEmptyDirectory(targetPath); err != nil {
+		if err := lib.EnsureEmptyDirectory(targetPath, false); err != nil {
 			return errors.Wrap(err, "failed to create target directory")
 		}
 

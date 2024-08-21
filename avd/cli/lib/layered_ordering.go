@@ -10,12 +10,16 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"time"
 )
 
 type FileMapping struct {
 	LayerIdx   int
 	SourcePath string
 	TargetPath string
+	FileMode   fs.FileMode
+	Modified   time.Time
+	Size       int64
 }
 
 type FileCollision struct {
@@ -37,22 +41,31 @@ func MergeDirectoryLayers(layers []fs.FS, basePath string) (fileMappings []FileM
 		entries, err := fs.ReadDir(layer, basePath)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				return nil, nil, nil, errors.Wrapf(err, "failed to read directory \"%s\" for layer %d", basePath, layerIdx)
+				return nil, nil, nil, errors.Wrapf(err, "failed to read directory \"%s\" for layer %d", basePath, layerIdx+1)
 			}
 		}
 
 		for _, entry := range entries {
 			entryName := entry.Name()
 			isDir := entry.IsDir()
+			sourcePath := filepath.Join(basePath, entryName)
 			normalizedName, targetName, orderingIndex, entryOrderingType := normalizeEntryName(entryName, isDir)
 
+			entryInfo, err := entry.Info()
+			if err != nil {
+				return nil, nil, nil, errors.Wrapf(err, `failed to get file info for "%s" in layer %d`, sourcePath, layerIdx+1)
+			}
+
 			newEntry := layerEntry{
-				sourcePath:    filepath.Join(basePath, entryName),
+				sourcePath:    sourcePath,
 				targetName:    targetName,
 				layerIdx:      layerIdx,
 				isDir:         isDir,
 				orderingIndex: orderingIndex,
 				orderingType:  entryOrderingType,
+				fileMode:      entryInfo.Mode(),
+				modified:      entryInfo.ModTime(),
+				size:          entryInfo.Size(),
 			}
 
 			existingEntries, ok := entriesByNormalizedName[normalizedName]
@@ -111,6 +124,20 @@ type layerEntry struct {
 	isDir         bool
 	orderingIndex int
 	orderingType  orderingType
+	fileMode      fs.FileMode
+	modified      time.Time
+	size          int64
+}
+
+func (l layerEntry) toFileMapping(targetPath string) FileMapping {
+	return FileMapping{
+		LayerIdx:   l.layerIdx,
+		SourcePath: l.sourcePath,
+		TargetPath: targetPath,
+		FileMode:   l.fileMode,
+		Modified:   l.modified,
+		Size:       l.size,
+	}
 }
 
 var orderedEntryNameRegex = regexp.MustCompile(`^(\d\d\d)(_(pre|post))?_(.*)$`)
@@ -229,11 +256,7 @@ func mergeFileEntries(entries []layerEntry) (mappings []FileMapping, collidingLa
 			return nil, layerIndexes
 		}
 		onlyEntry := entries[0]
-		return []FileMapping{{
-			LayerIdx:   onlyEntry.layerIdx,
-			SourcePath: onlyEntry.sourcePath,
-			TargetPath: onlyEntry.sourcePath,
-		}}, nil
+		return []FileMapping{onlyEntry.toFileMapping(onlyEntry.sourcePath)}, nil
 	}
 
 	mappings = make([]FileMapping, 0, len(entries))
@@ -275,11 +298,7 @@ func mapOrderedFiles(entries []layerEntry, orderIndexStart int, indexLength uint
 		dirPath := filepath.Dir(entry.sourcePath)
 		filename := fmt.Sprintf(filenameFormat, orderIndex, entry.targetName)
 
-		mappings[i] = FileMapping{
-			LayerIdx:   entry.layerIdx,
-			SourcePath: entry.sourcePath,
-			TargetPath: filepath.Join(dirPath, filename),
-		}
+		mappings[i] = entry.toFileMapping(filepath.Join(dirPath, filename))
 	}
 	return mappings
 }
