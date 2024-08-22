@@ -1,7 +1,7 @@
 # This script is copied to the image during image build and is executed during session host deployment
 # This script expects the sessionhost setup scripts to be stored in [systemdrive]\sessionhost_setup (systemdrive is usually C:)
 $ErrorActionPreference = "Stop"
-$path = "$env:SystemDrive\sy\sessionhost_setup_scripts"
+$path = "C:\SessionhostScripts"
 
 $scripts = Get-ChildItem -Path $path -Filter "???_*.ps1" | Sort-Object
 

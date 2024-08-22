@@ -3,7 +3,7 @@
   default: [
     {
       "inline": [
-        "C:\\sy\\caddy_static.ps1"
+        "C:\\imagebuild_resources\\caddy_static.ps1"
       ],
       "name": "Caddy local file server",
       "runAsSystem": true,

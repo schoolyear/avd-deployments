@@ -35,3 +35,4 @@ if (-Not (Test-Path -Path $staticDir))
 # Create the service
 sc.exe create $serviceName binPath= "$caddyExecutable file-server --root $staticDir --listen localhost:2015" start=auto
 sc.exe description $serviceName $serviceDescription
+sc.exe start $serviceName
