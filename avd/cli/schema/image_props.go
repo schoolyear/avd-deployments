@@ -7,8 +7,8 @@ import (
 )
 
 type ImageProperties struct {
-	ImageTemplateName *string        `json:"imageTemplateName"`
-	ImageTemplate     *ImageTemplate `json:"imageTemplate"`
+	ImageTemplateName string                                                             `json:"imageTemplateName"`
+	ImageTemplate     lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplate] `json:"imageTemplate"`
 }
 
 func (i ImageProperties) Validate() error {
@@ -18,18 +18,32 @@ func (i ImageProperties) Validate() error {
 	)
 }
 
-type ImageTemplate struct {
-	Identity   lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplateIdentity]   `json:"identity"`
-	Location   *string                                                                      `json:"location"`
-	Properties lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplateProperties] `json:"properties"`
-	Tags       map[string]*string                                                           `json:"tags"`
+// SetBuildSteps sets the customizer steps for the image template.
+// returns true if some customizer steps are already set (meaning the new steps are not added)
+func (i ImageProperties) SetBuildSteps(buildSteps []armvirtualmachineimagebuilder.ImageTemplateCustomizerClassification) (conflict bool) {
+	if i.ImageTemplate.V.Properties == nil {
+		i.ImageTemplate.V.Properties = &armvirtualmachineimagebuilder.ImageTemplateProperties{}
+	} else if len(i.ImageTemplate.V.Properties.Customize) > 0 {
+		return true
+	}
+
+	i.ImageTemplate.V.Properties.Customize = buildSteps
+	return false
 }
 
-func (i ImageTemplate) Validate() error {
-	return validation.ValidateStruct(
-		validation.Field(&i.Identity, validation.Required),
-		validation.Field(&i.Location, validation.Required),
-		validation.Field(&i.Properties, validation.Required),
-		validation.Field(&i.Identity, validation.Required),
-	)
-}
+//
+//type ImageTemplate struct {
+//	Identity   lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplateIdentity]   `json:"identity"`
+//	Location   *string                                                                      `json:"location"`
+//	Properties lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplateProperties] `json:"properties"`
+//	Tags       map[string]*string                                                           `json:"tags"`
+//}
+//
+//func (i ImageTemplate) Validate() error {
+//	return validation.ValidateStruct(
+//		validation.Field(&i.Identity, validation.Required),
+//		validation.Field(&i.Location, validation.Required),
+//		validation.Field(&i.Properties, validation.Required),
+//		validation.Field(&i.Identity, validation.Required),
+//	)
+//}

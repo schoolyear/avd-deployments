@@ -302,11 +302,11 @@ func mergeImageProperties(layers []layerProps) (*schema.ImageProperties, error) 
 	return &props, nil
 }
 
-func mergeBuildStepConfigs(layers []layerProps) []schema.BuildStep {
+func mergeBuildStepConfigs(layers []layerProps) schema.BuildSteps {
 	buildStepsConfig := schema.BuildStepsConfig{
-		Pre:     []schema.BuildStep{},
-		Default: []schema.BuildStep{},
-		Post:    []schema.BuildStep{},
+		Pre:     schema.BuildSteps{},
+		Default: schema.BuildSteps{},
+		Post:    schema.BuildSteps{},
 	}
 	for _, layer := range layers {
 		if layer.buildStepsConfig == nil {
@@ -317,7 +317,7 @@ func mergeBuildStepConfigs(layers []layerProps) []schema.BuildStep {
 		buildStepsConfig.Post = append(buildStepsConfig.Post, layer.buildStepsConfig.Post...)
 	}
 
-	var buildSteps []schema.BuildStep
+	var buildSteps schema.BuildSteps
 	buildSteps = append(buildSteps, buildStepsConfig.Pre...)
 	buildSteps = append(buildSteps, buildStepsConfig.Default...)
 	buildSteps = append(buildSteps, buildStepsConfig.Post...)
@@ -366,27 +366,17 @@ func mergeResourcesDir(layers []layerProps) ([]lib.FileMapping, error) {
 	return fileMappings, nil
 }
 
-func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProperties *schema.ImageProperties, buildSteps []schema.BuildStep, resourceFileMappings []lib.FileMapping, overwriteOutputDir bool) error {
+func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProperties *schema.ImageProperties, buildSteps schema.BuildSteps, resourceFileMappings []lib.FileMapping, overwriteOutputDir bool) error {
 	if err := lib.EnsureEmptyDirectory(outputPath, overwriteOutputDir); err != nil {
 		return errors.Wrap(err, "failed to create output directory")
 	}
 
-	imagePropertiesJson, err := json.MarshalIndent(imageProperties, "", "\t")
-	if err != nil {
-		return errors.Wrap(err, "failed to json marshal image properties")
-	}
-
-	// we don't know the length of the build steps json yet, so we do an estimation
-	const buildStepsJsonEstimate = 1000
+	// we don't know the length of the image properties json yet, so we do an estimation
+	const imagePropertiesJsonSizeEstimate = 2000
 	bar := progressbar.DefaultBytes(
-		int64(len(imagePropertiesJson))+int64(buildStepsJsonEstimate)+calcFileMappingsTotalSize(resourceFileMappings),
+		int64(imagePropertiesJsonSizeEstimate)+calcFileMappingsTotalSize(resourceFileMappings),
 		"Creating resources archive",
 	)
-
-	imagePropertiesPath := filepath.Join(outputPath, imagePropertiesFilename+".json")
-	if err := createAndWriteFile(imagePropertiesPath, imagePropertiesJson, bar); err != nil {
-		return errors.Wrapf(err, "failed to write image properties file to %s", imagePropertiesPath)
-	}
 
 	resourcesArchivePath := filepath.Join(outputPath, resourcesDirName+".zip")
 	resourcesSha256Checksum, err := writeResourcesArchive(resourcesArchivePath, layers, resourceFileMappings, bar)
@@ -394,20 +384,28 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 		return errors.Wrapf(err, "failed to write resources archive to %s", resourcesArchivePath)
 	}
 
+	// add hardcoded build steps
 	resourcesSha256ChecksumHex := hex.EncodeToString(resourcesSha256Checksum)
 	preSteps, postSteps := schema.HardcodedBuildSteps(resourcesSha256ChecksumHex)
 	buildSteps = append(preSteps, buildSteps...)
 	buildSteps = append(buildSteps, postSteps...)
 
-	buildStepsJson, err := json.MarshalIndent(buildSteps, "", "\t")
-	if err != nil {
-		return errors.Wrap(err, "failed to json marshal build steps")
+	// add build steps to image properties
+	if conflict := imageProperties.SetBuildSteps(buildSteps.ToCustomizerTypes()); conflict {
+		return errors.New("some customizer steps were already set in the image properties. you shouldn't")
 	}
 
-	bar.ChangeMax(bar.GetMax() - buildStepsJsonEstimate + len(buildStepsJson)) // replace estimate with actual byte size
-	buildStepsPath := filepath.Join(outputPath, buildStepsFileName+".json")
-	if err := createAndWriteFile(buildStepsPath, buildStepsJson, bar); err != nil {
-		return errors.Wrapf(err, "failed to write build steps file to %s", imagePropertiesPath)
+	imagePropertiesJson, err := json.MarshalIndent(imageProperties, "", "\t")
+	if err != nil {
+		return errors.Wrap(err, "failed to json marshal image properties")
+	}
+
+	// replace estimate with actual byte size
+	bar.ChangeMax(bar.GetMax() - imagePropertiesJsonSizeEstimate + len(imagePropertiesJson))
+
+	imagePropertiesPath := filepath.Join(outputPath, imagePropertiesFilename+".json")
+	if err := createAndWriteFile(imagePropertiesPath, imagePropertiesJson, bar); err != nil {
+		return errors.Wrapf(err, "failed to write image properties file to %s", imagePropertiesPath)
 	}
 
 	bar.Finish()
