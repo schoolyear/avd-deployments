@@ -22,9 +22,9 @@ import (
 	"strconv"
 )
 
-var ImageBuildCommand = &cli.Command{
-	Name:  "build",
-	Usage: "Build image package",
+var ImagePackage = &cli.Command{
+	Name:  "package",
+	Usage: "Build image package from image layers",
 	Flags: []cli.Flag{
 		&cli.StringSliceFlag{
 			Name:        "layer",

@@ -22,7 +22,7 @@ func main() {
 				Usage: "manage images",
 				Subcommands: cli.Commands{
 					commands.ImageNewCommand,
-					commands.ImageBuildCommand,
+					commands.ImagePackage,
 				},
 			},
 		},
