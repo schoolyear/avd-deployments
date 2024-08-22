@@ -47,7 +47,7 @@ var ImagePackage = &cli.Command{
 			Usage: "Don't actually copy files",
 		},
 		&cli.BoolFlag{
-			Name:  "overwrite-output",
+			Name:  "overwrite",
 			Usage: "Overwrite the output directory",
 		},
 	},
@@ -55,7 +55,7 @@ var ImagePackage = &cli.Command{
 		layerPaths := c.StringSlice("layer")
 		outputPath := c.Path("output")
 		dryRun := c.Bool("dry-run")
-		overwriteOutput := c.Bool("overwrite-output")
+		overwriteOutput := c.Bool("overwrite")
 
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -107,16 +107,6 @@ var ImagePackage = &cli.Command{
 		imageProperties, err := mergeImageProperties(layers)
 		if err != nil {
 			return errors.Wrap(err, "failed to merge image property documents")
-		}
-
-		niceImagePropsJson, err := json.MarshalIndent(imageProperties, "", "\t")
-		if err != nil {
-			return errors.Wrap(err, "failed to nicely print image properties")
-		}
-
-		if err := validation.Validate(imageProperties); err != nil {
-			fmt.Printf("Image Properties:\n%s\n", niceImagePropsJson)
-			return errors.Wrap(err, "merged image properties result in an invalid document")
 		}
 
 		fmt.Println("Merging build steps")
@@ -179,7 +169,10 @@ type layerProps struct {
 }
 
 type layerScanResult struct {
-	properties         *schema.ImageProperties
+	// either both are set or both are nil
+	cleanPropertiesJson []byte
+	properties          *schema.ImageProperties
+
 	buildStepsConfig   *schema.BuildStepsConfig
 	hasResourcesFolder bool
 	resourcesSize      int64 // 0, if hasResourcesFolder = false
@@ -221,13 +214,14 @@ func ensureLayerPathsExist(layerPaths []string) error {
 }
 
 func scanLayerPath(layerFs fs.FS) (layer layerScanResult, err error) {
-	props, err := lib.ReadJsonOrJson5File[schema.ImageProperties](layerFs, imagePropertiesFilename)
+	props, propsJson, err := lib.ReadJsonOrJson5File[schema.ImageProperties](layerFs, imagePropertiesFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) { // ok if the file does not exist
 		return layer, errors.Wrap(err, "failed to read properties file")
 	}
 	layer.properties = props
+	layer.cleanPropertiesJson = propsJson
 
-	buildSteps, err := lib.ReadJsonOrJson5File[schema.BuildStepsConfig](layerFs, buildStepsFileName)
+	buildSteps, _, err := lib.ReadJsonOrJson5File[schema.BuildStepsConfig](layerFs, buildStepsFileName)
 	if err != nil && !errors.Is(err, os.ErrNotExist) { // ok if the file does not exist
 		return layer, errors.Wrap(err, "failed to read build_steps file")
 	}
@@ -285,18 +279,15 @@ func printLayers(layers []layerProps) error {
 func mergeImageProperties(layers []layerProps) (*schema.ImageProperties, error) {
 	var propsJson []byte
 	for i, layer := range layers {
-		if layer.properties == nil {
+		if layer.cleanPropertiesJson == nil {
 			continue
-		}
-		layerPropsJson, err := json.Marshal(layer.properties)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal properties of layer %d", i+1)
 		}
 
 		if i == 0 {
-			propsJson = layerPropsJson
+			propsJson = layer.cleanPropertiesJson
 		} else {
-			propsJson, err = jsonpatch.MergePatch(propsJson, layerPropsJson)
+			var err error
+			propsJson, err = jsonpatch.MergePatch(propsJson, layer.cleanPropertiesJson)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to merge properties of layer %d", i+1)
 			}

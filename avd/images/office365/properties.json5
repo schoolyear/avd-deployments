@@ -1,11 +1,39 @@
 {
-  // the name of the image, for administration purposes
-  image_name: "office365",
-  source: {
-    offer: "office-365",
-    publisher: "microsoftwindowsdesktop",
-    sku: "win10-22h2-avd-m365-g2",
-    type: "PlatformImage",
-    version: "latest (19045.4651.240709)"
-  }
+  imageTemplateName: "office365",
+  imageTemplate: {
+    identity: {
+      type: "UserAssigned",
+      "userAssignedIdentities": {
+        "/subscriptions/bcf16915-2e5c-4002-bf40-01f2f1704bf9/resourcegroups/imagebuilder/providers/Microsoft.ManagedIdentity/userAssignedIdentities/imagebuilderid": {}
+      }
+    },
+    location: "westeurope",
+    properties: {
+      "source": {
+        "type": "PlatformImage",
+        "publisher": "microsoftwindowsdesktop",
+        "version": "latest",
+        "sku": "win10-22h2-avd-m365-g2",
+        "offer": "office-365"
+      },
+      "distribute": [
+        {
+          "galleryImageId": "/subscriptions/***/resourcegroups/***/providers/microsoft.compute/galleries/***/images/***",
+          "replicationRegions": [
+            "westeurope"
+          ],
+          "excludeFromLatest": true,
+          "runOutputName": "run1",
+          "type": "SharedImage"
+        }
+      ],
+      "vmProfile": {
+        "osDiskSizeGB": 127,
+        "vmSize": "Standard_D2s_v4",
+        "vnetConfig": null
+      },
+      "buildTimeoutInMinutes": 0,
+      "stagingResourceGroup": ""
+    },
+  },
 }

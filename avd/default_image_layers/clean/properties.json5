@@ -1,2 +1,13 @@
 {
+  imageTemplate: {
+    properties: {
+      "source": {
+        "type": "PlatformImage",
+        "sku": "win10-22h2-avd-g2",
+        "offer": "windows-10",
+        "version": "latest",
+        "publisher": "microsoftwindowsdesktop"
+      }
+    }
+  }
 }
