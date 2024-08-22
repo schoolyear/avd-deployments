@@ -3,6 +3,8 @@ package commands
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -118,14 +120,14 @@ var ImageBuildCommand = &cli.Command{
 		}
 
 		fmt.Println("Merging build steps")
-		buildStepsConfig := mergeBuildStepConfigs(layers)
-		niceBuildStepsConfigJson, err := json.MarshalIndent(buildStepsConfig, "", "\t")
+		buildSteps := mergeBuildStepConfigs(layers)
+		niceBuildStepsJson, err := json.MarshalIndent(buildSteps, "", "\t")
 		if err != nil {
 			return errors.Wrap(err, "failed to nicely print build steps config")
 		}
 
-		if err := validation.Validate(buildStepsConfig); err != nil {
-			fmt.Printf("Build steps:\n%s\n", niceBuildStepsConfigJson)
+		if err := validation.Validate(buildSteps); err != nil {
+			fmt.Printf("Build steps:\n%s\n", niceBuildStepsJson)
 			return errors.Wrap(err, "merged build steps configs result in an invalid document")
 		}
 
@@ -159,7 +161,7 @@ var ImageBuildCommand = &cli.Command{
 
 		fmt.Println("Writing the image building package")
 		fullOutputPath := filepath.Join(cwd, outputPath)
-		if err := writeImageBuildingPackage(fullOutputPath, layers, niceImagePropsJson, niceBuildStepsConfigJson, resourceFileMappings, overwriteOutput); err != nil {
+		if err := writeImageBuildingPackage(fullOutputPath, layers, imageProperties, buildSteps, resourceFileMappings, overwriteOutput); err != nil {
 			return errors.Wrap(err, "failed to write image building package")
 		}
 
@@ -309,8 +311,8 @@ func mergeImageProperties(layers []layerProps) (*schema.ImageProperties, error) 
 	return &props, nil
 }
 
-func mergeBuildStepConfigs(layers []layerProps) schema.BuildStepsConfig {
-	buildSteps := schema.BuildStepsConfig{
+func mergeBuildStepConfigs(layers []layerProps) []schema.BuildStep {
+	buildStepsConfig := schema.BuildStepsConfig{
 		Pre:     []schema.BuildStep{},
 		Default: []schema.BuildStep{},
 		Post:    []schema.BuildStep{},
@@ -319,10 +321,16 @@ func mergeBuildStepConfigs(layers []layerProps) schema.BuildStepsConfig {
 		if layer.buildStepsConfig == nil {
 			continue
 		}
-		buildSteps.Pre = append(buildSteps.Pre, layer.buildStepsConfig.Pre...)
-		buildSteps.Default = append(buildSteps.Default, layer.buildStepsConfig.Default...)
-		buildSteps.Post = append(buildSteps.Post, layer.buildStepsConfig.Post...)
+		buildStepsConfig.Pre = append(buildStepsConfig.Pre, layer.buildStepsConfig.Pre...)
+		buildStepsConfig.Default = append(buildStepsConfig.Default, layer.buildStepsConfig.Default...)
+		buildStepsConfig.Post = append(buildStepsConfig.Post, layer.buildStepsConfig.Post...)
 	}
+
+	var buildSteps []schema.BuildStep
+	buildSteps = append(buildSteps, buildStepsConfig.Pre...)
+	buildSteps = append(buildSteps, buildStepsConfig.Default...)
+	buildSteps = append(buildSteps, buildStepsConfig.Post...)
+
 	return buildSteps
 }
 
@@ -367,13 +375,20 @@ func mergeResourcesDir(layers []layerProps) ([]lib.FileMapping, error) {
 	return fileMappings, nil
 }
 
-func writeImageBuildingPackage(outputPath string, layers []layerProps, imagePropertiesJson []byte, buildStepsConfigJson []byte, resourceFileMappings []lib.FileMapping, overwriteOutputDir bool) error {
+func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProperties *schema.ImageProperties, buildSteps []schema.BuildStep, resourceFileMappings []lib.FileMapping, overwriteOutputDir bool) error {
 	if err := lib.EnsureEmptyDirectory(outputPath, overwriteOutputDir); err != nil {
 		return errors.Wrap(err, "failed to create output directory")
 	}
 
+	imagePropertiesJson, err := json.MarshalIndent(imageProperties, "", "\t")
+	if err != nil {
+		return errors.Wrap(err, "failed to json marshal image properties")
+	}
+
+	// we don't know the length of the build steps json yet, so we do an estimation
+	const buildStepsJsonEstimate = 1000
 	bar := progressbar.DefaultBytes(
-		int64(len(imagePropertiesJson))+int64(len(buildStepsConfigJson))+calcFileMappingsTotalSize(resourceFileMappings),
+		int64(len(imagePropertiesJson))+int64(buildStepsJsonEstimate)+calcFileMappingsTotalSize(resourceFileMappings),
 		"Creating resources archive",
 	)
 
@@ -382,14 +397,26 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 		return errors.Wrapf(err, "failed to write image properties file to %s", imagePropertiesPath)
 	}
 
-	buildStepsPath := filepath.Join(outputPath, buildStepsFileName+".json")
-	if err := createAndWriteFile(buildStepsPath, buildStepsConfigJson, bar); err != nil {
-		return errors.Wrapf(err, "failed to write build steps config file to %s", imagePropertiesPath)
+	resourcesArchivePath := filepath.Join(outputPath, resourcesDirName+".zip")
+	resourcesSha256Checksum, err := writeResourcesArchive(resourcesArchivePath, layers, resourceFileMappings, bar)
+	if err != nil {
+		return errors.Wrapf(err, "failed to write resources archive to %s", resourcesArchivePath)
 	}
 
-	resourcesArchivePath := filepath.Join(outputPath, resourcesDirName+".zip")
-	if err := writeResourcesArchive(resourcesArchivePath, layers, resourceFileMappings, bar); err != nil {
-		return errors.Wrapf(err, "failed to write resources archive to %s", resourcesArchivePath)
+	resourcesSha256ChecksumHex := hex.EncodeToString(resourcesSha256Checksum)
+	preSteps, postSteps := schema.HardcodedBuildSteps(resourcesSha256ChecksumHex)
+	buildSteps = append(preSteps, buildSteps...)
+	buildSteps = append(buildSteps, postSteps...)
+
+	buildStepsJson, err := json.MarshalIndent(buildSteps, "", "\t")
+	if err != nil {
+		return errors.Wrap(err, "failed to json marshal build steps")
+	}
+
+	bar.ChangeMax(bar.GetMax() - buildStepsJsonEstimate + len(buildStepsJson)) // replace estimate with actual byte size
+	buildStepsPath := filepath.Join(outputPath, buildStepsFileName+".json")
+	if err := createAndWriteFile(buildStepsPath, buildStepsJson, bar); err != nil {
+		return errors.Wrapf(err, "failed to write build steps file to %s", imagePropertiesPath)
 	}
 
 	bar.Finish()
@@ -410,28 +437,30 @@ func createAndWriteFile(path string, data []byte, bar *progressbar.ProgressBar) 
 	return errors.Wrap(err, "failed to write file")
 }
 
-func writeResourcesArchive(archivePath string, layers []layerProps, fileMappings []lib.FileMapping, bar *progressbar.ProgressBar) error {
-	f, err := os.Create(archivePath)
+func writeResourcesArchive(archivePath string, layers []layerProps, fileMappings []lib.FileMapping, bar *progressbar.ProgressBar) (sha256Checksum []byte, err error) {
+	archiveFile, err := os.Create(archivePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to create zip file")
+		return nil, errors.Wrap(err, "failed to create zip file")
 	}
-	defer f.Close()
+	defer archiveFile.Close()
 
-	archive := zip.NewWriter(f)
+	hash := sha256.New()
+	archiveWriter := io.MultiWriter(archiveFile, hash)
+	archive := zip.NewWriter(archiveWriter)
 
 	for _, mapping := range fileMappings {
 		bar.Describe(mapping.TargetPath)
 		if err := addFileToResourcesArchive(layers[mapping.LayerIdx].resourcesFs, mapping, archive, bar); err != nil {
-			return errors.Wrapf(err, "failed to add file to resources archive: %s", mapping.TargetPath)
+			return nil, errors.Wrapf(err, "failed to add file to resources archive: %s", mapping.TargetPath)
 		}
 	}
 
 	bar.Describe("Writing archive")
 	if err := archive.Close(); err != nil {
-		return errors.Wrap(err, "failed to finalize zip file")
+		return nil, errors.Wrap(err, "failed to finalize zip file")
 	}
 
-	return nil
+	return hash.Sum(nil), nil
 }
 
 func calcFileMappingsTotalSize(mappings []lib.FileMapping) (total int64) {
@@ -441,7 +470,7 @@ func calcFileMappingsTotalSize(mappings []lib.FileMapping) (total int64) {
 	return
 }
 
-func addFileToResourcesArchive(sourceFs fs.FS, fileMapping lib.FileMapping, archive *zip.Writer, progressbarWriter io.Writer) error {
+func addFileToResourcesArchive(sourceFs fs.FS, fileMapping lib.FileMapping, archive *zip.Writer, secondaryWriter io.Writer) error {
 	sourceFile, err := sourceFs.Open(fileMapping.SourcePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to open source file")
@@ -460,6 +489,6 @@ func addFileToResourcesArchive(sourceFs fs.FS, fileMapping lib.FileMapping, arch
 		return errors.Wrap(err, "failed to create file in archive")
 	}
 
-	_, err = io.Copy(io.MultiWriter(archiveFile, progressbarWriter), sourceFile)
+	_, err = io.Copy(io.MultiWriter(archiveFile, secondaryWriter), sourceFile)
 	return errors.Wrap(err, "failed to copy file to archive")
 }
