@@ -1,64 +1,6 @@
 {
   default: [
     {
-      "destination": "C:\\AVDImage\\installLanguagePacks.ps1",
-      "name": "avdBuiltInScript_installLanguagePacks",
-      "sha256Checksum": "519f1dcb41c15dc1726f28c51c11fb60876304ab9eb9535e70015cdb704a61b2",
-      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/InstallLanguagePacks.ps1",
-      "type": "File"
-    },
-    {
-      "inline": [
-        "C:\\AVDImage\\installLanguagePacks.ps1 -LanguageList \"English (United States)\""
-      ],
-      "name": "avdBuiltInScript_installLanguagePacks-parameter",
-      "runAsSystem": true,
-      "runElevated": true,
-      "type": "PowerShell"
-    },
-    {
-      "name": "avdBuiltInScript_installLanguagePacks-windowsUpdate",
-      "searchCriteria": "",
-      "type": "WindowsUpdate",
-      "updateLimit": 0
-    },
-    {
-      "name": "avdBuiltInScript_installLanguagePacks-windowsRestart",
-      "restartCheckCommand": "",
-      "restartCommand": "",
-      "restartTimeout": "10m",
-      "type": "WindowsRestart"
-    },
-    {
-      "destination": "C:\\AVDImage\\setDefaultLanguage.ps1",
-      "name": "avdBuiltInScript_setDefaultLanguage",
-      "sha256Checksum": "213eb3b3cf3f15668d9d74effdb5fe69e46e91109a9dfe1cc5ce8e7edbd3ba39",
-      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/SetDefaultLang.ps1",
-      "type": "File"
-    },
-    {
-      "inline": [
-        "C:\\AVDImage\\setDefaultLanguage.ps1 -Language \"English (United States)\""
-      ],
-      "name": "avdBuiltInScript_setDefaultLanguage-parameter",
-      "runAsSystem": true,
-      "runElevated": true,
-      "type": "PowerShell"
-    },
-    {
-      "name": "avdBuiltInScript_setDefaultLanguage-windowsUpdate",
-      "searchCriteria": "",
-      "type": "WindowsUpdate",
-      "updateLimit": 0
-    },
-    {
-      "name": "avdBuiltInScript_setDefaultLanguage-windowsRestart",
-      "restartCheckCommand": "",
-      "restartCommand": "",
-      "restartTimeout": "5m",
-      "type": "WindowsRestart"
-    },
-    {
       "name": "avdBuiltInScript_disableStorageSense",
       "runAsSystem": true,
       "runElevated": true,
@@ -83,19 +25,6 @@
       "type": "PowerShell"
     },
     {
-      "name": "avdBuiltInScript_windowsOptimization-windowsUpdate",
-      "searchCriteria": "",
-      "type": "WindowsUpdate",
-      "updateLimit": 0
-    },
-    {
-      "name": "avdBuiltInScript_windowsOptimization-windowsRestart",
-      "restartCheckCommand": "",
-      "restartCommand": "",
-      "restartTimeout": "",
-      "type": "WindowsRestart"
-    },
-    {
       "destination": "C:\\AVDImage\\removeAppxPackages.ps1",
       "name": "avdBuiltInScript_removeAppxPackages",
       "sha256Checksum": "db1de9f922b9e9de4a1d667e69d0324539606ae01ae182909806d9bdd5bdb518",
@@ -110,12 +39,6 @@
       "runAsSystem": true,
       "runElevated": true,
       "type": "PowerShell"
-    },
-    {
-      "name": "avdBuiltInScript_windowsUpdate",
-      "searchCriteria": "",
-      "type": "WindowsUpdate",
-      "updateLimit": 0
     },
     {
       "name": "avdBuiltInScript_windowsUpdate-windowsRestart",
