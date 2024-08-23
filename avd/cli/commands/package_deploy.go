@@ -292,7 +292,7 @@ func startImageBuilder(ctx context.Context, imageTemplateClient *armvirtualmachi
 	}
 
 	if wait {
-		fmt.Println("Started Image Builder")
+		fmt.Println("Started Image Builder...this may take up to a few hours to finish")
 		_, err := poller.PollUntilDone(ctx, nil)
 		if err != nil {
 			return errors.Wrap(err, "failed to poll until image builder is finished")

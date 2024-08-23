@@ -41,13 +41,6 @@
       "type": "PowerShell"
     },
     {
-      "name": "avdBuiltInScript_windowsUpdate-windowsRestart",
-      "restartCheckCommand": "",
-      "restartCommand": "",
-      "restartTimeout": "",
-      "type": "WindowsRestart"
-    },
-    {
       "name": "avdBuiltInScript_timeZoneRedirection",
       "runAsSystem": true,
       "runElevated": true,

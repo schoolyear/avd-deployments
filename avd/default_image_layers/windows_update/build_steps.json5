@@ -1,0 +1,17 @@
+{
+  default: [
+    {
+      "name": "Windows Update",
+      "searchCriteria": "",
+      "type": "WindowsUpdate",
+      "updateLimit": 0
+    },
+    {
+      "name": "Windows Reboot",
+      "restartCheckCommand": "",
+      "restartCommand": "",
+      "restartTimeout": "",
+      "type": "WindowsRestart"
+    }
+  ]
+}
