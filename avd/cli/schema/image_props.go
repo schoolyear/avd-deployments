@@ -31,19 +31,5 @@ func (i ImageProperties) SetBuildSteps(buildSteps []armvirtualmachineimagebuilde
 	return false
 }
 
-//
-//type ImageTemplate struct {
-//	Identity   lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplateIdentity]   `json:"identity"`
-//	Location   *string                                                                      `json:"location"`
-//	Properties lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplateProperties] `json:"properties"`
-//	Tags       map[string]*string                                                           `json:"tags"`
-//}
-//
-//func (i ImageTemplate) Validate() error {
-//	return validation.ValidateStruct(
-//		validation.Field(&i.Identity, validation.Required),
-//		validation.Field(&i.Location, validation.Required),
-//		validation.Field(&i.Properties, validation.Required),
-//		validation.Field(&i.Identity, validation.Required),
-//	)
-//}
+// HardcodedImageTemplateTag is a magic tag in Azure that makes vm image templates show up in the AVD console
+const HardcodedImageTemplateTag = "AVD_IMAGE_TEMPLATE"

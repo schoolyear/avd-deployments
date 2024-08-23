@@ -9,7 +9,7 @@
     },
     {
       name: "Install VDI browser",
-      type: "Powershell",
+      type: "PowerShell",
       inline: [
         "Start-Process msiexec.exe -Wait -ArgumentList '/i \"C:\\AVDImage\\schoolyear-vdi-browser.msi\" /q VDIPROVIDER=\"avd\"'"
       ],

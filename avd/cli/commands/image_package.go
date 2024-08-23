@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/friendsofgo/errors"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -179,9 +180,11 @@ type layerScanResult struct {
 }
 
 const (
-	imagePropertiesFilename = "properties"
-	buildStepsFileName      = "build_steps"
-	resourcesDirName        = "resources"
+	imagePropertiesFilename          = "properties"
+	imagePropertiesFileWithExtension = imagePropertiesFilename + ".json"
+	buildStepsFileName               = "build_steps"
+	resourcesDirName                 = "resources"
+	resourcesArchiveName             = resourcesDirName + ".zip"
 )
 
 func resolveAbsoluteLayerPaths(cwd string, layerPaths []string) ([]string, error) {
@@ -378,7 +381,7 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 		"Creating resources archive",
 	)
 
-	resourcesArchivePath := filepath.Join(outputPath, resourcesDirName+".zip")
+	resourcesArchivePath := filepath.Join(outputPath, resourcesArchiveName)
 	resourcesSha256Checksum, err := writeResourcesArchive(resourcesArchivePath, layers, resourceFileMappings, bar)
 	if err != nil {
 		return errors.Wrapf(err, "failed to write resources archive to %s", resourcesArchivePath)
@@ -395,15 +398,29 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 		return errors.New("some customizer steps were already set in the image properties. you shouldn't")
 	}
 
+	// add hardcoded tag to image template for it so show up in the AVD UI
+	// if the tag is already set, don't add it
+	if _, ok := imageProperties.ImageTemplate.V.Tags[schema.HardcodedImageTemplateTag]; !ok {
+		if imageProperties.ImageTemplate.V.Tags == nil {
+			imageProperties.ImageTemplate.V.Tags = map[string]*string{}
+		}
+		imageProperties.ImageTemplate.V.Tags[schema.HardcodedImageTemplateTag] = to.Ptr(schema.HardcodedImageTemplateTag)
+	}
+
 	imagePropertiesJson, err := json.MarshalIndent(imageProperties, "", "\t")
 	if err != nil {
 		return errors.Wrap(err, "failed to json marshal image properties")
 	}
 
+	if err := validation.Validate(imageProperties); err != nil {
+		fmt.Printf("Build steps:\n%s\n", imagePropertiesJson)
+		return errors.Wrap(err, "merged image properties config resulted in an invalid document")
+	}
+
 	// replace estimate with actual byte size
 	bar.ChangeMax(bar.GetMax() - imagePropertiesJsonSizeEstimate + len(imagePropertiesJson))
 
-	imagePropertiesPath := filepath.Join(outputPath, imagePropertiesFilename+".json")
+	imagePropertiesPath := filepath.Join(outputPath, imagePropertiesFileWithExtension)
 	if err := createAndWriteFile(imagePropertiesPath, imagePropertiesJson, bar); err != nil {
 		return errors.Wrapf(err, "failed to write image properties file to %s", imagePropertiesPath)
 	}

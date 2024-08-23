@@ -25,6 +25,13 @@ func main() {
 					commands.ImagePackage,
 				},
 			},
+			{
+				Name:  "package",
+				Usage: "manage image building packages",
+				Subcommands: cli.Commands{
+					commands.PackageDeployCommand,
+				},
+			},
 		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{

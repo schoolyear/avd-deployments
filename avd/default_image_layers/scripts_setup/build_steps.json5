@@ -2,6 +2,7 @@
   pre: [],
   default: [
     {
+      name: "Scripts setup",
       type: "PowerShell",
       inline: [
         // if no sessionhost setup scripts are included in other layers, the SessionhostScripts folder may not exist when we copy the sessionhost_setup.ps1 script, which would fail

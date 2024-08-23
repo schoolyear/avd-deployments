@@ -55,43 +55,7 @@ func (b *BuildStep) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-//
-//type BuildStep struct {
-//	Type string `json:"type"`
-//
-//	Sha256Checksum string   `json:"sha256Checksum,omitempty"` // File & PowerShell
-//	ScriptUri      string   `json:"scriptUri,omitempty"`      // PowerShell & Shell
-//	Inline         []string `json:"inline,omitempty"`         // PowerShell & Shell
-//
-//	// File
-//	Destination string `json:"destination,omitempty"`
-//	SourceUri   string `json:"sourceUri,omitempty"`
-//
-//	// PowerShell
-//	RunAsSystem    bool  `json:"runAsSystem,omitempty"`
-//	RunElevated    bool  `json:"runElevated,omitempty"`
-//	ValidExitCodes []int `json:"validExitCodes,omitempty"`
-//
-//	// Shell
-//	// no unique fields
-//
-//	// WindowsRestart
-//	RestartCheckCommand string `json:"restartCheckCommand,omitempty"`
-//	RestartCommand      string `json:"restartCommand,omitempty"`
-//	RestartTimeout      string `json:"restartTimeout,omitempty"`
-//
-//	// WindowsUpdate
-//	Filters        []string `json:"filters,omitempty"`
-//	SearchCriteria string   `json:"searchCriteria,omitempty"`
-//	UpdateLimit    int      `json:"updateLimit,omitempty"`
-//}
-//
-//func (b BuildStep) Validate() error {
-//	return validation.ValidateStruct(&b,
-//		validation.Field(&b.Type, validation.Required),
-//	)
-//}
-//
+const SourceURIPlaceholder = "[[[placeholder:sourceURI]]]"
 
 // HardcodedBuildSteps returns the hardcoded build steps that get prefixed & postfixed to the configured build steps
 func HardcodedBuildSteps(sha256Checksum string) (pre BuildSteps, post BuildSteps) {
@@ -101,7 +65,7 @@ func HardcodedBuildSteps(sha256Checksum string) (pre BuildSteps, post BuildSteps
 				Destination:    to.Ptr("C:\\imagebuild_resources.zip"),
 				Name:           to.Ptr("Download resources archive"),
 				SHA256Checksum: to.Ptr(sha256Checksum),
-				SourceURI:      to.Ptr("[[[placeholder:sourceUri]]]"),
+				SourceURI:      to.Ptr(SourceURIPlaceholder),
 			}},
 			{V: &armvirtualmachineimagebuilder.ImageTemplatePowerShellCustomizer{
 				Type:        to.Ptr("PowerShell"),
