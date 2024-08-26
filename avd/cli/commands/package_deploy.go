@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -14,9 +15,11 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/schoolyear/secure-apps-scripts/avd/cli/schema"
 	"github.com/urfave/cli/v2"
+	"io"
 	"io/fs"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -43,7 +46,7 @@ var PackageDeployCommand = &cli.Command{
 		},
 		&cli.PathFlag{
 			Name:    "resources-uri",
-			Usage:   "The URI on which the resources archive is hosted. Required if the package contains a \"" + schema.SourceURIPlaceholder + "\" placeholder (almost always the case)",
+			Usage:   "The URI path to which the resources archive can be uploaded. Required if the package contains a \"" + schema.SourceURIPlaceholder + "\" placeholder (almost always the case)",
 			Aliases: []string{"r"},
 		},
 		&cli.StringFlag{
@@ -97,7 +100,7 @@ var PackageDeployCommand = &cli.Command{
 		fullPackagePath := filepath.Join(cwd, packagePath)
 
 		packageFs := os.DirFS(packagePath)
-		imageProperties, err := scanPackagePath(packageFs)
+		imageProperties, resourcesArchiveChecksum, err := scanPackagePath(packageFs)
 		if err != nil {
 			return errors.Wrapf(err, "failed to scan image package directory %s", fullPackagePath)
 		}
@@ -105,6 +108,8 @@ var PackageDeployCommand = &cli.Command{
 		if err := validation.Validate(imageProperties); err != nil {
 			return errors.Wrap(err, "invalid image properties file")
 		}
+
+		resourcesUri.Path = path.Join(resourcesUri.Path, fmt.Sprintf("%s-%x.zip", imageProperties.ImageTemplateName, resourcesArchiveChecksum))
 
 		if err := replaceSourceURIPlaceholder(imageProperties.ImageTemplate.V, resourcesUri); err != nil {
 			return errors.Wrap(err, "failed to replace resources URI placeholder")
@@ -171,38 +176,61 @@ func parseResourcesURI(resourcesURI string) (*storageAccountBlob, error) {
 	}
 
 	pathParts := strings.SplitN(strings.TrimPrefix(parsed.Path, "/"), "/", 2)
+	var blobPath string
+	switch len(pathParts) {
+	case 1:
+		if len(strings.Trim(pathParts[0], "/")) == 0 {
+			return nil, fmt.Errorf("expected at least container name to be included in URI path")
+		}
+	case 2:
+		blobPath = pathParts[1]
+	default:
+		panic("programming error: no more than 2 entries expected")
+	}
 	if len(pathParts) != 2 {
-		return nil, fmt.Errorf("expected container name and blob path to be included in URI")
+
 	}
 
 	return &storageAccountBlob{
 		Service:   parsed.Host,
 		Container: pathParts[0],
-		Path:      pathParts[1],
+		Path:      blobPath,
 	}, nil
 }
 
-func scanPackagePath(packageFs fs.FS) (*schema.ImageProperties, error) {
+func scanPackagePath(packageFs fs.FS) (imageProperties *schema.ImageProperties, archiveSha256 []byte, err error) {
 	propertiesFile, err := packageFs.Open(imagePropertiesFileWithExtension)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open properties file")
+		return nil, nil, errors.Wrap(err, "failed to open properties file")
 	}
 	defer propertiesFile.Close()
 
-	var imageProperties schema.ImageProperties
 	if err := json.NewDecoder(propertiesFile).Decode(&imageProperties); err != nil {
-		return nil, errors.Wrap(err, "failed to parse image properties json")
+		return nil, nil, errors.Wrap(err, "failed to parse image properties json")
 	}
 
-	resourcesDir, err := fs.Stat(packageFs, resourcesArchiveName)
+	hash := sha256.New()
+	resourcesFile, err := packageFs.Open(resourcesArchiveName)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to check for resources archive")
+		return nil, nil, errors.Wrap(err, "failed to open resources archive")
 	}
-	if resourcesDir.IsDir() {
-		return nil, errors.New("resources archive is expected to be a file, but it is a directory")
+	defer resourcesFile.Close()
+
+	resourcesFileStats, err := resourcesFile.Stat()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to check for resources archive")
+	}
+	if resourcesFileStats.IsDir() {
+		return nil, nil, errors.New("resources archive is expected to be a file, but it is a directory")
 	}
 
-	return &imageProperties, nil
+	bar := progressbar.DefaultBytes(resourcesFileStats.Size(), "Calculating resources archive checksum")
+
+	if _, err := io.Copy(io.MultiWriter(bar, hash), resourcesFile); err != nil {
+		return nil, nil, errors.Wrap(err, "failed to calculate resources archive checksum")
+	}
+
+	return imageProperties, hash.Sum(nil), nil
 }
 
 func replaceSourceURIPlaceholder(imageTemplate *armvirtualmachineimagebuilder.ImageTemplate, resourcesURI *storageAccountBlob) error {
