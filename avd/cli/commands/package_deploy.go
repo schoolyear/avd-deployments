@@ -272,12 +272,10 @@ func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential,
 	}
 
 	_, err = azBlobClient.ServiceClient().NewContainerClient(resourcesURI.Container).NewBlobClient(resourcesURI.Path).GetProperties(ctx, nil)
-	if err != nil {
-		if bloberror.HasCode(err, bloberror.BlobNotFound) {
-			return true, nil
-		}
-
+	if err != nil && !bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return false, errors.Wrap(err, "failed to check if resources archive is already uploaded")
+	} else if err == nil {
+		return true, nil
 	}
 
 	resourcesFile, err := resourcesFs.Open(resourcesArchivePath)
