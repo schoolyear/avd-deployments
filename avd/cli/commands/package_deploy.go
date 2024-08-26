@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/friendsofgo/errors"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/schollz/progressbar/v3"
@@ -109,7 +110,7 @@ var PackageDeployCommand = &cli.Command{
 			return errors.Wrap(err, "invalid image properties file")
 		}
 
-		resourcesUri.Path = path.Join(resourcesUri.Path, fmt.Sprintf("%s-%x.zip", imageProperties.ImageTemplateName, resourcesArchiveChecksum))
+		resourcesUri.Path = path.Join(resourcesUri.Path, fmt.Sprintf("%x.zip", resourcesArchiveChecksum))
 
 		if err := replaceSourceURIPlaceholder(imageProperties.ImageTemplate.V, resourcesUri); err != nil {
 			return errors.Wrap(err, "failed to replace resources URI placeholder")
@@ -124,10 +125,15 @@ var PackageDeployCommand = &cli.Command{
 
 		if resourcesUri != nil {
 			fmt.Println("Uploading resources archive")
-			if err := uploadResourcesArchive(ctx, azCred, resourcesUri, packageFs, resourcesArchiveName); err != nil {
+			alreadyUploaded, err := uploadResourcesArchive(ctx, azCred, resourcesUri, packageFs, resourcesArchiveName)
+			if err != nil {
 				return errors.Wrap(err, "failed to upload resources archive")
 			}
-			fmt.Println("Uploaded")
+			if alreadyUploaded {
+				fmt.Println("Already uploaded")
+			} else {
+				fmt.Println("Uploaded")
+			}
 		}
 
 		clientFactory, err := armvirtualmachineimagebuilder.NewClientFactory(subscription, azCred, nil)
@@ -259,21 +265,30 @@ func replaceSourceURIPlaceholder(imageTemplate *armvirtualmachineimagebuilder.Im
 	return nil
 }
 
-func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential, resourcesURI *storageAccountBlob, resourcesFs fs.FS, resourcesArchivePath string) error {
+func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential, resourcesURI *storageAccountBlob, resourcesFs fs.FS, resourcesArchivePath string) (alreadyUploaded bool, err error) {
+	azBlobClient, err := azblob.NewClient(resourcesURI.serviceURL(), azCreds, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to initialize Azure SDK")
+	}
+
+	_, err = azBlobClient.ServiceClient().NewContainerClient(resourcesURI.Container).NewBlobClient(resourcesURI.Path).GetProperties(ctx, nil)
+	if err != nil {
+		if bloberror.HasCode(err, bloberror.BlobNotFound) {
+			return true, nil
+		}
+
+		return false, errors.Wrap(err, "failed to check if resources archive is already uploaded")
+	}
+
 	resourcesFile, err := resourcesFs.Open(resourcesArchivePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to open resources archive")
+		return false, errors.Wrap(err, "failed to open resources archive")
 	}
 	defer resourcesFile.Close()
 
 	resourcesFileStat, err := resourcesFile.Stat()
 	if err != nil {
-		return errors.Wrap(err, "failed to check resource archive size")
-	}
-
-	blobClient, err := azblob.NewClient(resourcesURI.serviceURL(), azCreds, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize Azure SDK")
+		return false, errors.Wrap(err, "failed to check resource archive size")
 	}
 
 	bar := progressbar.DefaultBytes(resourcesFileStat.Size(), "Upload resources archive")
@@ -282,13 +297,13 @@ func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential,
 	progressReader := progressbar.NewReader(resourcesFile, bar)
 	defer progressReader.Close()
 
-	_, err = blobClient.UploadStream(ctx, resourcesURI.Container, resourcesURI.Path, progressReader.Reader, nil)
+	_, err = azBlobClient.UploadStream(ctx, resourcesURI.Container, resourcesURI.Path, progressReader.Reader, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to upload")
+		return false, errors.Wrap(err, "failed to upload")
 	}
 
 	bar.Finish()
-	return nil
+	return false, nil
 }
 
 func createImageTemplate(ctx context.Context, imageTemplateClient *armvirtualmachineimagebuilder.VirtualMachineImageTemplatesClient, resourceGroup string, imageProperties *schema.ImageProperties) (string, error) {
