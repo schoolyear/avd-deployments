@@ -53,7 +53,7 @@ var PackageDeployCommand = &cli.Command{
 		},
 		&cli.PathFlag{
 			Name:    "resources-uri",
-			Usage:   "The URI path to which the resources archive can be uploaded. Required if the package contains a \"" + schema.SourceURIPlaceholder + "\" placeholder (almost always the case)",
+			Usage:   "The URI path to which the resources archive can be uploaded. Required if the package contains a \"" + schema.SourceURIPlaceholder + "\" placeholder (almost always the case). E.g. \"https://<storageaccount>.blob.core.windows.net/<containername>\"",
 			Aliases: []string{"r"},
 		},
 		&cli.StringFlag{
@@ -85,15 +85,6 @@ var PackageDeployCommand = &cli.Command{
 		waitForImageCompletion := c.Bool("wait")
 		timeoutFlag := c.Duration("timeout")
 
-		var resourcesUri *storageAccountBlob
-		if resourcesUriString != "" {
-			var err error
-			resourcesUri, err = parseResourcesURI(resourcesUriString)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse resources-uri flag")
-			}
-		}
-
 		ctx := context.Background()
 		if timeoutFlag > 0 {
 			var cancel context.CancelFunc
@@ -117,7 +108,16 @@ var PackageDeployCommand = &cli.Command{
 			return errors.Wrap(err, "invalid image properties file")
 		}
 
-		resourcesUri.Path = path.Join(resourcesUri.Path, fmt.Sprintf("%x.zip", resourcesArchiveChecksum))
+		var resourcesUri *storageAccountBlob
+		if resourcesUriString != "" {
+			var err error
+			resourcesUri, err = parseResourcesURI(resourcesUriString)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse resources-uri flag")
+			}
+
+			resourcesUri.Path = path.Join(resourcesUri.Path, fmt.Sprintf("%x.zip", resourcesArchiveChecksum))
+		}
 
 		if err := replaceSourceURIPlaceholder(imageProperties.ImageTemplate.V, resourcesUri); err != nil {
 			return errors.Wrap(err, "failed to replace resources URI placeholder")
