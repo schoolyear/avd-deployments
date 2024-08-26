@@ -7,13 +7,11 @@ import (
 )
 
 type ImageProperties struct {
-	ImageTemplateName string                                                             `json:"imageTemplateName"`
-	ImageTemplate     lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplate] `json:"imageTemplate"`
+	ImageTemplate lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplate] `json:"imageTemplate"`
 }
 
 func (i ImageProperties) Validate() error {
 	return validation.ValidateStruct(&i,
-		validation.Field(&i.ImageTemplateName, validation.Required),
 		validation.Field(&i.ImageTemplate, validation.Required),
 	)
 }

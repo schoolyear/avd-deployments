@@ -30,6 +30,12 @@ var PackageDeployCommand = &cli.Command{
 	Usage: "Deploy a package to Azure",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
+			Name:     "name",
+			Usage:    "Unique name for the Image Template in Azure",
+			Required: true,
+			Aliases:  []string{"n"},
+		},
+		&cli.StringFlag{
 			Name:     "subscription",
 			Required: true,
 			Aliases:  []string{"s"},
@@ -69,6 +75,7 @@ var PackageDeployCommand = &cli.Command{
 		},
 	},
 	Action: func(c *cli.Context) error {
+		imageTemplateName := c.Path("name")
 		subscription := c.Path("subscription")
 		resourceGroup := c.Path("resource-group")
 		packagePath := c.Path("package")
@@ -143,8 +150,8 @@ var PackageDeployCommand = &cli.Command{
 
 		imageBuilderClient := clientFactory.NewVirtualMachineImageTemplatesClient()
 
-		fmt.Println("Deploying image building template: " + imageProperties.ImageTemplateName)
-		imageTemplateResourceId, err := createImageTemplate(ctx, imageBuilderClient, resourceGroup, imageProperties)
+		fmt.Println("Deploying image building template: " + imageTemplateName)
+		imageTemplateResourceId, err := createImageTemplate(ctx, imageBuilderClient, resourceGroup, imageTemplateName, imageProperties)
 		if err != nil {
 			return err
 		}
@@ -152,7 +159,7 @@ var PackageDeployCommand = &cli.Command{
 
 		if startImageBuilderFlag {
 			fmt.Println("Starting image builder")
-			if err := startImageBuilder(context.Background(), imageBuilderClient, resourceGroup, imageProperties.ImageTemplateName, waitForImageCompletion); err != nil {
+			if err := startImageBuilder(context.Background(), imageBuilderClient, resourceGroup, imageTemplateName, waitForImageCompletion); err != nil {
 				return errors.Wrap(err, "failed to start image builder")
 			}
 		}
@@ -304,12 +311,12 @@ func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential,
 	return false, nil
 }
 
-func createImageTemplate(ctx context.Context, imageTemplateClient *armvirtualmachineimagebuilder.VirtualMachineImageTemplatesClient, resourceGroup string, imageProperties *schema.ImageProperties) (string, error) {
+func createImageTemplate(ctx context.Context, imageTemplateClient *armvirtualmachineimagebuilder.VirtualMachineImageTemplatesClient, resourceGroup string, imageTemplateName string, imageProperties *schema.ImageProperties) (string, error) {
 	bar := progressbar.Default(-1, "Creating Image Template resource")
 	createTemplatePoller, err := imageTemplateClient.BeginCreateOrUpdate(
 		ctx,
 		resourceGroup,
-		imageProperties.ImageTemplateName,
+		imageTemplateName,
 		*imageProperties.ImageTemplate.V,
 		nil,
 	)
