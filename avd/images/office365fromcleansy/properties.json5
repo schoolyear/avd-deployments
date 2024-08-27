@@ -1,0 +1,11 @@
+{
+  // -l images/office365
+  imageTemplate: {
+    properties: {
+      source: {
+        type: "SharedImageVersion",
+        imageVersionId: "/subscriptions/bcf16915-2e5c-4002-bf40-01f2f1704bf9/resourceGroups/imagebuilder/providers/Microsoft.Compute/galleries/imagegallery/images/cleansy/versions/latest"
+      }
+    },
+  }
+}
