@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/friendsofgo/errors"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/joho/godotenv"
 	"github.com/schollz/progressbar/v3"
 	"github.com/schoolyear/secure-apps-scripts/avd/cli/schema"
 	"github.com/urfave/cli/v2"
@@ -73,6 +74,13 @@ var PackageDeployCommand = &cli.Command{
 			Name:  "timeout",
 			Usage: "Set after how much time the command should timeout. Especially useful in combination with \"-wait\"",
 		},
+		&cli.StringSliceFlag{
+			Name:      "env",
+			Usage:     "Paths to .env files to resolve package parameters from",
+			Aliases:   []string{"e"},
+			TakesFile: true,
+			Value:     cli.NewStringSlice(".env", ".env.local"),
+		},
 	},
 	Action: func(c *cli.Context) error {
 		imageTemplateName := c.Path("name")
@@ -84,6 +92,7 @@ var PackageDeployCommand = &cli.Command{
 		startImageBuilderFlag := c.Bool("start")
 		waitForImageCompletion := c.Bool("wait")
 		timeoutFlag := c.Duration("timeout")
+		envFilePaths := c.StringSlice("env")
 
 		ctx := context.Background()
 		if timeoutFlag > 0 {
@@ -99,7 +108,7 @@ var PackageDeployCommand = &cli.Command{
 		fullPackagePath := filepath.Join(cwd, packagePath)
 
 		packageFs := os.DirFS(packagePath)
-		imageProperties, resourcesArchiveChecksum, err := scanPackagePath(packageFs)
+		imageProperties, resourcesArchiveChecksum, err := scanPackagePath(packageFs, envFilePaths)
 		if err != nil {
 			return errors.Wrapf(err, "failed to scan image package directory %s", fullPackagePath)
 		}
@@ -211,14 +220,30 @@ func parseResourcesURI(resourcesURI string) (*storageAccountBlob, error) {
 	}, nil
 }
 
-func scanPackagePath(packageFs fs.FS) (imageProperties *schema.ImageProperties, archiveSha256 []byte, err error) {
+func scanPackagePath(packageFs fs.FS, envFiles []string) (imageProperties *schema.ImageProperties, archiveSha256 []byte, err error) {
 	propertiesFile, err := packageFs.Open(imagePropertiesFileWithExtension)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to open properties file")
 	}
 	defer propertiesFile.Close()
 
-	if err := json.NewDecoder(propertiesFile).Decode(&imageProperties); err != nil {
+	propertiesFileContent, err := io.ReadAll(propertiesFile)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to read properties file")
+	}
+
+	paramsToResolve := schema.FindParametersInPropertiesJson(propertiesFileContent)
+	if len(paramsToResolve) > 0 {
+		fmt.Printf("Resolving %d package parameters\n", len(paramsToResolve))
+		resolvedParams, err := resolveParameters(envFiles, paramsToResolve)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to resolve parameters")
+		}
+
+		propertiesFileContent = schema.ReplaceParametersInPropertiesJson(propertiesFileContent, resolvedParams)
+	}
+
+	if err := json.Unmarshal(propertiesFileContent, &imageProperties); err != nil {
 		return nil, nil, errors.Wrap(err, "failed to parse image properties json")
 	}
 
@@ -270,6 +295,29 @@ func replaceSourceURIPlaceholder(imageTemplate *armvirtualmachineimagebuilder.Im
 	}
 
 	return nil
+}
+
+func resolveParameters(envFiles []string, params map[string]struct{}) (map[string]string, error) {
+	env, err := godotenv.Read(envFiles...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read env files")
+	}
+
+	resolvedParams := make(map[string]string, len(params))
+	for param := range params {
+		value, ok := env[param]
+		if !ok {
+			fmt.Printf("\t%s=>CANNOT BE RESOLVED\n", param)
+		} else {
+			resolvedParams[param] = value
+			fmt.Printf("\t%s=%s\n", param, value)
+		}
+	}
+	if len(resolvedParams) != len(params) {
+		return nil, errors.New("could not resolve all parameters")
+	}
+
+	return resolvedParams, nil
 }
 
 func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential, resourcesURI *storageAccountBlob, resourcesFs fs.FS, resourcesArchivePath string) (alreadyUploaded bool, err error) {
