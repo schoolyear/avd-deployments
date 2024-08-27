@@ -2,21 +2,20 @@
   // -l default_image_layers/clean
   // -l default_image_layers/windows_update
   // -l default_image_layers/scripts_setup
-  // -l default_image_layers/schoolyear_vdi_browser
   imageTemplate: {
     identity: {
       type: "UserAssigned",
       "userAssignedIdentities": {
-        "/subscriptions/bcf16915-2e5c-4002-bf40-01f2f1704bf9/resourcegroups/imagebuilder/providers/Microsoft.ManagedIdentity/userAssignedIdentities/imagebuilderid": {}
+        "[[[env:userAssignedIdentityResourceId]]]": {}
       }
     },
-    location: "westeurope",
+    location: "[[[env:location]]]",
     properties: {
       distribute: [
         {
-          "galleryImageId": "/subscriptions/bcf16915-2e5c-4002-bf40-01f2f1704bf9/resourcegroups/imagebuilder/providers/microsoft.compute/galleries/imagegallery/images/cleanbase",
+          "galleryImageId": "[[[env:imageGalleryDefinitionResourceId]]]",
           "replicationRegions": [
-            "westeurope"
+            "[[[env:location]]]"
           ],
           "runOutputName": "gallery",
           "type": "SharedImage"
