@@ -55,7 +55,7 @@ func (b *BuildStep) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-const SourceURIPlaceholder = "[[[builtin:sourceURI]]]"
+const SourceURIPlaceholder = "[[[deployment:sourceURI]]]"
 
 // HardcodedBuildSteps returns the hardcoded build steps that get prefixed & postfixed to the configured build steps
 func HardcodedBuildSteps(sha256Checksum string) (pre BuildSteps, post BuildSteps) {

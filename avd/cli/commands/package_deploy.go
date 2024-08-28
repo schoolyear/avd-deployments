@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -240,7 +241,7 @@ func scanPackagePath(packageFs fs.FS, envFiles []string, resolveInteractively bo
 		return nil, nil, errors.Wrap(err, "failed to read properties file")
 	}
 
-	paramsToResolve := schema.FindParametersInPropertiesJson(propertiesFileContent)
+	paramsToResolve := schema.FindPlaceholdersInJson(propertiesFileContent, schema.ParameterPlaceholder)
 	if len(paramsToResolve) > 0 {
 		fmt.Printf("Resolving %d package parameters\n", len(paramsToResolve))
 		resolvedParams, err := resolveParameters(envFiles, paramsToResolve, resolveInteractively)
@@ -248,11 +249,16 @@ func scanPackagePath(packageFs fs.FS, envFiles []string, resolveInteractively bo
 			return nil, nil, errors.Wrap(err, "failed to resolve parameters")
 		}
 
-		propertiesFileContent = schema.ReplaceParametersInPropertiesJson(propertiesFileContent, resolvedParams)
+		propertiesFileContent = schema.ReplacePlaceholders(propertiesFileContent, resolvedParams, schema.ParameterPlaceholder)
 	}
 
-	if err := json.Unmarshal(propertiesFileContent, &imageProperties); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse image properties json")
+	resolvedPropertiesFileContent, err := resolvePlaceholderProperties(propertiesFileContent)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to resolve placeholder properties")
+	}
+
+	if err := json.Unmarshal(resolvedPropertiesFileContent, &imageProperties); err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to parse image properties json:\n%s", resolvedPropertiesFileContent)
 	}
 
 	hash := sha256.New()
@@ -361,6 +367,53 @@ func resolveParameters(envFiles []string, params map[string]struct{}, resolveInt
 	}
 
 	return resolvedParams, nil
+}
+
+func resolvePlaceholderProperties(imagePropsJson []byte) ([]byte, error) {
+	var imageProperties schema.ImageProperties
+	if err := json.Unmarshal(imagePropsJson, &imageProperties); err != nil {
+		return nil, errors.Wrap(err, "failed to parse custom properties")
+	}
+
+	availableProperties := imageProperties.PlaceholderProperties
+	if availableProperties == nil {
+		availableProperties = schema.PlaceholderProperties{}
+	}
+
+	for {
+		props := schema.FindPlaceholdersInJson(imagePropsJson, schema.PropertiesPlaceholder)
+		if len(props) == 0 {
+			break
+		}
+
+		mapping := make(map[string]string, len(props))
+		for prop := range props {
+			jsonValue, ok := imageProperties.PlaceholderProperties[prop]
+			if !ok {
+				return nil, fmt.Errorf("cannot resolve placeholder property %s", prop)
+			}
+
+			// if the value is not a string, it is some
+			if !bytes.HasPrefix(jsonValue, []byte(`"`)) {
+				var buf bytes.Buffer
+				if err := json.Compact(&buf, jsonValue); err != nil {
+					return nil, errors.Wrap(err, "failed to compact json-based custom property")
+				}
+				jsonValue = buf.Bytes()
+			}
+
+			escapedJsonValue, err := json.Marshal(string(jsonValue))
+			if err != nil {
+				panic("marshalling string shouldn't fail: " + err.Error())
+			}
+
+			mapping[prop] = string(escapedJsonValue[1 : len(escapedJsonValue)-1])
+		}
+
+		imagePropsJson = schema.ReplacePlaceholders(imagePropsJson, mapping, schema.PropertiesPlaceholder)
+	}
+
+	return imagePropsJson, nil
 }
 
 func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential, resourcesURI *storageAccountBlob, resourcesFs fs.FS, resourcesArchivePath string) (alreadyUploaded bool, err error) {
