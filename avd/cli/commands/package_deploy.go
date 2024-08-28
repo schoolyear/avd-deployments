@@ -312,31 +312,50 @@ func resolveParameters(envFiles []string, params map[string]struct{}, resolveInt
 	}
 
 	resolvedParams := make(map[string]string, len(params))
+	var unresolvedParams []string
 	for param := range params {
 		value, ok := env[param]
 		if !ok {
+			unresolvedParams = append(unresolvedParams, param)
+
+			message := "UNRESOLVED"
 			if resolveInteractively {
-				value = prompt.Input(
-					fmt.Sprintf("Enter value for %s:", param),
-					func(document prompt.Document) []prompt.Suggest { return nil },
-					prompt.OptionAddKeyBind(prompt.KeyBind{
-						Key: prompt.ControlC,
-						Fn: func(buffer *prompt.Buffer) {
-							os.Exit(1)
-						},
-					}),
-				)
-				value = strings.TrimSpace(value)
+				message = "RESOLVE-INTERACTIVELY"
 			}
-			if len(value) == 0 {
-				fmt.Printf("\t%s=>CANNOT BE RESOLVED\n", param)
-				continue
-			}
+			fmt.Printf("\t%s=>%s\n", param, message)
+		} else {
+			resolvedParams[param] = value
+			fmt.Printf("\t%s=%s\n", param, value)
+		}
+	}
+
+	if len(unresolvedParams) > 0 {
+		if !resolveInteractively {
+			return nil, errors.New("could not resolve all parameters, interactivity is disabled")
 		}
 
-		resolvedParams[param] = value
-		fmt.Printf("\t%s=%s\n", param, value)
+		fmt.Printf("Resolving %d parameter(s) interactively:\n", len(unresolvedParams))
+
+		for i, param := range unresolvedParams {
+			value := prompt.Input(
+				fmt.Sprintf("(%d/%d) Enter value for %s:", i+1, len(unresolvedParams), param),
+				func(document prompt.Document) []prompt.Suggest { return nil },
+				prompt.OptionAddKeyBind(prompt.KeyBind{
+					Key: prompt.ControlC,
+					Fn: func(buffer *prompt.Buffer) {
+						os.Exit(1)
+					},
+				}),
+			)
+			value = strings.TrimSpace(value)
+			if value == "" {
+				return nil, fmt.Errorf("failed to resolve %s interactively, empty value given", param)
+			}
+
+			resolvedParams[param] = value
+		}
 	}
+
 	if len(resolvedParams) != len(params) {
 		return nil, errors.New("could not resolve all parameters")
 	}
