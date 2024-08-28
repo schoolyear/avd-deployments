@@ -1,0 +1,28 @@
+{
+  imageTemplate: {
+    identity: {
+      type: "UserAssigned",
+      "userAssignedIdentities": {
+        "[[[param:userAssignedIdentityResourceId]]]": {}
+      }
+    },
+    location: "[[[param:location]]]",
+    properties: {
+      distribute: [
+        {
+          "galleryImageId": "[[[param:targetGalleryImageId]]]",
+          "replicationRegions": [
+            "[[[param:location]]]"
+          ],
+          "runOutputName": "gallery",
+          "type": "SharedImage"
+        }
+      ],
+      "vmProfile": {
+        "osDiskSizeGB": 127,
+        "vmSize": "[[[param:vmSize]]]",
+      },
+      "buildTimeoutInMinutes": 0,
+    }
+  }
+}

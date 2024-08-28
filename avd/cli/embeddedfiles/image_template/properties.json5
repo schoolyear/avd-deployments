@@ -1,4 +1,3 @@
 {
-  // the name of the image, for administration purposes
-  imageTemplateName: "Dummy image template"
+  imageTemplate: {}
 }
