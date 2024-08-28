@@ -1,7 +1,7 @@
 {
-  // -l default_image_layers/clean
-  // -l default_image_layers/windows_update
-  // -l default_image_layers/scripts_setup
+  // -l default_layers/clean
+  // -l default_layers/windows_update
+  // -l default_layers/scripts_setup
   imageTemplate: {
     identity: {
       type: "UserAssigned",

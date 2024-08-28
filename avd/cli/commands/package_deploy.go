@@ -11,7 +11,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
-	"github.com/cqroot/prompt"
+	"github.com/c-bata/go-prompt"
 	"github.com/friendsofgo/errors"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/joho/godotenv"
@@ -316,11 +316,16 @@ func resolveParameters(envFiles []string, params map[string]struct{}, resolveInt
 		value, ok := env[param]
 		if !ok {
 			if resolveInteractively {
-				var err error
-				value, err = prompt.New().Ask(fmt.Sprintf("Enter value for %s:", param)).Input("")
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to prompt for %s", param)
-				}
+				value = prompt.Input(
+					fmt.Sprintf("Enter value for %s:", param),
+					func(document prompt.Document) []prompt.Suggest { return nil },
+					prompt.OptionAddKeyBind(prompt.KeyBind{
+						Key: prompt.ControlC,
+						Fn: func(buffer *prompt.Buffer) {
+							os.Exit(1)
+						},
+					}),
+				)
 				value = strings.TrimSpace(value)
 			}
 			if len(value) == 0 {

@@ -4,7 +4,7 @@
       name: "Install VDI browser",
       type: "PowerShell",
       inline: [
-        "C:\\imagebuild_resources\\schoolyear_vdi_browser\\install.ps1 --msiUrl \"[[[param:vdiBrowserMsiUrl]]]\""
+        "C:\\imagebuild_resources\\schoolyear_vdi_browser\\install.ps1 \"[[[param:vdiBrowserMsiUrl]]]\""
       ],
       runAsSystem: true,
       runElevated: true
