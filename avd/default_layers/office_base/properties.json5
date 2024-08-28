@@ -3,10 +3,10 @@
     properties: {
       source: {
         type: "PlatformImage",
-        sku: "win10-22h2-avd-g2",
-        offer: "windows-10",
+        publisher: "microsoftwindowsdesktop",
         version: "latest",
-        publisher: "microsoftwindowsdesktop"
+        sku: "win10-22h2-avd-m365-g2",
+        offer: "office-365"
       }
     }
   }

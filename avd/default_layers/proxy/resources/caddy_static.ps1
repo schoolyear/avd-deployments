@@ -3,7 +3,7 @@ $caddyUrl = "https://github.com/caddyserver/caddy/releases/download/v2.6.2/caddy
 $zipPath = "$env:TEMP\caddy.zip"
 $extractPath = "$env:ProgramFiles\Caddy"
 $caddyExecutable = "$extractPath\caddy.exe"
-$staticDir = "$env:SystemDrive\static"
+$staticDir = "C:\static"
 $serviceName = "Caddy"
 $serviceDescription = "Caddy Web Server"
 

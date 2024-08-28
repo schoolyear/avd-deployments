@@ -5,13 +5,13 @@
       name: "Scripts setup",
       type: "PowerShell",
       inline: [
-        "if (!(Test-Path -path \"$env:SystemDrive\\Scripts\")) {New-Item \"C:\\Scripts\" -Type Directory}",
-        "if (Test-Path -path \"$env:SystemDrive\\imagebuild_resources\\session_scripts\") {Copy-Item -Path \"$env:SystemDrive\\imagebuild_resources\\session_scripts\\*\" -Destination \"C:\\Scripts\" -Recurse}",
-        "if (!(Test-Path -path \"$env:SystemDrive\\UserScripts\")) {New-Item \"C:\\UserScripts\" -Type Directory}",
-        "if (Test-Path -path \"$env:SystemDrive\\imagebuild_resources\\user_scripts\") {Copy-Item -Path \"$env:SystemDrive\\imagebuild_resources\\user_scripts\\*\" -Destination \"C:\\UserScripts\" -Recurse}",
-        "if (!(Test-Path -path \"$env:SystemDrive\\SessionhostScripts\")) {New-Item \"C:\\SessionhostScripts\" -Type Directory}",
-        "if (Test-Path -path \"$env:SystemDrive\\imagebuild_resources\\sessionhost_setup_scripts\") {Copy-Item -Path \"$env:SystemDrive\\imagebuild_resources\\sessionhost_setup_scripts\\*\" -Destination \"C:\\SessionhostScripts\" -Recurse}",
-        "Copy-Item -Path \"$env:SystemDrive\\imagebuild_resources\\scripts_setup\\sessionhost_setup.ps1\" -Destination \"C:\\SessionhostScripts\""
+        "if (!(Test-Path -path \"C:\\Scripts\")) {New-Item \"C:\\Scripts\" -Type Directory}",
+        "if (Test-Path -path \"C:\\imagebuild_resources\\session_scripts\") {Copy-Item -Path \"C:\\imagebuild_resources\\session_scripts\\*\" -Destination \"C:\\Scripts\" -Recurse}",
+        "if (!(Test-Path -path \"C:\\UserScripts\")) {New-Item \"C:\\UserScripts\" -Type Directory}",
+        "if (Test-Path -path \"C:\\imagebuild_resources\\user_scripts\") {Copy-Item -Path \"C:\\imagebuild_resources\\user_scripts\\*\" -Destination \"C:\\UserScripts\" -Recurse}",
+        "if (!(Test-Path -path \"C:\\SessionhostScripts\")) {New-Item \"C:\\SessionhostScripts\" -Type Directory}",
+        "if (Test-Path -path \"C:\\imagebuild_resources\\sessionhost_setup_scripts\") {Copy-Item -Path \"C:\\imagebuild_resources\\sessionhost_setup_scripts\\*\" -Destination \"C:\\SessionhostScripts\" -Recurse}",
+        "Copy-Item -Path \"C:\\imagebuild_resources\\scripts_setup\\sessionhost_setup.ps1\" -Destination \"C:\\SessionhostScripts\""
       ],
       runAsSystem: true,
       runElevated: true
