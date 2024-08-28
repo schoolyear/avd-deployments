@@ -77,7 +77,7 @@ func HardcodedBuildSteps(sha256Checksum string) (pre BuildSteps, post BuildSteps
 		}, BuildSteps{
 			{V: &armvirtualmachineimagebuilder.ImageTemplatePowerShellCustomizer{
 				Type:        to.Ptr("PowerShell"),
-				Inline:      to.SliceOfPtrs(`Remove-Item -Path 'C:\imagebuild_resources', 'C:\imagebuild_resources.zip' -Recurse`),
+				Inline:      to.SliceOfPtrs(`Remove-Item -Path "C:\imagebuild_resources", "C:\imagebuild_resources.zip" -Recurse`),
 				Name:        to.Ptr("Extract resources archive"),
 				RunAsSystem: to.Ptr(true),
 				RunElevated: to.Ptr(true),
