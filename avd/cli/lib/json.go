@@ -10,11 +10,11 @@ import (
 	"os"
 )
 
-// ReadJsonOrJson5File reads either the json or json5 file
+// ReadJSONOrJSON5File reads either the json or json5 file
 // returns an error if both are found
 // returns os.ErrNotExist if neither are found
-func ReadJsonOrJson5File[T any](searchFs fs.FS, name string) (out *T, cleanJson []byte, err error) {
-	path, isJson5, err := findJsonOrJson5Path(searchFs, name)
+func ReadJSONOrJSON5File[T any](searchFs fs.FS, name string) (out *T, cleanJSON []byte, err error) {
+	path, isJSON5, err := findJSONOrJSON5Path(searchFs, name)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to find either json or json5 path")
 	}
@@ -30,7 +30,7 @@ func ReadJsonOrJson5File[T any](searchFs fs.FS, name string) (out *T, cleanJson 
 		return nil, nil, errors.Wrapf(err, "failed to read json file %s", path)
 	}
 
-	if isJson5 {
+	if isJSON5 {
 		jsonBytes = jsonc.New().Strip(jsonBytes)
 	}
 
@@ -41,11 +41,11 @@ func ReadJsonOrJson5File[T any](searchFs fs.FS, name string) (out *T, cleanJson 
 	return out, jsonBytes, nil
 }
 
-// findJsonOrJson5Path tries both the .json and .json5 extension
+// findJSONOrJSON5Path tries both the .json and .json5 extension
 // returns an error if both are found
 // returns os.ErrNotExist if neither are found
 // returns the path and whether it is a json5 file on one is found
-func findJsonOrJson5Path(searchFs fs.FS, name string) (path string, json5 bool, err error) {
+func findJSONOrJSON5Path(searchFs fs.FS, name string) (path string, json5 bool, err error) {
 	jsonPath := name + ".json"
 	json5Path := name + ".json5"
 	var jsonPathExists, json5PathExists bool
@@ -88,14 +88,14 @@ func findJsonOrJson5Path(searchFs fs.FS, name string) (path string, json5 bool, 
 	}
 }
 
-// Json5Unsupported can be wrapped around objects with a custom unmarshaler that does not support json5
-type Json5Unsupported[T json.Unmarshaler] struct{ V T }
+// JSON5Unsupported can be wrapped around objects with a custom unmarshaler that does not support json5
+type JSON5Unsupported[T json.Unmarshaler] struct{ V T }
 
-func (j Json5Unsupported[T]) MarshalJSON() ([]byte, error) {
+func (j JSON5Unsupported[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(j.V)
 }
 
-func (j *Json5Unsupported[T]) UnmarshalJSON(bytes []byte) error {
+func (j *JSON5Unsupported[T]) UnmarshalJSON(bytes []byte) error {
 	var v T
 	if err := json.Unmarshal(jsonc.New().Strip(bytes), &v); err != nil {
 		return err

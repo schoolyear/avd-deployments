@@ -46,8 +46,8 @@ func (b BuildStep) MarshalJSON() ([]byte, error) {
 
 func (b *BuildStep) UnmarshalJSON(bytes []byte) error {
 	var props armvirtualmachineimagebuilder.ImageTemplateProperties
-	fullJson := []byte(fmt.Sprintf(`{"customize": [%s]}`, bytes))
-	if err := json.Unmarshal(fullJson, &props); err != nil {
+	fullJSON := []byte(fmt.Sprintf(`{"customize": [%s]}`, bytes))
+	if err := json.Unmarshal(fullJSON, &props); err != nil {
 		return err
 	}
 

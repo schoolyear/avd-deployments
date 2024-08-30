@@ -112,13 +112,13 @@ var ImagePackage = &cli.Command{
 
 		fmt.Println("Merging build steps")
 		buildSteps := mergeBuildStepConfigs(layers)
-		niceBuildStepsJson, err := json.MarshalIndent(buildSteps, "", "\t")
+		niceBuildStepsJSON, err := json.MarshalIndent(buildSteps, "", "\t")
 		if err != nil {
 			return errors.Wrap(err, "failed to nicely print build steps config")
 		}
 
 		if err := validation.Validate(buildSteps); err != nil {
-			fmt.Printf("Build steps:\n%s\n", niceBuildStepsJson)
+			fmt.Printf("Build steps:\n%s\n", niceBuildStepsJSON)
 			return errors.Wrap(err, "merged build steps configs result in an invalid document")
 		}
 
@@ -171,7 +171,7 @@ type layerProps struct {
 
 type layerScanResult struct {
 	// either both are set or both are nil
-	cleanPropertiesJson []byte
+	cleanPropertiesJSON []byte
 	properties          *schema.ImageProperties
 
 	buildStepsConfig   *schema.BuildStepsConfig
@@ -217,14 +217,14 @@ func ensureLayerPathsExist(layerPaths []string) error {
 }
 
 func scanLayerPath(layerFs fs.FS) (layer layerScanResult, err error) {
-	props, propsJson, err := lib.ReadJsonOrJson5File[schema.ImageProperties](layerFs, imagePropertiesFilename)
+	props, propsJSON, err := lib.ReadJSONOrJSON5File[schema.ImageProperties](layerFs, imagePropertiesFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) { // ok if the file does not exist
 		return layer, errors.Wrap(err, "failed to read properties file")
 	}
 	layer.properties = props
-	layer.cleanPropertiesJson = propsJson
+	layer.cleanPropertiesJSON = propsJSON
 
-	buildSteps, _, err := lib.ReadJsonOrJson5File[schema.BuildStepsConfig](layerFs, buildStepsFileName)
+	buildSteps, _, err := lib.ReadJSONOrJSON5File[schema.BuildStepsConfig](layerFs, buildStepsFileName)
 	if err != nil && !errors.Is(err, os.ErrNotExist) { // ok if the file does not exist
 		return layer, errors.Wrap(err, "failed to read build_steps file")
 	}
@@ -282,15 +282,15 @@ func printLayers(layers []layerProps) error {
 func mergeImageProperties(layers []layerProps) (*schema.ImageProperties, error) {
 	var propsJson []byte
 	for i, layer := range layers {
-		if layer.cleanPropertiesJson == nil {
+		if layer.cleanPropertiesJSON == nil {
 			continue
 		}
 
 		if i == 0 {
-			propsJson = layer.cleanPropertiesJson
+			propsJson = layer.cleanPropertiesJSON
 		} else {
 			var err error
-			propsJson, err = jsonpatch.MergePatch(propsJson, layer.cleanPropertiesJson)
+			propsJson, err = jsonpatch.MergePatch(propsJson, layer.cleanPropertiesJSON)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to merge properties of layer %d", i+1)
 			}
@@ -375,9 +375,9 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 	}
 
 	// we don't know the length of the image properties json yet, so we do an estimation
-	const imagePropertiesJsonSizeEstimate = 2000
+	const imagePropertiesJSONSizeEstimate = 2000
 	bar := progressbar.DefaultBytes(
-		int64(imagePropertiesJsonSizeEstimate)+calcFileMappingsTotalSize(resourceFileMappings),
+		int64(imagePropertiesJSONSizeEstimate)+calcFileMappingsTotalSize(resourceFileMappings),
 		"Creating resources archive",
 	)
 
@@ -407,21 +407,21 @@ func writeImageBuildingPackage(outputPath string, layers []layerProps, imageProp
 		imageProperties.ImageTemplate.V.Tags[schema.HardcodedImageTemplateTag] = to.Ptr(schema.HardcodedImageTemplateTag)
 	}
 
-	imagePropertiesJson, err := json.MarshalIndent(imageProperties, "", "\t")
+	imagePropertiesJSON, err := json.MarshalIndent(imageProperties, "", "\t")
 	if err != nil {
 		return errors.Wrap(err, "failed to json marshal image properties")
 	}
 
 	if err := validation.Validate(imageProperties); err != nil {
-		fmt.Printf("Build steps:\n%s\n", imagePropertiesJson)
+		fmt.Printf("Build steps:\n%s\n", imagePropertiesJSON)
 		return errors.Wrap(err, "merged image properties config resulted in an invalid document")
 	}
 
 	// replace estimate with actual byte size
-	bar.ChangeMax(bar.GetMax() - imagePropertiesJsonSizeEstimate + len(imagePropertiesJson))
+	bar.ChangeMax(bar.GetMax() - imagePropertiesJSONSizeEstimate + len(imagePropertiesJSON))
 
 	imagePropertiesPath := filepath.Join(outputPath, imagePropertiesFileWithExtension)
-	if err := createAndWriteFile(imagePropertiesPath, imagePropertiesJson, bar); err != nil {
+	if err := createAndWriteFile(imagePropertiesPath, imagePropertiesJSON, bar); err != nil {
 		return errors.Wrapf(err, "failed to write image properties file to %s", imagePropertiesPath)
 	}
 

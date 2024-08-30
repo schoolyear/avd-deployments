@@ -10,7 +10,7 @@ import (
 
 type ImageProperties struct {
 	PlaceholderProperties PlaceholderProperties                                              `json:"placeholderProperties"`
-	ImageTemplate         lib.Json5Unsupported[*armvirtualmachineimagebuilder.ImageTemplate] `json:"imageTemplate"`
+	ImageTemplate         lib.JSON5Unsupported[*armvirtualmachineimagebuilder.ImageTemplate] `json:"imageTemplate"`
 }
 
 func (i ImageProperties) Validate() error {
@@ -31,7 +31,7 @@ const (
 
 var placeholderRegex = regexp.MustCompile(`\[{3}([a-zA-Z0-9_]+):([a-zA-Z0-9_]+)]{3}`)
 
-func FindPlaceholdersInJson(bytes []byte, placeholderType PlaceholderType) map[string]struct{} {
+func FindPlaceholdersInJSON(bytes []byte, placeholderType PlaceholderType) map[string]struct{} {
 	matchIndexes := placeholderRegex.FindAllSubmatchIndex(bytes, -1)
 	matches := make(map[string]struct{}, len(matchIndexes))
 	for _, match := range matchIndexes {

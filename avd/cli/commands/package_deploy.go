@@ -95,8 +95,8 @@ var PackageDeployCommand = &cli.Command{
 		subscription := c.Path("subscription")
 		resourceGroup := c.Path("resource-group")
 		packagePath := c.Path("package")
-		resourcesUriString := c.Path("resources-uri")
-		azureTenantId := c.String("azure-tenant-id")
+		resourcesURIString := c.Path("resources-uri")
+		azureTenantID := c.String("azure-tenant-id")
 		startImageBuilderFlag := c.Bool("start")
 		waitForImageCompletion := c.Bool("wait")
 		timeoutFlag := c.Duration("timeout")
@@ -126,31 +126,31 @@ var PackageDeployCommand = &cli.Command{
 			return errors.Wrap(err, "invalid image properties file")
 		}
 
-		var resourcesUri *storageAccountBlob
-		if resourcesUriString != "" {
+		var resourcesURI *storageAccountBlob
+		if resourcesURIString != "" {
 			var err error
-			resourcesUri, err = parseResourcesURI(resourcesUriString)
+			resourcesURI, err = parseResourcesURI(resourcesURIString)
 			if err != nil {
 				return errors.Wrap(err, "failed to parse resources-uri flag")
 			}
 
-			resourcesUri.Path = path.Join(resourcesUri.Path, fmt.Sprintf("%x.zip", resourcesArchiveChecksum))
+			resourcesURI.Path = path.Join(resourcesURI.Path, fmt.Sprintf("%x.zip", resourcesArchiveChecksum))
 		}
 
-		if err := replaceSourceURIPlaceholder(imageProperties.ImageTemplate.V, resourcesUri); err != nil {
+		if err := replaceSourceURIPlaceholder(imageProperties.ImageTemplate.V, resourcesURI); err != nil {
 			return errors.Wrap(err, "failed to replace resources URI placeholder")
 		}
 
 		azCred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
-			TenantID: azureTenantId,
+			TenantID: azureTenantID,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to get default Azure Credentials")
 		}
 
-		if resourcesUri != nil {
+		if resourcesURI != nil {
 			fmt.Println("Uploading resources archive")
-			alreadyUploaded, err := uploadResourcesArchive(ctx, azCred, resourcesUri, packageFs, resourcesArchiveName)
+			alreadyUploaded, err := uploadResourcesArchive(ctx, azCred, resourcesURI, packageFs, resourcesArchiveName)
 			if err != nil {
 				return errors.Wrap(err, "failed to upload resources archive")
 			}
@@ -169,11 +169,11 @@ var PackageDeployCommand = &cli.Command{
 		imageBuilderClient := clientFactory.NewVirtualMachineImageTemplatesClient()
 
 		fmt.Println("Deploying image building template: " + imageTemplateName)
-		imageTemplateResourceId, err := createImageTemplate(ctx, imageBuilderClient, resourceGroup, imageTemplateName, imageProperties)
+		imageTemplateResourceID, err := createImageTemplate(ctx, imageBuilderClient, resourceGroup, imageTemplateName, imageProperties)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Image Template created: ", imageTemplateResourceId)
+		fmt.Println("Image Template created: ", imageTemplateResourceID)
 
 		if startImageBuilderFlag {
 			fmt.Println("Starting image builder")
@@ -218,9 +218,6 @@ func parseResourcesURI(resourcesURI string) (*storageAccountBlob, error) {
 	default:
 		panic("programming error: no more than 2 entries expected")
 	}
-	if len(pathParts) != 2 {
-
-	}
 
 	return &storageAccountBlob{
 		Service:   parsed.Host,
@@ -241,7 +238,7 @@ func scanPackagePath(packageFs fs.FS, envFiles []string, resolveInteractively bo
 		return nil, nil, errors.Wrap(err, "failed to read properties file")
 	}
 
-	paramsToResolve := schema.FindPlaceholdersInJson(propertiesFileContent, schema.ParameterPlaceholder)
+	paramsToResolve := schema.FindPlaceholdersInJSON(propertiesFileContent, schema.ParameterPlaceholder)
 	if len(paramsToResolve) > 0 {
 		fmt.Printf("Resolving %d package parameters\n", len(paramsToResolve))
 		resolvedParams, err := resolveParameters(envFiles, paramsToResolve, resolveInteractively)
@@ -369,9 +366,9 @@ func resolveParameters(envFiles []string, params map[string]struct{}, resolveInt
 	return resolvedParams, nil
 }
 
-func resolvePlaceholderProperties(imagePropsJson []byte) ([]byte, error) {
+func resolvePlaceholderProperties(imagePropsJSON []byte) ([]byte, error) {
 	var imageProperties schema.ImageProperties
-	if err := json.Unmarshal(imagePropsJson, &imageProperties); err != nil {
+	if err := json.Unmarshal(imagePropsJSON, &imageProperties); err != nil {
 		return nil, errors.Wrap(err, "failed to parse custom properties")
 	}
 
@@ -381,7 +378,7 @@ func resolvePlaceholderProperties(imagePropsJson []byte) ([]byte, error) {
 	}
 
 	for {
-		props := schema.FindPlaceholdersInJson(imagePropsJson, schema.PropertiesPlaceholder)
+		props := schema.FindPlaceholdersInJSON(imagePropsJSON, schema.PropertiesPlaceholder)
 		if len(props) == 0 {
 			break
 		}
@@ -402,18 +399,18 @@ func resolvePlaceholderProperties(imagePropsJson []byte) ([]byte, error) {
 				jsonValue = buf.Bytes()
 			}
 
-			escapedJsonValue, err := json.Marshal(string(jsonValue))
+			escapedJSONValue, err := json.Marshal(string(jsonValue))
 			if err != nil {
 				panic("marshalling string shouldn't fail: " + err.Error())
 			}
 
-			mapping[prop] = string(escapedJsonValue[1 : len(escapedJsonValue)-1])
+			mapping[prop] = string(escapedJSONValue[1 : len(escapedJSONValue)-1])
 		}
 
-		imagePropsJson = schema.ReplacePlaceholders(imagePropsJson, mapping, schema.PropertiesPlaceholder)
+		imagePropsJSON = schema.ReplacePlaceholders(imagePropsJSON, mapping, schema.PropertiesPlaceholder)
 	}
 
-	return imagePropsJson, nil
+	return imagePropsJSON, nil
 }
 
 func uploadResourcesArchive(ctx context.Context, azCreds azcore.TokenCredential, resourcesURI *storageAccountBlob, resourcesFs fs.FS, resourcesArchivePath string) (alreadyUploaded bool, err error) {
