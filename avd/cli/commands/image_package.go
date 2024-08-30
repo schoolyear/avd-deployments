@@ -280,17 +280,17 @@ func printLayers(layers []layerProps) error {
 }
 
 func mergeImageProperties(layers []layerProps) (*schema.ImageProperties, error) {
-	var propsJson []byte
+	var propsJSON []byte
 	for i, layer := range layers {
 		if layer.cleanPropertiesJSON == nil {
 			continue
 		}
 
 		if i == 0 {
-			propsJson = layer.cleanPropertiesJSON
+			propsJSON = layer.cleanPropertiesJSON
 		} else {
 			var err error
-			propsJson, err = jsonpatch.MergePatch(propsJson, layer.cleanPropertiesJSON)
+			propsJSON, err = jsonpatch.MergePatch(propsJSON, layer.cleanPropertiesJSON)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to merge properties of layer %d", i+1)
 			}
@@ -298,7 +298,7 @@ func mergeImageProperties(layers []layerProps) (*schema.ImageProperties, error) 
 	}
 
 	var props schema.ImageProperties
-	if err := json.Unmarshal(propsJson, &props); err != nil {
+	if err := json.Unmarshal(propsJSON, &props); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal patched json document")
 	}
 

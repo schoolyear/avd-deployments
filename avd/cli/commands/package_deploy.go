@@ -372,11 +372,6 @@ func resolvePlaceholderProperties(imagePropsJSON []byte) ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to parse custom properties")
 	}
 
-	availableProperties := imageProperties.PlaceholderProperties
-	if availableProperties == nil {
-		availableProperties = schema.PlaceholderProperties{}
-	}
-
 	for {
 		props := schema.FindPlaceholdersInJSON(imagePropsJSON, schema.PropertiesPlaceholder)
 		if len(props) == 0 {
