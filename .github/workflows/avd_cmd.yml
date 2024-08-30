@@ -9,7 +9,7 @@ on:
     branches: ['main']
     paths:
       - 'avd/cli/**'
-      - '.github/workflows'
+      - '.github/workflows/**'
 
 jobs:
   test-build:
