@@ -1,128 +1,134 @@
 #!/bin/bash
 
-set -e
+set -e # so each commend gets printed as well
 
-# $1: whitelist
-# $2: trustedProxyToken
-# $3: vault name
-# $4: certificate name
-# $5: api base URL
+# Give the expected parameters a name
+TRUSTED_PROXY_WHITELIST=$1        # comma seperated list of "<domain>:<port>", may include wildcards. For public internet facing proxy (trusted proxy)
+SESSION_HOST_PROXY_WHITELIST=$2   # comma seperated list of "<domain>:<port>", may include wildcards. For session host facing proxy
+TRUSTED_PROXY_TOKEN=$3            # trustedProxyToken, used for authentication against the API
+API_BASE_URL=$4                   # base of Schoolyear API, without trailing slash
+TRUSTED_PROXY_BINARY_URL=$5       # URL to download trusted proxy binary from
+CERT_VAULT_NAME=$6                # name of the Key Vault that holds the HTTPS certificate for the trusted proxy
+CERT_NAME=$7                      # name of the Certificate in that Key Vault
 
-SERVICE_NAME="syproxy"
-USER_NAME="syproxy"
-
-PROXY_SHA256="f2ac91bbcb73ae7fd06fddf5213485af40aebfb2cce85ce0256bf09238413859"
-PROXY_URL="https://schoolyear-email-assets.s3.eu-west-1.amazonaws.com/proxy"
-
-# Create User with home directory
-echo "Creating service user"
-useradd -m $USER_NAME
-
-BASE_PATH="/home/$USER_NAME"
-BINARY_PATH="$BASE_PATH/proxy"
-WHITELIST_PATH="$BASE_PATH/whitelist.txt"
-API_KEY_PATH="$BASE_PATH/api_key.txt"
-PRIV_KEY_PATH="$BASE_PATH/private.pem"
-CERT_PATH="$BASE_PATH/public.pem"
-
+##################### SHARED #####################
 # Download proxy binary
+BINARY_PATH="/usr/local/share/syproxy"
 echo "Downloading proxy binary"
-curl -o $BINARY_PATH $PROXY_URL -s && echo "$PROXY_SHA256 $BINARY_PATH" | sha256sum -c
+curl -o $BINARY_PATH $TRUSTED_PROXY_BINARY_URL -s
 chmod +x $BINARY_PATH
+#####################/SHARED/#####################
 
-# Create Whitelist
+##################### TRUSTED PROXY #####################
+echo "Setting up Trusted proxy"
+TRUSTED_PROXY_SERVICE_NAME="trustedproxy"
+TRUSTED_PROXY_SERVICE_USER_NAME="sytrustedproxy"
+
+echo "Creating service user for trusted proxy"
+useradd -m $TRUSTED_PROXY_SERVICE_USER_NAME
+
+TRUSTED_PROXY_BASE_PATH="/home/$TRUSTED_PROXY_SERVICE_USER_NAME"
+TRUSTED_PROXY_WHITELIST_PATH="$TRUSTED_PROXY_BASE_PATH/whitelist.txt"
+TRUSTED_PROXY_API_KEY_PATH="$TRUSTED_PROXY_BASE_PATH/api_key.txt"
+TRUSTED_PROXY_PRIV_KEY_PATH="$TRUSTED_PROXY_BASE_PATH/private.pem"
+TRUSTED_PROXY_CERT_PATH="$TRUSTED_PROXY_BASE_PATH/public.pem"
+
+# Write whitelist
 echo "Creating whitelist"
-echo "$1" > $WHITELIST_PATH
+echo "$TRUSTED_PROXY_WHITELIST" > $TRUSTED_PROXY_WHITELIST_PATH
 
 # Create key file
 echo "Creating api key"
-echo -n "$2" > $API_KEY_PATH
+echo -n "$TRUSTED_PROXY_TOKEN" > $TRUSTED_PROXY_API_KEY_PATH
 
 # Get Entra token
+# python, since it is pre-installed on Ubuntu
 echo "Request Entra token"
-ACCESS_TOKEN=$(curl -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+ACCESS_TOKEN=$(curl -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 
 # Get TLS certificate
+# - fetch secret from API
+# - extract field from JSON
+# - base64 decode
+# - extract private key from secret (tee, because we need to write two separate files)
+# - generate public key from secret
 echo "Getting TLS certificate"
-curl -H "Authorization: Bearer $ACCESS_TOKEN" "https://$3.vault.azure.net/secrets/$4?api-version=7.4" | python3 -c "import sys, json; print(json.load(sys.stdin)['value'])" | openssl base64 -d -A | tee >(openssl pkcs12 -passin pass: -nodes -nocerts -out $PRIV_KEY_PATH) | openssl pkcs12 -passin pass: -nokeys -out $CERT_PATH
+curl -H "Authorization: Bearer $ACCESS_TOKEN" "https://$CERT_VAULT_NAME.vault.azure.net/secrets/$CERT_NAME?api-version=7.4" \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['value'])" \
+  | openssl base64 -d -A \
+  | tee >(openssl pkcs12 -passin pass: -nodes -nocerts -out $TRUSTED_PROXY_PRIV_KEY_PATH) \
+  | openssl pkcs12 -passin pass: -nokeys -out $TRUSTED_PROXY_CERT_PATH
 
-# Grant user access to files
+
+# Grant service user access to files
+# because this script is writing the files as owned by root
 echo "Granting service user access to files"
-chown $USER_NAME:$USER_NAME -R $BASE_PATH
+chown $TRUSTED_PROXY_SERVICE_USER_NAME:$TRUSTED_PROXY_SERVICE_USER_NAME -R $TRUSTED_PROXY_BASE_PATH
 
-# Install service
-echo "Installing service"
+# Install trusted proxy service
+# CAP_NET_BIND_SERVICE is required to start on a protected port without elevated privileges
+echo "Installing trusted proxy service"
 echo "[Unit]
-Description=$SERVICE_NAME
+Description=$TRUSTED_PROXY_SERVICE_NAME
 After=network.target
 
 [Service]
-User=$USER_NAME
-ExecStart=$BINARY_PATH -api-key $API_KEY_PATH -host-whitelist $WHITELIST_PATH -tls-cert $CERT_PATH -tls-key $PRIV_KEY_PATH -listen-address :443 -ulimit 0 -api-base-url $5
+User=$TRUSTED_PROXY_SERVICE_USER_NAME
+ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :443 -ulimit 0 -api-base-url $API_BASE_URL
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
-WantedBy=default.target" > /etc/systemd/system/$SERVICE_NAME.service
+WantedBy=default.target" > /etc/systemd/system/$TRUSTED_PROXY_SERVICE_NAME.service
 
+echo "Starting trusted proxy service"
 systemctl daemon-reload
-systemctl enable $SERVICE_NAME.service
-systemctl start $SERVICE_NAME.service
+systemctl enable $TRUSTED_PROXY_SERVICE_NAME.service
+systemctl start $TRUSTED_PROXY_SERVICE_NAME.service
 
-###  Simple proxy install for office whitelisting ###
-# todo: change to trusted-proxy
-# todo: add api base to trusted-proxy
+echo "Setting up Trusted proxy: DONE"
+#####################/TRUSTED PROXY/#####################
 
-# Variables
-S3_URL="https://schoolyear-email-assets.s3.eu-west-1.amazonaws.com/simple-proxy"
-PROXY_CONFIG_S3_URL="https://schoolyear-email-assets.s3.eu-west-1.amazonaws.com/whitelist.conf"
-EXECUTABLE="/usr/local/bin/simple-proxy"
-SIMPLE_PROXY_CONFIG_FOLDER="/etc/simple-proxy"
-WHITELIST_CONF="/etc/simple-proxy/whitelist.conf"
-SERVICE_NAME="simple-proxy.service"
 
-echo "Creating $SIMPLE_PROXY_CONFIG_FOLDER..."
-mkdir $SIMPLE_PROXY_CONFIG_FOLDER
+##################### SESSION HOST PROXY #####################
+echo "Setting up Session Host proxy"
 
-# Download the executable
-echo "Downloading simple-proxy..."
-curl -o $EXECUTABLE $S3_URL
+SESSION_HOST_PROXY_SERVICE_NAME="sessionhostproxy"
+SESSION_HOST_PROXY_SERVICE_USER_NAME="sysessionhostproxy"
 
-# Downloading the whitelist.conf file
-echo "Downloading whitelist.conf"
-curl -o $WHITELIST_CONF $PROXY_CONFIG_S3_URL
+echo "Creating service user for session host proxy"
+useradd -m $SESSION_HOST_PROXY_SERVICE_USER_NAME
 
-# Make sure the executable can be run
-echo "Setting executable permissions..."
-chmod +x $EXECUTABLE
+SESSION_HOST_PROXY_BASE_PATH="/home/$SESSION_HOST_PROXY_SERVICE_USER_NAME"
+SESSION_HOST_PROXY_WHITELIST_PATH="$SESSION_HOST_PROXY_BASE_PATH/whitelist.txt"
 
-# Create the systemd service file
-echo "Creating systemd service..."
-cat <<EOL > /etc/systemd/system/$SERVICE_NAME
-[Unit]
-Description=Simple Proxy Service
+# Write whitelist
+echo "Creating whitelist"
+echo "$SESSION_HOST_PROXY_WHITELIST" > $SESSION_HOST_PROXY_WHITELIST_PATH
+
+# Grant service user access to files
+# because this script is writing the files as owned by root
+echo "Granting service user access to files"
+chown $SESSION_HOST_PROXY_SERVICE_USER_NAME:$SESSION_HOST_PROXY_SERVICE_USER_NAME -R $SESSION_HOST_PROXY_BASE_PATH
+
+echo "Installing session host proxy service"
+echo "[Unit]
+Description=$SESSION_HOST_PROXY_SERVICE_NAME
 After=network.target
 
 [Service]
-ExecStart=$EXECUTABLE -config /etc/simple-proxy/whitelist.conf
-Restart=always
-User=root
+User=$SESSION_HOST_PROXY_SERVICE_USER_NAME
+ExecStart=$BINARY_PATH -simple-proxy-mode -host-whitelist $SESSION_HOST_PROXY_WHITELIST_PATH
 
 [Install]
-WantedBy=multi-user.target
-EOL
+WantedBy=default.target" > /etc/systemd/system/$SESSION_HOST_PROXY_SERVICE_NAME.service
 
-# Reload systemd to pick up the new service
-echo "Reloading systemd..."
+echo "Starting session host proxy service"
 systemctl daemon-reload
+systemctl enable $SESSION_HOST_PROXY_SERVICE_NAME.service
+systemctl start $SESSION_HOST_PROXY_SERVICE_NAME.service
 
-# Enable and start the service
-echo "Enabling and starting simple-proxy service..."
-systemctl enable $SERVICE_NAME
-systemctl start $SERVICE_NAME
-systemctl status $SERVICE_NAME
+echo "Setting up Session Host proxy: DONE"
+#####################/SESSION HOST PROXY/#####################
 
-echo "Setup complete. The simple-proxy service is now running."
-
-### /Simple proxy install for office whitelisting ###
-
-echo "DONE"
+echo "Proxy installation completed"
