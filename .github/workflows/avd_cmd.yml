@@ -2,7 +2,7 @@ name: AVD cli
 
 on:
   push:
-    branches: ['master']
+    branches: ['main']
     paths:
       - 'avd/cli/**'
       - '.github/workflows/**'
