@@ -3,9 +3,18 @@
   default: [
     {
       "inline": [
-        "C:\\imagebuild_resources\\caddy_static.ps1"
+        "C:\\imagebuild_resources\\proxy\\static_caddy_install.ps1"
       ],
       "name": "Caddy local file server",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "inline": [
+        "'[[[props:whitelistedDomainSuffixes]]]' | Out-File -Filepath \"C:\\domainwhitelist.json\""
+      ],
+      "name": "Write whitelist config file",
       "runAsSystem": true,
       "runElevated": true,
       "type": "PowerShell"
