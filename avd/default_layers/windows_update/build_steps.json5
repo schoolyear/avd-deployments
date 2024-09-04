@@ -1,5 +1,5 @@
 {
-  default: [
+  post: [
     {
       "name": "Windows Update",
       "searchCriteria": "",
