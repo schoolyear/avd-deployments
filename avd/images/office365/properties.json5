@@ -1,7 +1,6 @@
 {
   placeholderProperties: {
     whitelistedDomainSuffixes: {
-      "events.data.microsoft.com": {},
       "login.microsoftonline.com": {},
       "msauth.net": {},
       "msftauth.net": {},

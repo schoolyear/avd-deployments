@@ -1,0 +1,9 @@
+{
+  placeholderProperties: {
+    whitelistedDomainSuffixes: {
+      "events.data.microsoft.com": {},
+      "login.microsoftonline.com": {},
+      "prod.warm.ingest.monitor.core.windows.net": {},
+    }
+  }
+}

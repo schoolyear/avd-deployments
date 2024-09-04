@@ -3,7 +3,7 @@
   default: [
     {
       "inline": [
-        "C:\\imagebuild_resources\\proxy\\static_caddy_install.ps1"
+        "C:\\imagebuild_resources\\network_lockdown\\static_caddy_install.ps1"
       ],
       "name": "Caddy local file server",
       "runAsSystem": true,
