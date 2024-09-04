@@ -1,3 +1,12 @@
 {
-  imageTemplate: {},
+  placeholderProperties: {
+    whitelistedDomainSuffixes: {
+      "events.data.microsoft.com": {},
+      "login.microsoftonline.com": {},
+      "msauth.net": {},
+      "msftauth.net": {},
+      "officeapps.live.com": {},
+      "officeclient.microsoft.com": {}
+    }
+  }
 }
