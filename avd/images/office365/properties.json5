@@ -1,9 +1,6 @@
 {
   placeholderProperties: {
     whitelistedDomainSuffixes: {
-      "login.microsoftonline.com": {},
-      "msauth.net": {},
-      "msftauth.net": {},
       "officeapps.live.com": {},
       "officeclient.microsoft.com": {}
     }

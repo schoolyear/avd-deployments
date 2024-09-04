@@ -1,9 +1,25 @@
 {
   placeholderProperties: {
     whitelistedDomainSuffixes: {
-      "events.data.microsoft.com": {},
       "login.microsoftonline.com": {},
+      "msauth.net": {},
+      "msftauth.net": {},
+      "events.data.microsoft.com": {},
       "prod.warm.ingest.monitor.core.windows.net": {},
+      "oneocsp.microsoft.com": {},
+      "login.windows.net": {},
+      "www.msftconnecttest.com": {},
+      "prod.do.dsp.mp.microsoft.com": {},
+      "sfx.ms": {},
+      "azure-dns.com": {},
+      "azure-dns.net": {},
+      "eh.servicebus.windows.net": {},
+      "mrsglobalsteus2prod.blob.core.windows.net": {},
+      "wvdportalstorageblob.blob.core.windows.net": {},
+      "azkms.core.windows.net": {},
+      "gcs.prod.monitoring.core.windows.net": {},
+      "catalogartifact.azureedge.net": {},
+      "pas.windows.net": {}
     }
   }
 }
