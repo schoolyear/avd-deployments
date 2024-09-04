@@ -5,6 +5,7 @@ Set-NetConnectionProfile -NetworkCategory Public
 $syExamsFolder = "C:\Program Files (x86)\Schoolyear\Schoolyear Browser Development (confidential)"
 $syExamsExe = "$syExamsFolder\shell\Schoolyear Exams.exe"
 $syVDIServiceExe = "$syExamsFolder\schoolyear-vdi-service.exe"
+$avdTokenProviderExe = "$syExamsFolder\shell\resources\avd_token_provider.exe"
 
 # Allow the VDI browser
 New-NetFirewallRule -DisplayName "Allow Schoolyear Browser outbound" -Program $syExamsExe -Direction Outbound -Action Allow -Profile Any | Out-Null
@@ -12,7 +13,7 @@ New-NetFirewallRule -DisplayName "Allow Schoolyear Browser outbound" -Program $s
 New-NetFirewallRule -DisplayName "Allow Schoolyear VDI service" -Program $syVDIServiceExe -Direction Outbound -Action Allow -Profile Any | Out-Null
 
 # Allow the token provider
-New-NetFirewallRule -DisplayName "Allow "$syExamsFolder\shell\resources\avd_token_provider.exe" outbound" -Program $avdTokenProviderExe -Direction Outbound -Action Allow -Profile Any | Out-Null
+New-NetFirewallRule -DisplayName "Allow AVD token provider" -Program $avdTokenProviderExe -Direction Outbound -Action Allow -Profile Any | Out-Null
 
 # Allow communication to the AVD services
 # This rule should be changed if you change the subnet in the deployment template
