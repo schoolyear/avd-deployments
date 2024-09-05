@@ -38,9 +38,6 @@ if (!$found)
 try
 {
     Write-Host "Setting user-level proxy..."
-    bitsadmin /util /setieproxy LOCALSYSTEM MANUAL_PROXY "$proxyIpAddr" *.wvd.microsoft.com
-    bitsadmin /util /setieproxy NETWORKSERVICE MANUAL_PROXY "$proxyIpAddr" *.wvd.microsoft.com
-
     $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 
     Set-ItemProperty -Path $regPath -Name ProxyServer -Value "$proxyIpAddr"
