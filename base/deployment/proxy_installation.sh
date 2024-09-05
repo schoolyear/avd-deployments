@@ -80,7 +80,7 @@ After=network.target
 
 [Service]
 User=$TRUSTED_PROXY_SERVICE_USER_NAME
-ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :443 -ulimit 0 -api-base-url $API_BASE_URL
+ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :443 -api-base-url $API_BASE_URL
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
@@ -89,7 +89,7 @@ WantedBy=default.target" > /etc/systemd/system/$TRUSTED_PROXY_SERVICE_NAME.servi
 echo "Starting trusted proxy service"
 systemctl daemon-reload
 systemctl enable $TRUSTED_PROXY_SERVICE_NAME.service
-systemctl start $TRUSTED_PROXY_SERVICE_NAME.service
+systemctl restart $TRUSTED_PROXY_SERVICE_NAME.service # restart: idempotency
 
 echo "Setting up Trusted proxy: DONE"
 #####################/TRUSTED PROXY/#####################
@@ -131,7 +131,7 @@ WantedBy=default.target" > /etc/systemd/system/$SESSION_HOST_PROXY_SERVICE_NAME.
 echo "Starting session host proxy service"
 systemctl daemon-reload
 systemctl enable $SESSION_HOST_PROXY_SERVICE_NAME.service
-systemctl start $SESSION_HOST_PROXY_SERVICE_NAME.service
+systemctl restart $SESSION_HOST_PROXY_SERVICE_NAME.service # restart: idempotency
 
 echo "Setting up Session Host proxy: DONE"
 #####################/SESSION HOST PROXY/#####################
