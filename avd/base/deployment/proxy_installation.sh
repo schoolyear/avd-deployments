@@ -15,10 +15,13 @@ CERT_NAME=$7                      # name of the Certificate in that Key Vault
 
 ##################### SHARED #####################
 # Download proxy binary
+# Download to a temporary location first, then move, so we can do this while the binary is already running
 BINARY_PATH="/usr/local/share/syproxy"
+BINARY_PATH_NEXT="$BINARY_PATH-next"
 echo "Downloading proxy binary"
-curl -o $BINARY_PATH $TRUSTED_PROXY_BINARY_URL -s
-chmod +x $BINARY_PATH
+curl -o $BINARY_PATH_NEXT $TRUSTED_PROXY_BINARY_URL -s
+chmod +x $BINARY_PATH_NEXT
+mv $BINARY_PATH_NEXT $BINARY_PATH
 #####################/SHARED/#####################
 
 ##################### TRUSTED PROXY #####################
