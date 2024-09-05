@@ -10,15 +10,6 @@
       "runElevated": true,
       "type": "PowerShell"
     },
-    {
-      "inline": [
-        "'[[[props:whitelistedDomainSuffixes]]]' | Out-File -Filepath \"C:\\domainwhitelist.json\""
-      ],
-      "name": "Write whitelist config file",
-      "runAsSystem": true,
-      "runElevated": true,
-      "type": "PowerShell"
-    }
   ],
   post: []
 }

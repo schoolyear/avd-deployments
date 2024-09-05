@@ -1,32 +1,56 @@
-$regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+$ErrorActionPreference = "Stop"
 
-# Set the proxy server
-Set-ItemProperty -Path $regPath -Name "AutoConfigURL" -Value "http://localhost:2015/proxy.pac"
-# Enable the proxy
-Set-ItemProperty -Path $regPath -Name ProxyEnable -Value 1
-Set-ItemProperty -Path $regPath -Name AutoDetect -Value 0
+$url = "http://169.254.169.254/metadata/instance/compute/tagsList?api-version=2021-02-01"
+$headers = @{
+    "Metadata" = "true"
+}
 
-# Refresh the settings
-$refreshSystem = @"
-using System;
-using System.Runtime.InteropServices;
-
-public class RefreshSystem
+try
 {
-    [DllImport("wininet.dll", SetLastError = true)]
-    public static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
+    # Make the request and get the response
+    $response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+}
+catch
+{
+    Write-Error "Could not make request to metadata endpoint: $_"
+    exit 1
+}
 
-    public const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
-    public const int INTERNET_OPTION_REFRESH = 37;
-
-    public static void Refresh()
+# Find the "name": "proxyVmIpAddr" and print its value
+$found = $false
+$proxyIpAddr = ""
+foreach ($tag in $response)
+{
+    if ($tag.name -eq "proxyVmIpAddr")
     {
-        InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
-        InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+        $proxyIpAddr = $tag.value
+        $found = $true
+        break
     }
 }
-"@
-Add-Type -TypeDefinition $refreshSystem
-[RefreshSystem]::Refresh()
 
-Write-Output "Proxy server set to $proxyIpAddr and enabled."
+if (!$found)
+{
+    Write-Error "Could not find proxyVmIpAddr in metadata"
+    exit 1
+}
+
+try
+{
+    Write-Host "Setting user-level proxy..."
+    bitsadmin /util /setieproxy LOCALSYSTEM MANUAL_PROXY "$proxyIpAddr" *.wvd.microsoft.com
+    bitsadmin /util /setieproxy NETWORKSERVICE MANUAL_PROXY "$proxyIpAddr" *.wvd.microsoft.com
+
+    $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+
+    Set-ItemProperty -Path $regPath -Name ProxyServer -Value "$proxyIpAddr"
+    Set-ItemProperty -Path $regPath -Name ProxyEnable -Value 1
+    Set-ItemProperty -Path $regPath -Name AutoDetect -Value 0
+    Set-ItemProperty -Path $regPath -Name ProxyOverride -Value "*.wvd.microsoft.com"
+    netsh winhttp import proxy source=ie
+}
+catch
+{
+    Write-Error "Could not set user-level proxy: $_"
+    exit 1
+}
