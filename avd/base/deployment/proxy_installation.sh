@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# WARNING: make sure this script can run idempotent (aka can be ran multiple times on the same machine)
+
 set -e # so each commend gets printed as well
 
 # Give the expected parameters a name
@@ -25,7 +27,7 @@ TRUSTED_PROXY_SERVICE_NAME="trustedproxy"
 TRUSTED_PROXY_SERVICE_USER_NAME="sytrustedproxy"
 
 echo "Creating service user for trusted proxy"
-useradd -m $TRUSTED_PROXY_SERVICE_USER_NAME
+id -u $TRUSTED_PROXY_SERVICE_USER_NAME &>/dev/null || useradd -m $TRUSTED_PROXY_SERVICE_USER_NAME
 
 TRUSTED_PROXY_BASE_PATH="/home/$TRUSTED_PROXY_SERVICE_USER_NAME"
 TRUSTED_PROXY_WHITELIST_PATH="$TRUSTED_PROXY_BASE_PATH/whitelist.txt"
@@ -97,7 +99,7 @@ SESSION_HOST_PROXY_SERVICE_NAME="sessionhostproxy"
 SESSION_HOST_PROXY_SERVICE_USER_NAME="sysessionhostproxy"
 
 echo "Creating service user for session host proxy"
-useradd -m $SESSION_HOST_PROXY_SERVICE_USER_NAME
+id -u $SESSION_HOST_PROXY_SERVICE_USER_NAME &>/dev/null || useradd -m $SESSION_HOST_PROXY_SERVICE_USER_NAME
 
 SESSION_HOST_PROXY_BASE_PATH="/home/$SESSION_HOST_PROXY_SERVICE_USER_NAME"
 SESSION_HOST_PROXY_WHITELIST_PATH="$SESSION_HOST_PROXY_BASE_PATH/whitelist.txt"
