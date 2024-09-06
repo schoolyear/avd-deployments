@@ -123,7 +123,7 @@ After=network.target
 
 [Service]
 User=$SESSION_HOST_PROXY_SERVICE_USER_NAME
-ExecStart=$BINARY_PATH -simple-proxy-mode -host-whitelist $SESSION_HOST_PROXY_WHITELIST_PATH
+ExecStart=$BINARY_PATH -simple-proxy-mode -host-whitelist $SESSION_HOST_PROXY_WHITELIST_PATH -host-pac
 
 [Install]
 WantedBy=default.target" > /etc/systemd/system/$SESSION_HOST_PROXY_SERVICE_NAME.service
