@@ -35,15 +35,16 @@ if (!$found)
     exit 1
 }
 
+$matchingProxy = [uri]::EscapeDataString("PROXY $proxyIpAddr")
+$pacUrl = "http://$proxyIpAddr/proxy.pac?matchingProxy=$matchingProxy&defaultProxy=DIRECT"
+
 try
 {
     Write-Host "Setting user-level proxy..."
     $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 
-    Set-ItemProperty -Path $regPath -Name ProxyServer -Value "$proxyIpAddr"
+    Set-ItemProperty -Path $regPath -Name AutoConfigURL -Value "$pacUrl"
     Set-ItemProperty -Path $regPath -Name ProxyEnable -Value 1
-    Set-ItemProperty -Path $regPath -Name AutoDetect -Value 0
-    Set-ItemProperty -Path $regPath -Name ProxyOverride -Value "*.wvd.microsoft.com"
     netsh winhttp import proxy source=ie
 }
 catch

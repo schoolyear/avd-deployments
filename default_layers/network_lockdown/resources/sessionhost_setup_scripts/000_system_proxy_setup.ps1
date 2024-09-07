@@ -35,11 +35,18 @@ if (!$found)
     exit 1
 }
 
+Write-Host "Open firewall to sessionhost proxy"
+$ipWithoutPort = ($proxyIpAddr -split ":")[0]
+New-NetFirewallRule -DisplayName "Allow sessionhost proxy outbound" -RemoteAddress $ipWithoutPort -Direction Outbound -Action Allow -Profile Any | Out-Null
+
+$matchingProxy = [uri]::EscapeDataString("PROXY $proxyIpAddr")
+$pacUrl = "http://$proxyIpAddr/proxy.pac?matchingProxy=$matchingProxy&defaultProxy=DIRECT"
+
 try
 {
     Write-Host "Setting system proxy..."
-    bitsadmin /util /setieproxy LOCALSYSTEM MANUAL_PROXY "$proxyIpAddr" *.wvd.microsoft.com
-    bitsadmin /util /setieproxy NETWORKSERVICE MANUAL_PROXY "$proxyIpAddr" *.wvd.microsoft.com
+    bitsadmin /util /setieproxy LOCALSYSTEM AUTOSCRIPT "$pacUrl"
+    bitsadmin /util /setieproxy NETWORKSERVICE AUTOSCRIPT "$pacUrl"
 }
 catch
 {
