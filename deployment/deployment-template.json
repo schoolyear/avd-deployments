@@ -50,10 +50,7 @@
     },
     "vmAdminPassword": {
       "type": "securestring",
-      "defaultValue": "Bb#GoPsT8Lrvrf"
-    },
-    "trustedProxyBinaryBaseUrl": {
-      "type": "string"
+      "defaultValue": "[newGuid()]"
     }
   },
   "variables": {
@@ -75,7 +72,7 @@
     "proxyNicName": "[concat(variables('defaultNamingPrefix'), 'proxy-nic')]",
     "proxyVmName": "[concat(variables('defaultNamingPrefix'), 'proxy-vm')]",
     "vmNamePrefix": "[concat(substring(parameters('examId'), 0, 8), 'vm')]",
-    "vmCustomImageSourceId": "/subscriptions/[[subscriptionId]]/resourceGroups/[[rg]]/providers/Microsoft.Compute/galleries/[[gallery]]/images/[[image]]/versions/[[version]]",
+    "vmCustomImageSourceId": "/subscriptions/[[[subscriptionId]]]/resourceGroups/[[[rg]]]/providers/Microsoft.Compute/galleries/[[[gallery]]]/images/[[[image]]]/versions/[[[version]]]",
     "privatelinkZoneName": "privatelink.wvd.microsoft.com",
     "privateEndpointConnectionName": "schoolyear-secure-endpoint-connection",
     "privateEndpointConnectionNicName": "[format('{0}-nic', variables('privateEndpointConnectionName'))]",
@@ -86,17 +83,19 @@
     "sessionhostsSubnetName": "sessionhosts",
     "servicesSubnetName": "services",
     "proxyAdminUsername": "syuser",
-    "sshPubKey": "ssh-rsa [[public key]] azure",
+    "sshPubKey": "ssh-rsa [[[public key]]] azure",
     "proxyVmSize": "Standard_D1_v2",
-    "keyVaultResourceGroup": "[[schoolyear]]",
-    "keyVaultName": "[[avdvault]]",
-    "keyVaultCertificateName": "[[proxycert]]",
+    "keyVaultResourceGroup": "[[[schoolyear]]]",
+    "keyVaultName": "[[[avdvault]]]",
+    "keyVaultCertificateName": "[[[proxycert]]]",
     "keyVaultRoleAssignmentDeploymentName": "keyvaultRoleAssignment",
-    "dnsZoneResourceGroup": "[[schoolyear]]",
-    "dnsZoneName": "[[proxy.example.com]]",
+    "dnsZoneResourceGroup": "[[[schoolyear]]]",
+    "dnsZoneName": "[[[proxy.example.com]]]",
     "proxyDnsEntryDeploymentName": "proxyDnsEntry",
-    "proxyInstallScriptUrl": "[[proxyinstallscripturl]]",
-    "proxyInstallScriptName": "[[proxyinstallscriptname]]"
+    "proxyInstallScriptUrl": "https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh",
+    "proxyInstallScriptName": "proxy_installation.sh",
+    "sessionHostProxyWhitelist": "[[[sessionhostProxyWhitelist]]]",
+    "trustedProxyBinaryUrl": "https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64"
   },
   "resources": [
     {
@@ -268,7 +267,7 @@
             "value": "[variables('vmNumberOfInstances')]"
           },
           "vmDiskType": {
-            "value": "StandardSSD_LRS"
+            "value": "Premium_LRS"
           },
           "vmDiskSizeGB": {
             "value": 128
@@ -378,7 +377,7 @@
               "instanceId": "[parameters('instanceId')]",
               "entraAuthority": "[parameters('entraAuthority')]",
               "entraClientId": "[parameters('entraClientId')]",
-              "proxyVmIpAddr": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('proxyNicName')), '2024-01-01', 'Full').properties.ipConfigurations[0].properties.privateIPAddress]"
+              "proxyVmIpAddr": "[format('{0}:8080', reference(resourceId('Microsoft.Network/networkInterfaces', variables('proxyNicName')), '2024-01-01', 'Full').properties.ipConfigurations[0].properties.privateIPAddress)]"
             }
           }
         },
@@ -1560,7 +1559,7 @@
                 "typeHandlerVersion": "1.10",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
-                  "commandToExecute": "powershell -ExecutionPolicy Unrestricted -Command \"& { . 'C:\\Init\\initialize_sessionhost.ps1'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute 'PowerShell' -Argument '-Command Restart-Computer -Force') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName 'reboot' }\""
+                  "commandToExecute": "powershell -ExecutionPolicy Unrestricted -Command \"& { . 'C:\\SessionhostScripts\\sessionhost_setup.ps1'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute 'PowerShell' -Argument '-Command Restart-Computer -Force') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName 'reboot' }\""
                 }
               }
             }
@@ -1874,7 +1873,7 @@
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[format('bash {0} \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\"', variables('proxyInstallScriptName'), format('{0}.*.wvd.microsoft.com:*,{1}.*.wvd.microsoft.com:*', reference(resourceId('Microsoft.Resources/deployments', variables('deploymentName')), '2022-09-01').outputs.hostpoolId.value, reference(resourceId('Microsoft.Resources/deployments', variables('deploymentName')), '2022-09-01').outputs.workspaceId.value), parameters('trustedProxySecret'), variables('keyVaultName'), variables('keyVaultCertificateName'), parameters('apiBaseUrl'))]"
+          "commandToExecute": "[format('bash {0} \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\" \"{6}\" \"{7}\"',variables('proxyInstallScriptName'),format('{0}.*.wvd.microsoft.com:*,{1}.*.wvd.microsoft.com:*',reference(resourceId('Microsoft.Resources/deployments', variables('deploymentName')), '2022-09-01').outputs.hostpoolId.value,reference(resourceId('Microsoft.Resources/deployments', variables('deploymentName')), '2022-09-01').outputs.workspaceId.value),variables('sessionHostProxyWhitelist'),parameters('trustedProxySecret'),parameters('apiBaseUrl'),variables('trustedProxyBinaryUrl'),variables('keyVaultName'),variables('keyVaultCertificateName'))]"
         }
       }
     }
