@@ -1,8 +1,9 @@
 {
   placeholderProperties: {
-    whitelistedDomainSuffixes: {
-      "officeapps.live.com": {},
-      "officeclient.microsoft.com": {}
+    whitelistedHost: {
+      "officeclient.microsoft.com:443": {},
+      "odc*.officeapps.live.com:443":{},
+      "ols.officeapps.live.com:443": {},
     }
   }
 }
