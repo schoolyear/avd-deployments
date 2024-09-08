@@ -1,9 +1,7 @@
 {
-  placeholderProperties: {
-    whitelistedHost: {
-      "officeclient.microsoft.com:443": {},
-      "odc*.officeapps.live.com:443":{},
-      "ols.officeapps.live.com:443": {},
-    }
+  whitelistedHosts: {
+    "officeclient.microsoft.com:443": {},
+    "odc*.officeapps.live.com:443":{},
+    "ols.officeapps.live.com:443": {},
   }
 }

@@ -1,75 +1,73 @@
 {
-  placeholderProperties: {
-    whitelistedHost: {
-      // Source: https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint?tabs=azure
-//      "login.microsoftonline.com:443": {},
-      "*.prod.warm.ingest.monitor.core.windows.net:443":{},
-      "catalogartifact.azureedge.net:443": {},
-      "gcs.prod.monitoring.core.windows.net:443":{},
-      "azkms.core.windows.net:1688": {},
-      "mrsglobalsteus2prod.blob.core.windows.net:443":{},
-      "wvdportalstorageblob.blob.core.windows.net:443": {},
-      "oneocsp.microsoft.com:80":{},
-      "pas.windows.net:443": {},
+  whitelistedHosts: {
+    // Source: https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint?tabs=azure
+    //      "login.microsoftonline.com:443": {},
+    "*.prod.warm.ingest.monitor.core.windows.net:443":{},
+    "catalogartifact.azureedge.net:443": {},
+    "gcs.prod.monitoring.core.windows.net:443":{},
+    "azkms.core.windows.net:1688": {},
+    "mrsglobalsteus2prod.blob.core.windows.net:443":{},
+    "wvdportalstorageblob.blob.core.windows.net:443": {},
+    "oneocsp.microsoft.com:80":{},
+    "pas.windows.net:443": {},
 
-      // Source: https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint?tabs=azure
-//      "login.windows.net:443": {},
-      "*.events.data.microsoft.com:443":{},
-      "www.msftconnecttest.com:80": {},
-      "*.prod.do.dsp.mp.microsoft.com:443":{},
-      "*.digicert.com:80": {},
-      "*.azure-dns.com:443":{},
-      "*.azure-dns.net:443": {},
-      "*.eh.servicebus.windows.net:443":{},
-      "go.microsoft.com:443": {},
+    // Source: https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint?tabs=azure
+    //      "login.windows.net:443": {},
+    "*.events.data.microsoft.com:443":{},
+    "www.msftconnecttest.com:80": {},
+    "*.prod.do.dsp.mp.microsoft.com:443":{},
+    "*.digicert.com:80": {},
+    "*.azure-dns.com:443":{},
+    "*.azure-dns.net:443": {},
+    "*.eh.servicebus.windows.net:443":{},
+    "go.microsoft.com:443": {},
 
-      // https://learn.microsoft.com/en-us/microsoft-365/enterprise/urls-and-ip-address-ranges?view=o365-worldwide#microsoft-365-common-and-office-online
-      // 56
-      "*.auth.microsoft.com:443": {},
-      "*.msftidentity.com:443":{},
-      "*.msidentity.com:443": {},
-      "account.activedirectory.windowsazure.com:443":{},
-      "accounts.accesscontrol.windows.net:443": {},
-      "adminwebservice.microsoftonline.com:443":{},
-      "api.passwordreset.microsoftonline.com:443": {},
-      "autologon.microsoftazuread-sso.com:443":{},
-      "becws.microsoftonline.com:443": {},
-      "ccs.login.microsoftonline.com:443":{},
-      "clientconfig.microsoftonline-p.net:443": {},
-      "companymanager.microsoftonline.com:443":{},
-      "device.login.microsoftonline.com:443": {},
-      "graph.windows.net:443":{},
-      "login-us.microsoftonline.com:443": {},
-      "login.microsoft.com:443":{},
-      "login.microsoftonline-p.com:443": {},
-      "login.microsoftonline.com:443":{},
-      "login.windows.net:443": {},
-      "logincert.microsoftonline.com:443":{},
-      "loginex.microsoftonline.com:443": {},
-      "nexus.microsoftonline-p.com:443":{},
-      "passwordreset.microsoftonline.com:443": {},
-      "provisioningapi.microsoftonline.com:443":{},
+    // https://learn.microsoft.com/en-us/microsoft-365/enterprise/urls-and-ip-address-ranges?view=o365-worldwide#microsoft-365-common-and-office-online
+    // 56
+    "*.auth.microsoft.com:443": {},
+    "*.msftidentity.com:443":{},
+    "*.msidentity.com:443": {},
+    "account.activedirectory.windowsazure.com:443":{},
+    "accounts.accesscontrol.windows.net:443": {},
+    "adminwebservice.microsoftonline.com:443":{},
+    "api.passwordreset.microsoftonline.com:443": {},
+    "autologon.microsoftazuread-sso.com:443":{},
+    "becws.microsoftonline.com:443": {},
+    "ccs.login.microsoftonline.com:443":{},
+    "clientconfig.microsoftonline-p.net:443": {},
+    "companymanager.microsoftonline.com:443":{},
+    "device.login.microsoftonline.com:443": {},
+    "graph.windows.net:443":{},
+    "login-us.microsoftonline.com:443": {},
+    "login.microsoft.com:443":{},
+    "login.microsoftonline-p.com:443": {},
+    "login.microsoftonline.com:443":{},
+    "login.windows.net:443": {},
+    "logincert.microsoftonline.com:443":{},
+    "loginex.microsoftonline.com:443": {},
+    "nexus.microsoftonline-p.com:443":{},
+    "passwordreset.microsoftonline.com:443": {},
+    "provisioningapi.microsoftonline.com:443":{},
 
-      // https://learn.microsoft.com/en-us/microsoft-365/enterprise/urls-and-ip-address-ranges?view=o365-worldwide#microsoft-365-common-and-office-online
-      // 59
-      "*.hip.live.com:443": {},
-      "*.microsoftonline-p.com:443":{},
-      "*.microsoftonline.com:443": {},
-      "*.msauth.net:443":{},
-      "*.msauthimages.net:443": {},
-      "*.msecnd.net:443":{},
-      "*.msftauth.net:443": {},
-      "*.msftauthimages.net:443":{},
-      "*.phonefactor.net:443": {},
-      "enterpriseregistration.windows.net:443":{},
-      "policykeyservice.dc.ad.msft.net:443": {},
+    // https://learn.microsoft.com/en-us/microsoft-365/enterprise/urls-and-ip-address-ranges?view=o365-worldwide#microsoft-365-common-and-office-online
+    // 59
+    "*.hip.live.com:443": {},
+    "*.microsoftonline-p.com:443":{},
+    "*.microsoftonline.com:443": {},
+    "*.msauth.net:443":{},
+    "*.msauthimages.net:443": {},
+    "*.msecnd.net:443":{},
+    "*.msftauth.net:443": {},
+    "*.msftauthimages.net:443":{},
+    "*.phonefactor.net:443": {},
+    "enterpriseregistration.windows.net:443":{},
+    "policykeyservice.dc.ad.msft.net:443": {},
 
 
-      // exceptions
-      // - `*.wvd.microsoft.com` carries RDP traffic and should not go through the session host proxy. It is whitelisted separately in the firewall
-      // - `www.microsoft.com` we do not want to whitelist this domain, as it is also a website
-      // - `*.sfx.ms` we do not want Onedrive to start updating during an exam
-      // - `graph.microsoft.com:443` provides access to online files in Office. Sadly, this also means that we don't show profile pictures in Office.
-    }
+    // exceptions
+    // - `*.wvd.microsoft.com` carries RDP traffic and should not go through the session host proxy. It is whitelisted separately in the firewall
+    // - `www.microsoft.com` we do not want to whitelist this domain, as it is also a website
+    // - `*.sfx.ms` we do not want Onedrive to start updating during an exam
+    // - `graph.microsoft.com:443` provides access to online files in Office. Sadly, this also means that we don't show profile pictures in Office.
   }
 }
