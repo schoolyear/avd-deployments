@@ -261,7 +261,7 @@
             "value": "CustomImage"
           },
           "vmSize": {
-            "value": "Standard_D2s_v4"
+            "value": "Standard_D2s_v5"
           },
           "vmNumberOfInstances": {
             "value": "[variables('vmNumberOfInstances')]"
@@ -337,7 +337,7 @@
             "value": "[parameters('tokenExpirationTime')]"
           },
           "vmTemplate": {
-            "value": "{\"domain\":\"\",\"galleryImageOffer\":\"office-365\",\"galleryImagePublisher\":\"microsoftwindowsdesktop\",\"galleryImageSKU\":\"win10-22h2-avd-m365-g2\",\"imageType\":\"Gallery\",\"customImageId\":null,\"namePrefix\":\"fp1\",\"osDiskType\":\"StandardSSD_LRS\",\"vmSize\":{\"id\":\"Standard_D2s_v4\",\"cores\":2,\"ram\":8},\"galleryItemId\":\"microsoftwindowsdesktop.office-365win10-22h2-avd-m365-g2\",\"hibernate\":false,\"diskSizeGB\":128,\"securityType\":\"Standard\",\"secureBoot\":false,\"vTPM\":false,\"vmInfrastructureType\":\"Cloud\",\"virtualProcessorCount\":null,\"memoryGB\":null,\"maximumMemoryGB\":null,\"minimumMemoryGB\":null,\"dynamicMemoryConfig\":false}"
+            "value": "{\"domain\":\"\",\"galleryImageOffer\":\"office-365\",\"galleryImagePublisher\":\"microsoftwindowsdesktop\",\"galleryImageSKU\":\"win10-22h2-avd-m365-g2\",\"imageType\":\"Gallery\",\"customImageId\":null,\"namePrefix\":\"fp1\",\"osDiskType\":\"Premium_LRS\",\"vmSize\":{\"id\":\"Standard_D2s_v5\",\"cores\":2,\"ram\":8},\"galleryItemId\":\"microsoftwindowsdesktop.office-365win10-22h2-avd-m365-g2\",\"hibernate\":false,\"diskSizeGB\":128,\"securityType\":\"Standard\",\"secureBoot\":false,\"vTPM\":false,\"vmInfrastructureType\":\"Cloud\",\"virtualProcessorCount\":null,\"memoryGB\":null,\"maximumMemoryGB\":null,\"minimumMemoryGB\":null,\"dynamicMemoryConfig\":false}"
           },
           "availabilityOption": {
             "value": "AvailabilityZone"
