@@ -80,5 +80,14 @@
       "sha256Checksum": "b772a356efea373af6aff984efa9039e7586c5d57e4b1763b65fa90edf4da744",
       "type": "PowerShell"
     },
+    {
+      "name": "Disable network profile popup",
+      "inline": [
+        "New-Item -Path \"HKLM\\System\\CurrentControlSet\\Control\\Network\\NewNetworkWindowOff\""
+      ],
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    }
   ],
 }
