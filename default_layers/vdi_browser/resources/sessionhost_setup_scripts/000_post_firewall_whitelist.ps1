@@ -2,7 +2,7 @@ $syFolder = "C:\Program Files (x86)\Schoolyear\"
 $installationFolders = @("Schoolyear Browser Development (confidential)", "Schoolyear Browser Testing", "Schoolyear Browser Preview", "Schoolyear Browser")
 
 foreach ($folder in $installationFolders) {
-    $syExamsFolder= Join-Path -Path $syFolder -ChildPath $installationFolders
+    $syExamsFolder= Join-Path -Path $syFolder -ChildPath $folder
 
     $syExamsExe = "$syExamsFolder\shell\Schoolyear Exams.exe"
     $syVDIServiceExe = "$syExamsFolder\schoolyear-vdi-service.exe"
