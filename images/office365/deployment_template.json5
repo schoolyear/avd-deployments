@@ -71,7 +71,7 @@
     "proxyNsgName": "[concat(variables('defaultNamingPrefix'), 'proxy-nsg')]",
     "proxyNicName": "[concat(variables('defaultNamingPrefix'), 'proxy-nic')]",
     "proxyVmName": "[concat(variables('defaultNamingPrefix'), 'proxy-vm')]",
-    "vmNamePrefix": "[concat(substring(parameters('examId'), 0, 8), 'vm')]",
+    "vmNamePrefix": "[format('syvm{0}', substring(parameters('examId'), 0, 8))]",
     "vmCustomImageSourceId": "[[[param:vmCustomImageSourceId]]]",
     "privatelinkZoneName": "privatelink.wvd.microsoft.com",
     "privateEndpointConnectionName": "schoolyear-secure-endpoint-connection",
