@@ -2,3 +2,5 @@
 out/
 *.local
 local.*
+images/local*
+local/
