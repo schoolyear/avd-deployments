@@ -19,7 +19,7 @@ avd-cli image package \
 ## Package deployment
 
 ```cmd
-avd-cli.exe package deploy \
+avd-cli package deploy \
     -n office365 \
     -s <<azure subscription id>> \
     -rg imagebuilder \
