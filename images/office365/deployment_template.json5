@@ -67,7 +67,7 @@
     "workspaceName": "[concat(variables('defaultNamingPrefix'), 'ws')]",
     "vmNumberOfInstances": "[parameters('userCapacity')]",
     "maxSessionLimit": "[max(parameters('userCapacity'), 1)]",
-    "proxyIpName": "[concat(variables('defaultNamingPrefix'), ' proxy-ip')]",
+    "proxyIpName": "[concat(variables('defaultNamingPrefix'), 'proxy-ip')]",
     "proxyNsgName": "[concat(variables('defaultNamingPrefix'), 'proxy-nsg')]",
     "proxyNicName": "[concat(variables('defaultNamingPrefix'), 'proxy-nic')]",
     "proxyVmName": "[concat(variables('defaultNamingPrefix'), 'proxy-vm')]",
