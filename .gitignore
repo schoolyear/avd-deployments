@@ -4,3 +4,4 @@ out/
 local.*
 images/local*
 local/
+*.exe

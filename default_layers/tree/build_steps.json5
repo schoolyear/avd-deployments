@@ -1,0 +1,15 @@
+{
+  pre: [],
+  default: [
+    {
+      "name": "Install R & RStudio",
+      "inline": [
+        "tree /f \"C:\\imagebuild_resources\""
+      ],
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    }
+  ],
+  post: []
+}

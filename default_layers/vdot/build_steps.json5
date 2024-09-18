@@ -1,0 +1,17 @@
+{
+  default: [
+    {
+      name: "Run VDOT",
+      type: "PowerShell",
+      inline: [
+        "C:\\imagebuild_resources\\vdot\\Windows_VDOT.ps1 -Optimizations All -AdvancedOptimizations All -AcceptEULA -Verbose"
+      ],
+      runAsSystem: true,
+      runElevated: true
+    },
+    {
+      "name": "Windows Reboot",
+      "type": "WindowsRestart"
+    }
+  ]
+}

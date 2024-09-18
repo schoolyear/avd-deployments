@@ -1,5 +1,6 @@
 {
   default: [
+    // MS is still fixing this script: https://github.com/Azure/RDS-Templates/pull/768
     {
       "name": "avdBuiltInScript_disableStorageSense",
       "runAsSystem": true,
