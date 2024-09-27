@@ -1893,10 +1893,6 @@
             "matcher": "*-*-*-*-*.*.wvd.microsoft.com",
             "proxy": "[reference(resourceId(variables('dnsZoneResourceGroup'), 'Microsoft.Resources/deployments', variables('proxyDnsEntryDeploymentName')), '2022-09-01').outputs.domain.value]"
           },
-          {
-            "matcher": "*-*-*-*-*.*.wvd.microsoft.com",
-            "proxy": "[reference(resourceId(variables('dnsZoneResourceGroup'), 'Microsoft.Resources/deployments', variables('proxyDnsEntryDeploymentName')), '2022-09-01').outputs.domain.value]"
-          }
         ]
       }
     },
