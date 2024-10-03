@@ -12,6 +12,7 @@ API_BASE_URL=$4                   # base of Schoolyear API, without trailing sla
 TRUSTED_PROXY_BINARY_URL=$5       # URL to download trusted proxy binary from
 CERT_VAULT_NAME=$6                # name of the Key Vault that holds the HTTPS certificate for the trusted proxy
 CERT_NAME=$7                      # name of the Certificate in that Key Vault
+AUTH_BYPASS_NETS=$8               # comma separate list of CIDRs that bypass the proxy auth of the trusted proxy, used for Chromebook deployments
 
 ##################### SHARED #####################
 # Download proxy binary
@@ -35,6 +36,7 @@ id -u $TRUSTED_PROXY_SERVICE_USER_NAME &>/dev/null || useradd -m $TRUSTED_PROXY_
 TRUSTED_PROXY_BASE_PATH="/home/$TRUSTED_PROXY_SERVICE_USER_NAME"
 TRUSTED_PROXY_WHITELIST_PATH="$TRUSTED_PROXY_BASE_PATH/whitelist.txt"
 TRUSTED_PROXY_API_KEY_PATH="$TRUSTED_PROXY_BASE_PATH/api_key.txt"
+TRUSTED_PROXY_AUTH_BYPASS_PATH="$TRUSTED_PROXY_BASE_PATH/auth_bypass.txt"
 TRUSTED_PROXY_PRIV_KEY_PATH="$TRUSTED_PROXY_BASE_PATH/private.pem"
 TRUSTED_PROXY_CERT_PATH="$TRUSTED_PROXY_BASE_PATH/public.pem"
 
@@ -45,6 +47,10 @@ echo "$TRUSTED_PROXY_WHITELIST" > $TRUSTED_PROXY_WHITELIST_PATH
 # Create key file
 echo "Creating api key"
 echo -n "$TRUSTED_PROXY_TOKEN" > $TRUSTED_PROXY_API_KEY_PATH
+
+# Create auth bypass file
+echo "Creating auth-bypass file"
+echo -n "$AUTH_BYPASS_NETS" > $TRUSTED_PROXY_AUTH_BYPASS_PATH
 
 # Get Entra token
 # python, since it is pre-installed on Ubuntu
@@ -80,7 +86,7 @@ After=network.target
 
 [Service]
 User=$TRUSTED_PROXY_SERVICE_USER_NAME
-ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :443 -api-base-url $API_BASE_URL
+ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :443 -api-base-url $API_BASE_URL -auth-bypass $TRUSTED_PROXY_AUTH_BYPASS_PATH
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
