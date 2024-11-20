@@ -4,6 +4,7 @@
 
 set -e # so each commend gets printed as well
 
+##################### PARAMETERS #####################
 # Give the expected parameters a name
 TRUSTED_PROXY_WHITELIST=$1        # comma seperated list of "<domain>:<port>", may include wildcards. For public internet facing proxy (trusted proxy)
 SESSION_HOST_PROXY_WHITELIST=$2   # comma seperated list of "<domain>:<port>", may include wildcards. For session host facing proxy
@@ -13,17 +14,29 @@ TRUSTED_PROXY_BINARY_URL=$5       # URL to download trusted proxy binary from
 CERT_VAULT_NAME=$6                # name of the Key Vault that holds the HTTPS certificate for the trusted proxy
 CERT_NAME=$7                      # name of the Certificate in that Key Vault
 AUTH_BYPASS_NETS=$8               # comma separate list of CIDRs that bypass the proxy auth of the trusted proxy, used for Chromebook deployments
+#####################/PARAMETERS/#####################
 
 ##################### SHARED #####################
 # Download proxy binary
 # Download to a temporary location first, then move, so we can do this while the binary is already running
 BINARY_PATH="/usr/local/share/syproxy"
 BINARY_PATH_NEXT="$BINARY_PATH-next"
+
 echo "Downloading proxy binary"
-curl -o $BINARY_PATH_NEXT $TRUSTED_PROXY_BINARY_URL -s
+PROXY_DOWNLOAD_STATUS=$(curl -s -w "%{http_code}" -o $BINARY_PATH_NEXT $TRUSTED_PROXY_BINARY_URL) || {
+    echo "Curl failed to download the trusted proxy with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $TRUSTED_PROXY_BINARY_URL"
+    exit 49
+}
+
+if [ "$PROXY_DOWNLOAD_STATUS" -ne 200 ]; then
+    echo "HTTP error when downloading proxy binary: $PROXY_DOWNLOAD_STATUS ($TRUSTED_PROXY_BINARY_URL)"
+    exit 50
+fi
+
 chmod +x $BINARY_PATH_NEXT
 mv $BINARY_PATH_NEXT $BINARY_PATH
 #####################/SHARED/#####################
+
 
 ##################### TRUSTED PROXY #####################
 echo "Setting up Trusted proxy"
@@ -53,19 +66,48 @@ echo "Creating auth-bypass file"
 echo -n "$AUTH_BYPASS_NETS" > $TRUSTED_PROXY_AUTH_BYPASS_PATH
 
 # Get Entra token
-# python, since it is pre-installed on Ubuntu
+# this uses python because it is pre-installed on Ubuntu
 echo "Request Entra token"
-ACCESS_TOKEN=$(curl -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" \
-  | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+ENTRA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
+ENTRA_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Metadata: true" $ENTRA_URL) || {
+    echo "Curl failed to fetch entra access_token with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $ENTRA_URL"
+    exit 49
+}
+ENTRA_STATUS="${ENTRA_RESPONSE: -3}"
+ENTRA_BODY="${ENTRA_RESPONSE:0:${#ENTRA_RESPONSE}-3}"
+
+if [ "$ENTRA_STATUS" -ne 200 ]; then
+  echo "Failed with status code $ENTRA_STATUS"
+  echo "Response body:"
+  echo "$ENTRA_BODY"
+  exit 51
+fi
+
+echo "Parsing access_token from Entra token response"
+ACCESS_TOKEN=$(echo $ENTRA_BODY | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 
 # Get TLS certificate
-# - fetch secret from API
+KEYVAULT_URL="https://$CERT_VAULT_NAME.vault.azure.net/secrets/$CERT_NAME?api-version=7.4"
+CERT_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" $KEYVAULT_URL) || {
+    echo "Curl failed to fetch TLS certificate from keyvault with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $KEYVAULT_URL"
+    exit 49
+}
+CERT_STATUS="${CERT_RESPONSE: -3}"
+CERT_BODY="${CERT_RESPONSE:0:${#CERT_RESPONSE}-3}"
+
+if [ "$CERT_STATUS" -ne 200 ]; then
+  echo "Failed with status code $CERT_STATUS"
+  echo "Response body:"
+  echo "$CERT_BODY"
+  exit 52
+fi
+
 # - extract field from JSON
 # - base64 decode
 # - extract private key from secret (tee, because we need to write two separate files)
 # - generate public key from secret
-echo "Getting TLS certificate"
-curl -H "Authorization: Bearer $ACCESS_TOKEN" "https://$CERT_VAULT_NAME.vault.azure.net/secrets/$CERT_NAME?api-version=7.4" \
+echo "Parsing TLS certificate response"
+echo "$CERT_BODY" \
   | python3 -c "import sys, json; print(json.load(sys.stdin)['value'])" \
   | openssl base64 -d -A \
   | tee >(openssl pkcs12 -passin pass: -nodes -nocerts -out $TRUSTED_PROXY_PRIV_KEY_PATH) \
