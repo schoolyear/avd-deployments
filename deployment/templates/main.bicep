@@ -19,44 +19,54 @@ param proxyAdminUsername string = 'syuser'
 
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
+var vmCreationBatchTemplateUri = '[[param:vmCreationBatchTemplateUri]]'
+
 var location = resourceGroup().location
 var defaultNamingPrefix = resourceGroup().name
+
+// VNET
 var natIpName = '${defaultNamingPrefix}ip'
 var natName = '${defaultNamingPrefix}nat'
 var vnetName = '${defaultNamingPrefix}vnet'
 var vnetSubnetCIDR = '10.0.0.0/19'
 var sessionhostsSubnetCIDR = '10.0.0.0/20'
+var sessionhostsSubnetName = 'sessionhosts'
 var servicesSubnetCIDR = '10.0.16.0/20'
+var servicesSubnetName = 'services'
+var privatelinkZoneName = 'privatelink.wvd.microsoft.com'
+
+// AVD
 var hostpoolName = '${defaultNamingPrefix}pool'
 var appGroupName = '${defaultNamingPrefix}dag'
 var workspaceName = '${defaultNamingPrefix}ws'
+
+// Sessionhosts
 var vmNumberOfInstances = userCapacity
+var vmNamePrefix = 'vm${substring(examId,0,8)}'
+var vmCustomImageSourceId = '[[param:vmCustomImageSourceId]]]'
+
+// Proxy servers
+var sshPubKey = '[[param:proxyRSAPublicKey]]]' // NOTE: if left empty, ssh for the proxy VM will be disabled
+var proxyVmSize = 'Standard_D1_v2'
 var proxyIpName = '${defaultNamingPrefix}proxy-ip'
 var proxyNsgName = '${defaultNamingPrefix}proxy-nsg'
 var proxyNicName = '${defaultNamingPrefix}proxy-nic'
 var proxyVmName = '${defaultNamingPrefix}proxy-vm'
-var vmNamePrefix = 'vm${substring(examId,0,8)}'
-var vmCustomImageSourceId = '[[param:vmCustomImageSourceId]]]'
-var privatelinkZoneName = 'privatelink.wvd.microsoft.com'
-var deploymentName = 'avdDeployment'
-var sessionhostsSubnetName = 'sessionhosts'
-var servicesSubnetName = 'services'
-// NOTE: if left empty, ssh for the proxy VM will be disabled
-var sshPubKey = '[[param:proxyRSAPublicKey]]]'
-var proxyVmSize = 'Standard_D1_v2'
+var proxyInstallScriptUrl = 'https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh'
+var proxyInstallScriptName = 'proxy_installation.sh'
+var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
+var sessionHostProxyWhitelist = '[[builtin:sessionHostProxyWhitelist]]]'
+
+// Proxy DNS deployment
+var proxyDnsEntryDeploymentName = 'proxy-dns-entry'
+var dnsZoneResourceGroup = '[[param:dnsZoneResourceGroup]]]'
+var dnsZoneName = '[[param:dnsZoneName]]]'
+
+// Keyvault
 var keyVaultResourceGroup = '[[param:keyVaultResourceGroup]]]'
 var keyVaultName = '[[param:keyVaultName]]]'
 var keyVaultCertificateName = '[[param:keyVaultCertificateName]]]'
 var keyVaultRoleAssignmentDeploymentName = 'keyvaultRoleAssignment'
-var dnsZoneResourceGroup = '[[param:dnsZoneResourceGroup]]]'
-var dnsZoneName = '[[param:dnsZoneName]]]'
-var proxyDnsEntryDeploymentName = 'proxyDnsEntry'
-var proxyInstallScriptUrl = 'https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh'
-var proxyInstallScriptName = 'proxy_installation.sh'
-var sessionHostProxyWhitelist = '[[builtin:sessionHostProxyWhitelist]]]'
-var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
-// NOTE: will be baked in by the release
-var vmCreationBatchTemplateUri = '[[param:vmCreationBatchTemplateUri]]'
 
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
@@ -77,7 +87,7 @@ module network './network.bicep' = {
 }
 
 module avdDeployment './avdDeployment.bicep' = {
-  name: deploymentName
+  name: 'avd-deployment'
 
   params: {
     batchVmCreationTemplateUri: vmCreationBatchTemplateUri
