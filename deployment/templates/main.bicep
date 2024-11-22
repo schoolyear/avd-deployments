@@ -21,7 +21,17 @@ param proxyAdminUsername string = 'syuser'
 var templateVersion = '0.0.0'
 var vmCreationBatchTemplateUri = '[[param:vmCreationBatchTemplateUri]]'
 
+// all resources are deployed in the region of the resource group
+// the region in which the resource group is created, is configured in the AVD add-on in the Schoolyear admin dashboard
+//
+// AVD metadata resources can only be created in some select regions
+// notably, in Europe the regions that do support these resources are heavily constrained on VM capacity
+//
+// location: the region in which you want to deploy your VMs
+// avdMetadataLocation: a region that supports AVD resources: 'centralindia,uksouth,ukwest,japaneast,japanwest,australiaeast,canadaeast,canadacentral,northeurope,westeurope,southafricanorth,eastus,eastus2,westus,westus2,westus3,northcentralus,southcentralus,westcentralus,centralus'.
 var location = resourceGroup().location
+var avdMetadataLocation = 'westeurope'
+
 var defaultNamingPrefix = resourceGroup().name
 
 // VNET
@@ -93,6 +103,7 @@ module avdDeployment './avdDeployment.bicep' = {
     batchVmCreationTemplateUri: vmCreationBatchTemplateUri
     hostpoolName: hostpoolName
     location: location
+    avdMetadataLocation: avdMetadataLocation
     vmNamePrefix: vmNamePrefix
     vmSize: 'Standard_D2s_v5'
     vmDiskType: 'Premium_LRS'
