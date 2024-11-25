@@ -42,10 +42,14 @@ var workspaceName = '${defaultNamingPrefix}ws'
 
 // Sessionhosts
 var vmNumberOfInstances = userCapacity
-var vmNamePrefix = 'vm${substring(examId,0,8)}'
+var vmNamePrefix = 'syvm${substring(examId,0,7)}'
 var vmCustomImageSourceId = '[[param:vmCustomImageSourceId]]]'
 
 // Proxy servers
+// User may pass an array of ip CIDRs for the proxy to whitelist
+// SECURITY: only do this for ranges reserved for Chromebooks that are exclusively run the Schoolyear client
+// ex. [31.149.165.25/32, 31.149.163.0/24]
+var ipRangesWhitelist = []
 var sshPubKey = '[[param:proxyRSAPublicKey]]]' // NOTE: if left empty, ssh for the proxy VM will be disabled
 var proxyVmSize = 'Standard_D1_v2'
 var proxyIpName = '${defaultNamingPrefix}proxy-ip'
@@ -160,6 +164,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     apiBaseUrl: apiBaseUrl
     trustedProxyBinaryUrl: trustedProxyBinaryUrl
     keyVaultCertificateName: keyVaultCertificateName
+    ipRangesWhitelist: ipRangesWhitelist
   }
 }
 

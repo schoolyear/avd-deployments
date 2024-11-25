@@ -22,6 +22,7 @@ param trustedProxySecret string
 param apiBaseUrl string
 param trustedProxyBinaryUrl string
 param keyVaultCertificateName string
+param ipRangesWhitelist array
 
 @secure()
 param proxyVmAdminPassword string = newGuid()
@@ -109,6 +110,10 @@ module proxyDnsEntryDeployment './proxyDnsEntryDeployment.bicep' = {
   }
 }
 
+// If user has provided an array of ips to whitelist
+// pass these to the auth_bypass.txt file
+var ipRangesWhitelistStr = join(ipRangesWhitelist, ',')
+
 // This depends on the main deployment
 resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
   parent: proxyVM
@@ -127,7 +132,7 @@ resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020
       ]
     }
     protectedSettings: {
-      commandToExecute: 'bash ${proxyInstallScriptName} "${hostpoolId}.*.wvd.microsoft.com:*,${workspaceId}.*.wvd.microsoft.com:*" "${sessionHostProxyWhitelist}" "${trustedProxySecret}" "${apiBaseUrl}" "${trustedProxyBinaryUrl}" "${keyVaultName}" "${keyVaultCertificateName}"'
+      commandToExecute: 'bash ${proxyInstallScriptName} "${hostpoolId}.*.wvd.microsoft.com:*,${workspaceId}.*.wvd.microsoft.com:*" "${sessionHostProxyWhitelist}" "${trustedProxySecret}" "${apiBaseUrl}" "${trustedProxyBinaryUrl}" "${keyVaultName}" "${keyVaultCertificateName}" "${ipRangesWhitelistStr}"'
     }
   }
 }
