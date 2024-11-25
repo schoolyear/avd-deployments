@@ -57,6 +57,9 @@ var sessionHostProxyWhitelist = '[[builtin:sessionHostProxyWhitelist]]]'
 var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
 // NOTE: will be baked in by the release
 var vmCreationBatchTemplateUri = '[[param:vmCreationBatchTemplateUri]]'
+// User may pass an array of ip CIDRs for the proxy to whitelist
+// ex. [31.149.165.25/32, 31.149.163.0/24]
+var ipRangesWhitelist = []
 
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
@@ -150,6 +153,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     apiBaseUrl: apiBaseUrl
     trustedProxyBinaryUrl: trustedProxyBinaryUrl
     keyVaultCertificateName: keyVaultCertificateName
+    ipRangesWhitelist: ipRangesWhitelist
   }
 }
 
