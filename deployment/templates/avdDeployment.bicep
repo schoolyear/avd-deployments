@@ -7,6 +7,9 @@ param hostpoolName string
 @description('The location where the resources will be deployed.')
 param location string
 
+@description('The location where the AVD metadata resources will be deployed.')
+param avdMetadataLocation string
+
 @description('The name of the workspace to be attach to new Applicaiton Group.')
 param workSpaceName string = ''
 
@@ -60,7 +63,7 @@ var privateEndpointFeedZoneLinkName = '${privateEndpointFeedName}/${privateEndpo
 
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview' = {
   name: hostpoolName
-  location: location
+  location: avdMetadataLocation
 
   properties: {
     description: 'Created by Schoolyear'
@@ -84,7 +87,7 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview'
 
 resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2022-10-14-preview' = {
   name: appGroupName
-  location: location
+  location: avdMetadataLocation
   properties: {
     hostPoolArmPath: hostpool.id
     friendlyName: 'Default Desktop'
@@ -95,7 +98,7 @@ resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2022-10-14-
 
 resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
   name: workSpaceName
-  location: location
+  location: avdMetadataLocation
 
   properties: {
     applicationGroupReferences: [appGroup.id]
