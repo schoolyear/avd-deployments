@@ -1,7 +1,7 @@
 param location string
 param proxyVmName string
 param proxyVmSize string
-param proxyNicID string
+param proxyNicIDs array
 param proxyAdminUsername string
 param sshPubKey string
 param keyVaultRoleAssignmentDeploymentName string
@@ -10,7 +10,7 @@ param keyVaultResourceGroup string
 param keyVaultName string
 param proxyDnsEntryDeploymentName string
 param dnsZoneResourceGroup string
-param proxyPublicIpAddress string
+param proxyPublicIpAddresses array
 param dnsZoneName string
 param proxyInstallScriptUrl string
 param proxyInstallScriptName string
@@ -29,8 +29,8 @@ param proxyVmAdminPassword string = newGuid()
 
 var disableSsh = empty(sshPubKey) ? true : false
 
-resource proxyVM 'Microsoft.Compute/virtualMachines@2023-03-01' = {
-  name: proxyVmName
+resource proxyVMs 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in range(0, length(proxyNicIDs)): {
+  name: '${proxyVmName}-${i}'
   location: location
 
   identity: {
@@ -44,12 +44,12 @@ resource proxyVM 'Microsoft.Compute/virtualMachines@2023-03-01' = {
     networkProfile: {
       networkInterfaces: [
         {
-          id: proxyNicID
+          id: proxyNicIDs[i]
         }
       ]
     }
     osProfile: {
-      computerName: proxyVmName
+      computerName: '${proxyVmName}-${i}'
       adminUsername: proxyAdminUsername
       adminPassword: disableSsh ? proxyVmAdminPassword : null
       linuxConfiguration: {
@@ -79,22 +79,22 @@ resource proxyVM 'Microsoft.Compute/virtualMachines@2023-03-01' = {
       }
     }
   }
-}
+}]
 
 // NOTE: when running 'global' deployments you might run into a conflict
 // if same name deployments run at the same time, it's best to add a uuid to this
 // examId is as good as any
-module keyVaultRoleAssignmentDeployment 'keyVaultRoleAssignmentDeployment.bicep' = {
-  name: '${keyVaultRoleAssignmentDeploymentName}-${examId}'
+module keyVaultRoleAssignmentDeployments 'keyVaultRoleAssignmentDeployment.bicep' = [for i in range(0, length(proxyNicIDs)): {
+  name: '${keyVaultRoleAssignmentDeploymentName}-${examId}-${i}'
   scope: resourceGroup(keyVaultResourceGroup)
 
   params: {
-    proxyVmName: proxyVmName
-    proxyPrincipalId: proxyVM.identity.principalId
+    proxyVmName: proxyVMs[i].name
+    proxyPrincipalId: proxyVMs[i].identity.principalId
     keyVaultResourceGroup: keyVaultResourceGroup
     keyVaultName: keyVaultName
   }
-}
+}]
 
 // NOTE: when running 'global' deployments you might run into a conflict
 // if same name deployments run at the same time, it's best to add a uuid to this
@@ -104,7 +104,7 @@ module proxyDnsEntryDeployment './proxyDnsEntryDeployment.bicep' = {
   scope: resourceGroup(dnsZoneResourceGroup)
   
   params: {
-    ipv4: proxyPublicIpAddress
+    ipv4Addresses: proxyPublicIpAddresses
     dnsZoneName: dnsZoneName
     dnsRecord: examId
   }
@@ -115,8 +115,8 @@ module proxyDnsEntryDeployment './proxyDnsEntryDeployment.bicep' = {
 var ipRangesWhitelistStr = join(ipRangesWhitelist, ',')
 
 // This depends on the main deployment
-resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-  parent: proxyVM
+resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = [for i in range(0, length(proxyNicIDs)): {
+  parent: proxyVMs[i]
   name: 'CustomScriptExtensionName'
   location: location
 
@@ -135,8 +135,8 @@ resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020
       commandToExecute: 'bash ${proxyInstallScriptName} "${hostpoolId}.*.wvd.microsoft.com:*,${workspaceId}.*.wvd.microsoft.com:*" "${sessionHostProxyWhitelist}" "${trustedProxySecret}" "${apiBaseUrl}" "${trustedProxyBinaryUrl}" "${keyVaultName}" "${keyVaultCertificateName}" "${ipRangesWhitelistStr}"'
     }
   }
-}
+}]
 
 output proxyDnsDeploymentDomain string = proxyDnsEntryDeployment.outputs.domain
 output proxyDnsEntryDeploymentResourceUrl string = proxyDnsEntryDeployment.outputs.resourceUrl
-output keyVaultRoleAssignmentDeploymentResourceUrl string = keyVaultRoleAssignmentDeployment.outputs.resourceUrl
+output keyVaultRoleAssignmentDeploymentResourceUrls array = [for i in range(0, length(proxyNicIDs)): keyVaultRoleAssignmentDeployments[i].outputs.resourceUrl]

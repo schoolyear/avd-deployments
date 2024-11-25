@@ -5,10 +5,11 @@ param proxyNicName string
 param proxyVmName string
 param servicesSubnetId string
 param disableSsh bool
+param numProxyVms int
 
 // Ip Address of proxy
-resource proxyPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
-  name: proxyIpName
+resource proxyPublicIPAddresses 'Microsoft.Network/publicIPAddresses@2023-04-01' = [for i in range(0, numProxyVms): {
+  name: '${proxyIpName}-${i}'
   location: location
   sku: {
     name: 'Standard'
@@ -23,7 +24,7 @@ resource proxyPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-04-01' =
       protectionMode: 'VirtualNetworkInherited'
     }
   }
-}
+}]
 
 var httpsInboundRule = {
   name: 'AllowAnyHTTPSInbound'
@@ -66,18 +67,18 @@ resource proxyNetworkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023
   }
 }
 
-resource proxyNetworkInterface 'Microsoft.Network/networkInterfaces@2020-06-01' = {
-  name: proxyNicName
+resource proxyNetworkInterfaces 'Microsoft.Network/networkInterfaces@2020-06-01' = [for i in range(0, numProxyVms): {
+  name: '${proxyNicName}-${i}'
   location: location
 
   properties: {
     ipConfigurations: [
       {
-        name: '${proxyVmName}-nic-ipconfig'
+        name: '${proxyVmName}-${i}-nic-ipconfig'
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           publicIPAddress: {
-            id: proxyPublicIPAddress.id
+            id: proxyPublicIPAddresses[i].id
           }
           subnet: {
             id: servicesSubnetId  
@@ -90,8 +91,8 @@ resource proxyNetworkInterface 'Microsoft.Network/networkInterfaces@2020-06-01' 
       id: proxyNetworkSecurityGroup.id
     }
   }
-}
+}]
 
-output proxyNicID string = proxyNetworkInterface.id
-output proxyNicPrivateIpAddress string = proxyNetworkInterface.properties.ipConfigurations[0].properties.privateIPAddress
-output proxyPublicIpAddress string = proxyPublicIPAddress.properties.ipAddress
+output proxyNicIDs array = [for i in range(0, numProxyVms): proxyNetworkInterfaces[i].id]
+output proxyNicPrivateIpAddresses array = [for i in range(0, numProxyVms): proxyNetworkInterfaces[i].properties.ipConfigurations[0].properties.privateIPAddress]
+output proxyPublicIpAddresses array = [for i in range(0, numProxyVms): proxyPublicIPAddresses[i].properties.ipAddress]

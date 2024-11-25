@@ -16,31 +16,57 @@ catch
     exit 1
 }
 
-# Find the "name": "proxyVmIpAddr" and print its value
+# Find the "proxyVmIpAddresses" from metadata
 $found = $false
-$proxyIpAddr = ""
-foreach ($tag in $response)
-{
-    if ($tag.name -eq "proxyVmIpAddr")
+$proxyIpAddresses = ""
+foreach ($tag in $response) {
+    if ($tag.name -eq "proxyVmIpAddresses")
     {
-        $proxyIpAddr = $tag.value
+        $proxyIpAddresses = $tag.value
         $found = $true
         break
     }
 }
 
-if (!$found)
-{
-    Write-Error "Could not find proxyVmIpAddr in metadata"
+if (!$found) {
+    Write-Error "Could not find proxyVmIpAddresses in metadata"
     exit 1
 }
 
-Write-Host "Open firewall to sessionhost proxy"
-$ipWithoutPort = ($proxyIpAddr -split ":")[0]
-New-NetFirewallRule -DisplayName "Allow sessionhost proxy outbound" -RemoteAddress $ipWithoutPort -Direction Outbound -Action Allow -Profile Any | Out-Null
+$splitProxyIpAddresses = $proxyIpAddresses.split(",")
+foreach ($proxyIpAddr in $splitProxyIpAddresses) {
+    $ipWithoutPort = ($proxyIpAddr -split ":")[0]
+    Write-Host "Open firewall to sessionhost proxy: $ipWithoutPort"
+    New-NetFirewallRule -DisplayName "Allow sessionhost proxy outbound ($ipWithoutPort)" -RemoteAddress $ipWithoutPort -Direction Outbound -Action Allow -Profile Any | Out-Null
+}
 
-$matchingProxy = [uri]::EscapeDataString("PROXY $proxyIpAddr")
-$pacUrl = "http://$proxyIpAddr/proxy.pac?matchingProxy=$matchingProxy&defaultProxy=DIRECT"
+# We modify the windows hosts file to map a local domain (proxies.local) 
+# to all the proxies we may have, this is necessary in order to have a fail-over 
+# and not use a single proxy to get back the pac file
+$hostsFilepath = "C:\Windows\System32\drivers\etc\hosts"
+$domain = "proxies.local"
+foreach ($proxyIpAddr in $splitProxyIpAddresses) {
+    # add line by line each proxy ip pointing to that domain
+    # ex.
+    #    10.0.16.4 proxies.local
+    #    10.0.16.5 proxies.local
+    $ipWithoutPort = ($proxyIpAddr -split ":")[0]
+    Add-Content -Path $hostsFilepath -Value "$ipWithoutPort $domain"
+}
+
+Write-Host "Updated hosts file"
+
+# Flush dns
+ipconfig \flushdns
+
+# Turns out Windows doesn't properly escape semicolons, so we opted to use url-safe base64 encoding for this
+# matchingProxyBase64 query param takes priority over matchingProxy in order not to break existing deployments
+# Please use the new base64 encoded param for now so we don't run into any shenanigans in the future
+$proxyString = $splitProxyIpAddresses.ForEach({ "PROXY $_" }) -join "; "
+$proxyBytes = [System.Text.Encoding]::UTF8.GetBytes($proxyString)
+$proxyStringBase64 = [Convert]::ToBase64String($proxyBytes)
+$matchingProxyBase64 = $proxyStringBase64.Replace('+','-').Replace('/','_').TrimEnd('=')
+$pacUrl = "http://${domain}:8080/proxy.pac?matchingProxyBase64=$matchingProxyBase64&defaultProxy=DIRECT"
 
 try
 {

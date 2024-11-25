@@ -16,6 +16,7 @@ param vmAdminUser string = 'syadmin'
 @secure()
 param vmAdminPassword string = newGuid()
 param proxyAdminUsername string = 'syuser'
+param numProxyVms int = 2
 
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
@@ -127,7 +128,8 @@ module avdDeployment './avdDeployment.bicep' = {
       instanceId: instanceId
       entraAuthority: entraAuthority
       entraClientId: entraClientId
-      proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddress}:8080'
+      proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
+      proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
     }
     userGroupId: userGroupId
   }
@@ -145,6 +147,7 @@ module proxyNetwork 'proxyNetwork.bicep' = {
     proxyVmName: proxyVmName
     servicesSubnetId: network.outputs.servicesSubnetId
     disableSsh: disableSsh
+    numProxyVms: numProxyVms
   }
 }
 
@@ -155,7 +158,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     location: location
     proxyVmName: proxyVmName
     proxyVmSize: proxyVmSize
-    proxyNicID: proxyNetwork.outputs.proxyNicID
+    proxyNicIDs: proxyNetwork.outputs.proxyNicIDs
     proxyAdminUsername: proxyAdminUsername
     sshPubKey: sshPubKey
     keyVaultRoleAssignmentDeploymentName: keyVaultRoleAssignmentDeploymentName
@@ -164,7 +167,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     keyVaultName: keyVaultName
     proxyDnsEntryDeploymentName: proxyDnsEntryDeploymentName
     dnsZoneResourceGroup: dnsZoneResourceGroup
-    proxyPublicIpAddress: proxyNetwork.outputs.proxyPublicIpAddress
+    proxyPublicIpAddresses: proxyNetwork.outputs.proxyPublicIpAddresses
     dnsZoneName: dnsZoneName
     proxyInstallScriptUrl: proxyInstallScriptUrl
     proxyInstallScriptName: proxyInstallScriptName
@@ -190,10 +193,9 @@ output proxyConfig object = {
   ]
 }
 output resourceUrlsToDelete array = [
-  proxyDeployment.outputs.keyVaultRoleAssignmentDeploymentResourceUrl
+  ...proxyDeployment.outputs.keyVaultRoleAssignmentDeploymentResourceUrls
   proxyDeployment.outputs.proxyDnsEntryDeploymentResourceUrl
 ]
-output proxyIp string = proxyNetwork.outputs.proxyPublicIpAddress
 output hostpoolName string = hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
