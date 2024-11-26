@@ -66,7 +66,6 @@ echo "Creating auth-bypass file"
 echo -n "$AUTH_BYPASS_NETS" > $TRUSTED_PROXY_AUTH_BYPASS_PATH
 
 # Get Entra token
-# this uses python because it is pre-installed on Ubuntu
 echo "Request Entra token"
 ENTRA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
 ENTRA_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Metadata: true" $ENTRA_URL) || {
@@ -83,6 +82,7 @@ if [ "$ENTRA_STATUS" -ne 200 ]; then
   exit 51
 fi
 
+# this uses python because it is pre-installed on Ubuntu
 echo "Parsing access_token from Entra token response"
 ACCESS_TOKEN=$(echo $ENTRA_BODY | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 
