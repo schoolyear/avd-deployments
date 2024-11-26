@@ -68,12 +68,26 @@ echo -n "$AUTH_BYPASS_NETS" > $TRUSTED_PROXY_AUTH_BYPASS_PATH
 # Get Entra token
 echo "Request Entra token"
 ENTRA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
-ENTRA_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Metadata: true" $ENTRA_URL) || {
-    echo "Curl failed to fetch entra access_token with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $ENTRA_URL"
-    exit 49
-}
-ENTRA_STATUS="${ENTRA_RESPONSE: -3}"
-ENTRA_BODY="${ENTRA_RESPONSE:0:${#ENTRA_RESPONSE}-3}"
+
+MAX_RETRIES=5
+COUNT=0
+while [ $COUNT -lt $MAX_RETRIES ]; do
+  ENTRA_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Metadata: true" $ENTRA_URL) || {
+      echo "Curl failed to fetch entra access_token with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $ENTRA_URL"
+      exit 49
+  }
+  ENTRA_STATUS="${ENTRA_RESPONSE: -3}"
+  ENTRA_BODY="${ENTRA_RESPONSE:0:${#ENTRA_RESPONSE}-3}"
+
+  if [ "$ENTRA_STATUS" -eq 200 ]; then
+    break
+  fi
+
+  echo "request failed with ($ENTRA_STATUS): $ENTRA_BODY"
+  echo "retrying..."
+  COUNT=$((COUNT+1))
+  sleep 10
+done
 
 if [ "$ENTRA_STATUS" -ne 200 ]; then
   echo "Failed with status code $ENTRA_STATUS"
