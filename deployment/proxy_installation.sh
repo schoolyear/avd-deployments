@@ -153,39 +153,6 @@ systemctl daemon-reload
 systemctl enable $TRUSTED_PROXY_SERVICE_NAME.service
 systemctl restart $TRUSTED_PROXY_SERVICE_NAME.service # restart: idempotency
 
-# Check if trusted proxy is up and running
-if systemctl is-active --quiet "$TRUSTED_PROXY_SERVICE_NAME.service"; then
-  echo "Service $TRUSTED_PROXY_SERVICE_NAME is active"
-else
-  echo "Service $TRUSTED_PROXY_SERVICE_NAME failed to start" >&2
-  exit 53
-fi
-
-# Check Trusted proxy readiness
-MAX_RETRIES=3
-COUNT=0
-while [ $COUNT -lt $MAX_RETRIES ]; do
-  TRUSTED_PROXY_READY_RESPONSE=$(curl --insecure -s -o - -w "%{http_code}" "https://localhost/ready")
-  TRUSTED_PROXY_READY_STATUS="${TRUSTED_PROXY_READY_RESPONSE: -3}"
-  TRUSTED_PROXY_READY_BODY="${TRUSTED_PROXY_READY_RESPONSE:0:${#TRUSTED_PROXY_READY_RESPONSE}-3}"
-  if [ "$TRUSTED_PROXY_READY_STATUS" -eq 200 ]; then
-    break
-  fi
-
-  echo "Trusted proxy readiness check failed with status: $TRUSTED_PROXY_READY_STATUS"
-  echo "Response Body:"
-  echo $TRUSTED_PROXY_READY_BODY
-  COUNT=$((COUNT+1))
-  sleep 1
-done
-
-if [ "$TRUSTED_PROXY_READY_STATUS" -ne 200 ]; then
-  echo "All Trusted proxy readiness checks failed, last status: $TRUSTED_PROXY_READY_STATUS"
-  echo "Response body:"
-  echo $TRUSTED_PROXY_READY_BODY
-  exit 54
-fi
-
 echo "Setting up Trusted proxy: DONE"
 #####################/TRUSTED PROXY/#####################
 
@@ -227,39 +194,6 @@ echo "Starting session host proxy service"
 systemctl daemon-reload
 systemctl enable $SESSION_HOST_PROXY_SERVICE_NAME.service
 systemctl restart $SESSION_HOST_PROXY_SERVICE_NAME.service # restart: idempotency
-
-# Check if Session Host proxy is up and running
-if systemctl is-active --quiet "$SESSION_HOST_PROXY_SERVICE_NAME.service"; then
-  echo "Service $SESSION_HOST_PROXY_SERVICE_NAME is active"
-else
-  echo "Service $SESSION_HOST_PROXY_SERVICE_NAME failed to start" >&2
-  exit 53
-fi
-
-# Check Session Host proxy readiness
-MAX_RETRIES=3
-COUNT=0
-while [ $COUNT -lt $MAX_RETRIES ]; do
-  SESSION_HOST_PROXY_READY_RESPONSE=$(curl -s -o - -w "%{http_code}" "http://localhost:8080/ready")
-  SESSION_HOST_PROXY_READY_STATUS="${SESSION_HOST_PROXY_READY_RESPONSE: -3}"
-  SESSION_HOST_PROXY_READY_BODY="${SESSION_HOST_PROXY_READY_RESPONSE:0:${#SESSION_HOST_PROXY_READY_RESPONSE}-3}"
-  if [ "$SESSION_HOST_PROXY_READY_STATUS" -eq 200 ]; then
-    break
-  fi
-
-  echo "Session Host proxy readiness check failed with status: $SESSION_HOST_PROXY_READY_STATUS"
-  echo "Response Body:"
-  echo $SESSION_HOST_PROXY_READY_BODY
-  COUNT=$((COUNT+1))
-  sleep 1
-done
-
-if [ "$SESSION_HOST_PROXY_READY_STATUS" -ne 200 ]; then
-  echo "All Session Host proxy readiness checks failed, last status: $SESSION_HOST_PROXY_READY_STATUS"
-  echo "Response body:"
-  echo $SESSION_HOST_PROXY_READY_BODY
-  exit 54
-fi
 
 echo "Setting up Session Host proxy: DONE"
 #####################/SESSION HOST PROXY/#####################
