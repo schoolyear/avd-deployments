@@ -85,7 +85,7 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview'
   }
 }
 
-resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2022-10-14-preview' = {
+resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-08-preview' = {
   name: appGroupName
   location: avdMetadataLocation
   properties: {
@@ -96,7 +96,7 @@ resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2022-10-14-
   }
 }
 
-resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
+resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-08-preview' = {
   name: workSpaceName
   location: avdMetadataLocation
 
