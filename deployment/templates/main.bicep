@@ -21,8 +21,7 @@ param studentsPerProxy int = 10
 @description('Minimum number of proxy VMs to deploy')
 param minProxyVms int = 2
 
-var calculatedProxyCount = max(ceiling(userCapacity / studentsPerProxy), minProxyVms)
-var numProxyVms = calculatedProxyCount
+var numProxyVms = max(ceiling(userCapacity / studentsPerProxy), minProxyVms)
 
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
@@ -205,6 +204,3 @@ output resourceUrlsToDelete array = [
 output hostpoolName string = hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
-output calculatedProxyCount int = calculatedProxyCount
-output studentsPerProxy int = studentsPerProxy
-output totalCapacity int = calculatedProxyCount * studentsPerProxy
