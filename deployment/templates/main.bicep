@@ -16,7 +16,15 @@ param vmAdminUser string = 'syadmin'
 @secure()
 param vmAdminPassword string = newGuid()
 param proxyAdminUsername string = 'syuser'
-param numProxyVms int = 2
+@description('Number of students that can be supported by a single proxy VM')
+param studentsPerProxy int = 10
+@description('Minimum number of proxy VMs to deploy')
+param minProxyVms int = 2
+
+var numProxyVms = max(
+  (userCapacity + studentsPerProxy - 1) / studentsPerProxy,
+  minProxyVms
+)
 
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
