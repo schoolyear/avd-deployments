@@ -106,6 +106,10 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
     name: 'AADLoginForWindows'
     location: location
 
+    dependsOn: [
+      dsc
+    ]
+
     properties: {
       publisher: 'Microsoft.Azure.ActiveDirectory'
       type: 'AADLoginForWindows'
