@@ -200,6 +200,11 @@ else
     echo "Reorder was successfull"
   else
     echo "Keys still don't match, exiting"
+
+    echo "<-----------------PUBLIC KEY------------------>"
+    cat "$TRUSTED_PROXY_CERT_PATH"
+    echo "</-----------------PUBLIC KEY----------------->"
+
     exit 55
   fi
 fi
