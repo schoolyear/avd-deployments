@@ -14,6 +14,7 @@ TRUSTED_PROXY_BINARY_URL=$5       # URL to download trusted proxy binary from
 CERT_VAULT_NAME=$6                # name of the Key Vault that holds the HTTPS certificate for the trusted proxy
 CERT_NAME=$7                      # name of the Certificate in that Key Vault
 AUTH_BYPASS_NETS=$8               # comma separate list of CIDRs that bypass the proxy auth of the trusted proxy, used for Chromebook deployments
+TRUSTED_PROXY_FQDN=$9             # when set, the script verifies if it gets a valid certificate when trying to connect to the trusted proxy
 #####################/PARAMETERS/#####################
 
 ##################### SHARED #####################
@@ -39,60 +40,6 @@ mv $BINARY_PATH_NEXT $BINARY_PATH
 
 ##################### HELPER FUNCTIONS #####################
 
-# Calculates the moduli of a certificate and it's private key
-# returns 0 on match and 1 on mismatch
-check_key_match() {
-  local private_key="$1"
-  local public_key="$2"
-
-  # Extract modulus from the private key
-  private_modulus=$(openssl rsa -in "$private_key" -noout -modulus | openssl md5)
-  if [[ $? -ne 0 ]]; then
-    echo "check_key_match: Unable to process private key."
-    return 1
-  fi
-
-  # Extract modulus from the public key
-  public_modulus=$(openssl x509 -in "$public_key" -noout -modulus | openssl md5)
-  if [[ $? -ne 0 ]]; then
-    echo "check_key_match: Unable to process public key."
-    return 1
-  fi
-
-  # Compare the moduli
-  if [[ "$private_modulus" == "$public_modulus" ]]; then
-    return 0
-  else
-    return 1
-  fi
-}
-
-# Reverses the order of a certificate chain
-reverse_certificates() {
-  local public_key="$1"
-  local dir="$(dirname "$public_key")"
-  local reordered_key="$dir/reordered_public.pem"
-  local temp_reordered_key="$dir/temp_reordered.pem"
-
-  # Split the public.pem file into individual certificate files
-  # by using the 'END CERTIFICATE' as separating line
-  csplit -f cert_part_ -z "$public_key" '/END CERTIFICATE/+1' '{*}' >/dev/null 2>&1
-
-  # Go over the split certificate and reverse their order
-  touch $reordered_key
-  for cert_file in cert_part_*; do
-    cat $cert_file "$reordered_key" > "$temp_reordered_key"
-    mv "$temp_reordered_key" "$reordered_key"
-  done
-
-  # Replace the original file with reordered content
-  mv "$reordered_key" "$public_key"
-  echo "Certificates reordered in $public_key"
-
-  # Cleanup temporary certificate parts
-  rm -f cert_part_*
-}
-
 #####################/HELPER FUNCTIONS/#####################
 
 ##################### TRUSTED PROXY #####################
@@ -109,6 +56,7 @@ TRUSTED_PROXY_API_KEY_PATH="$TRUSTED_PROXY_BASE_PATH/api_key.txt"
 TRUSTED_PROXY_AUTH_BYPASS_PATH="$TRUSTED_PROXY_BASE_PATH/auth_bypass.txt"
 TRUSTED_PROXY_PRIV_KEY_PATH="$TRUSTED_PROXY_BASE_PATH/private.pem"
 TRUSTED_PROXY_CERT_PATH="$TRUSTED_PROXY_BASE_PATH/public.pem"
+TRUSTED_PROXY_PORT="443"
 
 # Write whitelist
 echo "Creating whitelist"
@@ -184,31 +132,6 @@ echo "$CERT_BODY" \
   | tee >(openssl pkcs12 -passin pass: -nodes -nocerts -out $TRUSTED_PROXY_PRIV_KEY_PATH) \
   | openssl pkcs12 -passin pass: -nokeys -out $TRUSTED_PROXY_CERT_PATH
 
-# Sometimes the certificate chain is in reverse order
-# (ACME KeyVault does this occasionally for example)
-# We check the moduli of private - public keys and if 
-# there is a mismatch we try again with a reverse certificate 
-# chain. If moduli is a mismatch again we give up.
-echo "Checking private - public moduli"
-if check_key_match "$TRUSTED_PROXY_PRIV_KEY_PATH" "$TRUSTED_PROXY_CERT_PATH"; then
-  echo "Keys match, doing nothing"
-else
-  echo "Private key does not match public key"
-  echo "Attempting to fix mismatch by reversing order of certificate chain"
-  reverse_certificates "$TRUSTED_PROXY_CERT_PATH"
-  if check_key_match "$TRUSTED_PROXY_PRIV_KEY_PATH" "$TRUSTED_PROXY_CERT_PATH"; then
-    echo "Reorder was successfull"
-  else
-    echo "Keys still don't match, exiting"
-
-    echo "<-----------------PUBLIC KEY------------------>"
-    cat "$TRUSTED_PROXY_CERT_PATH"
-    echo "</-----------------PUBLIC KEY----------------->"
-
-    exit 55
-  fi
-fi
-
 # Grant service user access to files
 # because this script is writing the files as owned by root
 echo "Granting service user access to files"
@@ -223,7 +146,7 @@ After=network.target
 
 [Service]
 User=$TRUSTED_PROXY_SERVICE_USER_NAME
-ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :443 -api-base-url $API_BASE_URL -auth-bypass $TRUSTED_PROXY_AUTH_BYPASS_PATH
+ExecStart=$BINARY_PATH -api-key $TRUSTED_PROXY_API_KEY_PATH -host-whitelist $TRUSTED_PROXY_WHITELIST_PATH -tls-cert $TRUSTED_PROXY_CERT_PATH -tls-key $TRUSTED_PROXY_PRIV_KEY_PATH -listen-address :$TRUSTED_PROXY_PORT -api-base-url $API_BASE_URL -auth-bypass $TRUSTED_PROXY_AUTH_BYPASS_PATH
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
@@ -240,6 +163,19 @@ if systemctl is-active --quiet "$TRUSTED_PROXY_SERVICE_NAME.service"; then
 else
   echo "Service $TRUSTED_PROXY_SERVICE_NAME failed to start" >&2
   exit 53
+fi
+
+if [ "$TRUSTED_PROXY_FQDN" -ne "" ]; then
+  SCLIENT_OUTPUT=$(echo -n | openssl s_client -connect 127.0.0.1:$TRUSTED_PROXY_PORT -servername "$TRUSTED_PROXY_FQDN" -verify_hostname "$TRUSTED_PROXY_FQDN" -verify_return_error)
+  echo "Trusted Proxy connection test:"
+  echo "$SCLIENT_OUTPUT"
+
+  if echo "$SCLIENT_OUTPUT" | grep -q "Verify return code: 0 (ok)"; then
+    echo "Certificate verification succeeded."
+  else
+    echo "Certificate verification failed."
+    exit 57
+  fi
 fi
 
 # Check Trusted proxy readiness
