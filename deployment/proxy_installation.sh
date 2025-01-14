@@ -74,9 +74,9 @@ echo -n "$AUTH_BYPASS_NETS" > $TRUSTED_PROXY_AUTH_BYPASS_PATH
 echo "Request Entra token"
 ENTRA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
 
-MAX_RETRIES=5
-COUNT=0
-while [ $COUNT -lt $MAX_RETRIES ]; do
+ENTRA_MAX_RETRIES=5
+ENTRA_RETRY_COUNT=0
+while [ $ENTRA_RETRY_COUNT -lt $ENTRA_MAX_RETRIES ]; do
   ENTRA_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Metadata: true" $ENTRA_URL) || {
       echo "Curl failed to fetch entra access_token with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $ENTRA_URL"
       exit 49
@@ -90,7 +90,7 @@ while [ $COUNT -lt $MAX_RETRIES ]; do
 
   echo "request failed with ($ENTRA_STATUS): $ENTRA_BODY"
   echo "retrying..."
-  COUNT=$((COUNT+1))
+  ENTRA_RETRY_COUNT=$((ENTRA_RETRY_COUNT+1))
   sleep 10
 done
 
@@ -108,12 +108,34 @@ ACCESS_TOKEN=$(echo $ENTRA_BODY | python3 -c "import sys, json; print(json.load(
 # Get TLS certificate
 echo "Fetching TLS certificate from Key Vault"
 KEYVAULT_URL="https://$CERT_VAULT_NAME.vault.azure.net/secrets/$CERT_NAME?api-version=7.4"
-CERT_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" $KEYVAULT_URL) || {
-    echo "Curl failed to fetch TLS certificate from keyvault with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $KEYVAULT_URL"
-    exit 49
-}
-CERT_STATUS="${CERT_RESPONSE: -3}"
-CERT_BODY="${CERT_RESPONSE:0:${#CERT_RESPONSE}-3}"
+KEYVAULT_MAX_RETRIES=5
+KEYVAULT_RETRY_COUNT=0
+
+while [ $KEYVAULT_RETRY_COUNT -lt $KEYVAULT_MAX_RETRIES ]; do
+  CERT_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" $KEYVAULT_URL) || {
+      echo "Curl failed to fetch TLS certificate from keyvault with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $KEYVAULT_URL"
+      exit 49
+  }
+
+  CERT_STATUS="${CERT_RESPONSE: -3}"
+  CERT_BODY="${CERT_RESPONSE:0:${#CERT_RESPONSE}-3}"
+
+  if [ "$CERT_STATUS" -eq 200 ]; then
+    break
+  fi
+
+  echo "request failed with ($CERT_STATUS): $CERT_BODY"
+  echo "retrying..."
+  KEYVAULT_RETRY_COUNT=$((KEYVAULT_RETRY_COUNT+1))
+
+  if [ "$CERT_STATUS" -eq 403 ]; then
+    # the most common cause for Key Vault failure is 403 caused by slow RBAC propagation in Azure
+    # we wait 5x 1min, which should be enough for Azure™®© to get its shit together
+    sleep 60
+  else
+    sleep 10
+  fi
+done
 
 if [ "$CERT_STATUS" -ne 200 ]; then
   echo "Failed with status code $CERT_STATUS"
@@ -180,9 +202,9 @@ if [ "$TRUSTED_PROXY_FQDN" -ne "" ]; then
 fi
 
 # Check Trusted proxy readiness
-MAX_RETRIES=3
-COUNT=0
-while [ $COUNT -lt $MAX_RETRIES ]; do
+TP_MAX_RETRIES=3
+TP_RETRY_COUNT=0
+while [ $TP_RETRY_COUNT -lt $TP_MAX_RETRIES ]; do
   TRUSTED_PROXY_READY_RESPONSE=$(curl --insecure -s -o - -w "%{http_code}" "https://localhost/ready") || {
     echo "Curl failed to check trusted proxy /ready with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html)"
   }
@@ -195,7 +217,7 @@ while [ $COUNT -lt $MAX_RETRIES ]; do
   echo "Trusted proxy readiness check failed with status: $TRUSTED_PROXY_READY_STATUS"
   echo "Response Body:"
   echo $TRUSTED_PROXY_READY_BODY
-  COUNT=$((COUNT+1))
+  TP_RETRY_COUNT=$((TP_RETRY_COUNT+1))
   sleep 2
 done
 
@@ -257,9 +279,9 @@ else
 fi
 
 # Check Session Host proxy readiness
-MAX_RETRIES=3
-COUNT=0
-while [ $COUNT -lt $MAX_RETRIES ]; do
+SP_MAX_RETRIES=3
+SP_RETRY_COUNT=0
+while [ $SP_RETRY_COUNT -lt $SP_MAX_RETRIES ]; do
   SESSION_HOST_PROXY_READY_RESPONSE=$(curl -s -o - -w "%{http_code}" "http://localhost:8080/ready") || {
     echo "Curl failed to check session host proxy /ready with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html)"
   }
@@ -272,7 +294,7 @@ while [ $COUNT -lt $MAX_RETRIES ]; do
   echo "Session Host proxy readiness check failed with status: $SESSION_HOST_PROXY_READY_STATUS"
   echo "Response Body:"
   echo $SESSION_HOST_PROXY_READY_BODY
-  COUNT=$((COUNT+1))
+  SP_RETRY_COUNT=$((SP_RETRY_COUNT+1))
   sleep 2
 done
 
