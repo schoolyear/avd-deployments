@@ -2,7 +2,7 @@
   pre: [],
   default: [
     {
-      "name": "Install R & RStudio",
+      "name": "Tree the imagebuild_resources folder",
       "inline": [
         "tree /f \"C:\\imagebuild_resources\""
       ],
