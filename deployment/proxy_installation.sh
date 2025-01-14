@@ -106,6 +106,7 @@ echo "Parsing access_token from Entra token response"
 ACCESS_TOKEN=$(echo $ENTRA_BODY | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 
 # Get TLS certificate
+echo "Fetching TLS certificate from Key Vault"
 KEYVAULT_URL="https://$CERT_VAULT_NAME.vault.azure.net/secrets/$CERT_NAME?api-version=7.4"
 CERT_RESPONSE=$(curl -s -o - -w "%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" $KEYVAULT_URL) || {
     echo "Curl failed to fetch TLS certificate from keyvault with exit code $? (see https://everything.curl.dev/cmdline/exitcode.html): $KEYVAULT_URL"
