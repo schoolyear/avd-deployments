@@ -7,7 +7,6 @@ param examId string
 param instanceId string
 @secure()
 param trustedProxySecret string
-param userGroupId string
 param apiBaseUrl string
 param entraAuthority string
 param entraClientId string
@@ -139,7 +138,6 @@ module avdDeployment './avdDeployment.bicep' = {
       proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
       proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
     }
-    userGroupId: userGroupId
   }
 }
 
@@ -207,3 +205,4 @@ output resourceUrlsToDelete array = [
 output hostpoolName string = hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
+output appGroupId string = avdDeployment.outputs.appGroupId

@@ -50,7 +50,6 @@ param appGroupName string
 param servicesSubnetResourceId string
 param sessionhostsSubnetResourceId string
 param privateLinkZoneName string
-param userGroupId string
 
 var maxSessionLimit = max(vmNumberOfInstances, 1)
 var privateEndpointZoneLinkName = 'default'
@@ -264,33 +263,6 @@ resource vmCreation 'Microsoft.Resources/deployments@2024-03-01' = [for i in ran
   }  
 }]
 
-// NOTE: This was originally outside of the 'avdDeployment', however we need to reference the 
-// created appGroup and it's much easier to do it here
-resource appGroupRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(appGroup.id, userGroupId, '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')
-  scope: appGroup
-
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')
-    principalId: userGroupId
-    principalType: 'Group'
-  }
-}
-
-// NOTE: This was originally outside of the 'avdDeployment', however we need to reference the 
-// created appGroup and it's much easier to do it here
-// NOTE: the scope for this role assignment was initially inside the properties object
-// which doesn't exist according to the docs. So i tried to put it outside of it. Make 
-// sure this is the intended behaviour.
-resource userGroupRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, userGroupId, 'fb879df8-f326-4884-b1cf-06f3ad86be52')
-  scope: resourceGroup()
-
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'fb879df8-f326-4884-b1cf-06f3ad86be52')
-    principalId: userGroupId
-  }
-}
-
 output workspaceId string = workSpace.properties.objectId
 output hostpoolId string = hostpool.properties.objectId
+output appGroupId string = appGroup.id
