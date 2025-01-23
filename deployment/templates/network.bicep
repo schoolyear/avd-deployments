@@ -8,6 +8,11 @@ param sessionhostsSubnetCIDR string
 param servicesSubnetName string
 param servicesSubnetCIDR string
 param privatelinkZoneName string
+param internalServiceLinkIds object
+param internalServicesPrivateDNSZoneName string
+
+// convert license server link service ids to array for iteration
+var serviceIds = items(internalServiceLinkIds)
 
 // A public IP Address for our NAT Gateway
 resource natPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
@@ -128,7 +133,79 @@ resource virtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLin
   ]
 }
 
+// conditional private endpoints
+// that links to some private service
+// only deploys if we specify Private Link Service Ids to connect to 
+resource privateEndpoints 'Microsoft.Network/privateEndpoints@2024-05-01' = [for service in serviceIds: {
+  name: '${service.key}-private-endpoint'
+  location: location
+
+  properties: {
+    privateLinkServiceConnections: [
+      {
+        name: '${service.key}-private-service-connection'
+        properties: {
+          privateLinkServiceId: service.value
+        }
+      }
+    ] 
+    subnet: {
+      id: virtualNetwork::servicesSubnet.id
+    }
+    customNetworkInterfaceName: '${service.key}-private-endpoint-nic'
+  }
+}]
+
+// IP Extractors,
+// Yeap, exactly what it sounds like.
+// This is needed to fetch the IP of the PrivateEndpoints underlying NICs
+// Doing this directly without a module doesn't work for whatever Azure™ patented reason
+module nicIpExtractors 'nicPrivateIpExtractor.bicep' = [for i in range(0, length(serviceIds)): {
+  name: '${serviceIds[i].key}-nic-ip-extractor'
+
+  params: {
+    nicName: last(split(privateEndpoints[i].properties.networkInterfaces[0].id, '/'))
+  }
+}]
+
+
+// Deploy Private DNS zone in case we have private endpoints
+var deployPrivateDNSZoneForInternalServices = !empty(serviceIds)
+resource licenseServersPrivateDNSZone 'Microsoft.Network/privateDnsZones@2024-06-01' = if (deployPrivateDNSZoneForInternalServices) {
+  name: internalServicesPrivateDNSZoneName
+  location: 'global'
+
+  // Link Private DNS Zone to VNet
+  resource deployLicenseServerDNSZoneVNetLink 'virtualNetworkLinks' = {
+    name: '${internalServicesPrivateDNSZoneName}-vnet-link'
+    location: 'global'
+
+    properties: {
+      virtualNetwork: {
+        id: virtualNetwork.id
+      }
+      // we don't want this, if enabled
+      // all vms in subnet will get an A record
+      registrationEnabled: false
+    }
+  }
+}
+
+// Create DNS records for each service
+resource licenseServersPrivateDNSZoneRecords 'Microsoft.Network/privateDnsZones/A@2024-06-01' = [for i in range(0, length(serviceIds)): {
+  name: serviceIds[i].key
+  parent: licenseServersPrivateDNSZone
+  
+  properties: {
+    ttl: 3600
+    aRecords:[
+      {
+        ipv4Address: nicIpExtractors[i].outputs.privateIpAddr
+      }
+    ]
+  }
+}]
+
 output ipAddresses array = [natPublicIPAddress.properties.ipAddress]
 output sessionHostsSubnetId string = virtualNetwork::sessionhostsSubnet.id
 output servicesSubnetId string = virtualNetwork::servicesSubnet.id
-
