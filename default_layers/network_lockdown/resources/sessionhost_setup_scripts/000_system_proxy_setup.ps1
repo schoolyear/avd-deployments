@@ -57,7 +57,7 @@ foreach ($proxyIpAddr in $splitProxyIpAddresses) {
 Write-Host "Updated hosts file"
 
 # Flush dns
-ipconfig \flushdns
+ipconfig /flushdns
 
 # Turns out Windows doesn't properly escape semicolons, so we opted to use url-safe base64 encoding for this
 # matchingProxyBase64 query param takes priority over matchingProxy in order not to break existing deployments
