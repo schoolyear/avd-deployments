@@ -130,32 +130,15 @@ module avdDeployment './avdDeployment.bicep' = {
   name: 'avd-deployment'
 
   params: {
-    batchVmCreationTemplateUri: vmCreationBatchTemplateUri
     hostpoolName: hostpoolName
     location: location
     avdMetadataLocation: avdMetadataLocation
-    vmNamePrefix: vmNamePrefix
-    vmSize: 'Standard_D2s_v5'
-    vmDiskType: 'Premium_LRS'
     vmNumberOfInstances: vmNumberOfInstances
-    vmCustomImageSourceId: vmCustomImageSourceId
     workSpaceName: workspaceName
     tokenExpirationTime: tokenExpirationTime
-    vmAdministratorAccountUsername: vmAdminUser
-    vmAdministratorAccountPassword: vmAdminPassword
     appGroupName: appGroupName
     servicesSubnetResourceId: network.outputs.servicesSubnetId
-    sessionhostsSubnetResourceId: network.outputs.sessionHostsSubnetId
     privateLinkZoneName: privatelinkZoneName
-    virtualMachineTags: {
-      apiBaseUrl: apiBaseUrl
-      examId: examId
-      instanceId: instanceId
-      entraAuthority: entraAuthority
-      entraClientId: entraClientId
-      proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
-      proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
-    }
   }
 }
 
@@ -206,6 +189,40 @@ module proxyDeployment 'proxyDeployment.bicep' = {
   }
 }
 
+// The very last thing we run is the VMCreation
+// in order to skip some error that might happen if 
+// VMCreation fails
+module vmDeployment 'vmDeployment.bicep' = {
+  name: 'vmDeployment'
+
+  dependsOn: [
+    proxyDeployment
+  ]
+
+  params: {
+    location: location
+    batchVmCreationTemplateUri: vmCreationBatchTemplateUri
+    vmNamePrefix: vmNamePrefix
+    vmSize: 'Standard_D2s_v5'
+    vmDiskType: 'Premium_LRS'
+    vmCustomImageSourceId: vmCustomImageSourceId
+    vmAdministratorAccountUsername: vmAdminUser
+    vmAdministratorAccountPassword: vmAdminPassword
+    sessionhostsSubnetResourceId: network.outputs.sessionHostsSubnetId
+    virtualMachineTags: {
+      apiBaseUrl: apiBaseUrl
+      examId: examId
+      instanceId: instanceId
+      entraAuthority: entraAuthority
+      entraClientId: entraClientId
+      proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
+      proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
+    }
+    hostpoolName: hostpoolName
+    vmNumberOfInstances: vmNumberOfInstances
+    hostpoolRegistrationToken: avdDeployment.outputs.hostpoolRegistrationToken
+  }
+}
 
 output publicIps array = network.outputs.ipAddresses
 output proxyConfig object = {
