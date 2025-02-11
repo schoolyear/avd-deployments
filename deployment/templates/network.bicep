@@ -13,6 +13,9 @@ param internalServicesPrivateDNSZoneName string
 
 // convert license server link service ids to array for iteration
 var serviceIds = items(internalServiceLinkIds)
+// we use a default value in case 'internalServicesPrivateDNSZoneName' is empty because 
+// the A record resource will fail if parent has an empty name even though it will not deploy
+var resolvedInternalServicesPrivateDNSZoneName = !empty(internalServicesPrivateDNSZoneName) ? internalServicesPrivateDNSZoneName : 'customerinternalservices.syavd.local'
 
 // A public IP Address for our NAT Gateway
 resource natPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
@@ -172,12 +175,12 @@ module nicIpExtractors 'nicPrivateIpExtractor.bicep' = [for i in range(0, length
 // Deploy Private DNS zone in case we have private endpoints
 var deployPrivateDNSZoneForInternalServices = !empty(serviceIds)
 resource licenseServersPrivateDNSZone 'Microsoft.Network/privateDnsZones@2024-06-01' = if (deployPrivateDNSZoneForInternalServices) {
-  name: internalServicesPrivateDNSZoneName
+  name: resolvedInternalServicesPrivateDNSZoneName
   location: 'global'
 
   // Link Private DNS Zone to VNet
   resource deployLicenseServerDNSZoneVNetLink 'virtualNetworkLinks' = {
-    name: '${internalServicesPrivateDNSZoneName}-vnet-link'
+    name: '${resolvedInternalServicesPrivateDNSZoneName}-vnet-link'
     location: 'global'
 
     properties: {
@@ -189,22 +192,20 @@ resource licenseServersPrivateDNSZone 'Microsoft.Network/privateDnsZones@2024-06
       registrationEnabled: false
     }
   }
-}
 
-// Create DNS records for each service
-resource licenseServersPrivateDNSZoneRecords 'Microsoft.Network/privateDnsZones/A@2024-06-01' = [for i in range(0, length(serviceIds)): {
-  name: serviceIds[i].key
-  parent: licenseServersPrivateDNSZone
-  
-  properties: {
-    ttl: 3600
-    aRecords:[
-      {
-        ipv4Address: nicIpExtractors[i].outputs.privateIpAddr
-      }
-    ]
-  }
-}]
+  resource licenseServersPrivateDNSZoneRecords 'A' = [for i in range(0, length(serviceIds)): {
+    name: serviceIds[i].key
+    
+    properties: {
+      ttl: 3600
+      aRecords:[
+        {
+          ipv4Address: nicIpExtractors[i].outputs.privateIpAddr
+        }
+      ]
+    }
+  }]
+}
 
 output ipAddresses array = [natPublicIPAddress.properties.ipAddress]
 output sessionHostsSubnetId string = virtualNetwork::sessionhostsSubnet.id
