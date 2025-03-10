@@ -22,12 +22,12 @@ jobs:
         id: template_versioning
         run: |
           sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/main.bicep
-          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreationBatch.bicep
+          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreation.bicep
 
-      - name: Link vmCreationBatchTemplateUri in main template
-        id: vmcreationbatchuri_link
+      - name: Link vmCreationTemplateUri in main template
+        id: vmcreationuri_link
         run: |
-          sed -i "s|\[\[param:vmCreationBatchTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreationBatch.json|" deployment/templates/main.bicep
+          sed -i "s|\[\[param:vmCreationTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreation.json|" deployment/templates/main.bicep
 
       - name: Output directory
         run: mkdir -p out
@@ -38,17 +38,17 @@ jobs:
           bicepFilePath: deployment/templates/main.bicep
           outputFilePath: out/main.json
 
-      - name: Build vmCreationBatch
+      - name: Build vmCreation
         uses: Azure/bicep-build-action@v1.0.0
         with:
-          bicepFilePath: deployment/templates/linked/vmCreationBatch.bicep
-          outputFilePath: out/vmCreationBatch.json
+          bicepFilePath: deployment/templates/linked/vmCreation.bicep
+          outputFilePath: out/vmCreation.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             out/main.json
-            out/vmCreationBatch.json
+            out/vmCreation.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
