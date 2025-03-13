@@ -34,10 +34,10 @@ var internalServiceLinkIds = json(internalServiceLinkIdsJSON)
 // -> spss will result in a domain of spss.customerinternalservices.syavd.local
 var internalServicesPrivateDNSZoneName = '[[param:internalServicesPrivateDNSZoneName]]]'
 
-var numProxyVms = max(
+var numProxyVms = min(max(
   (userCapacity + studentsPerProxy - 1) / studentsPerProxy,
   minProxyVms
-)
+), 10)
 
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
