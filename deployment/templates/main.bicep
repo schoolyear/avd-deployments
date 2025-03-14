@@ -12,8 +12,6 @@ param entraAuthority string
 param entraClientId string
 param tokenExpirationTime string = dateTimeAdd(utcNow(), 'P1D')
 param vmAdminUser string = 'syadmin'
-@secure()
-param vmAdminPassword string = newGuid()
 param proxyAdminUsername string = 'syuser'
 @description('Number of students that can be supported by a single proxy VM')
 param studentsPerProxy int = 10
@@ -36,14 +34,14 @@ var internalServiceLinkIds = json(internalServiceLinkIdsJSON)
 // -> spss will result in a domain of spss.customerinternalservices.syavd.local
 var internalServicesPrivateDNSZoneName = '[[param:internalServicesPrivateDNSZoneName]]]'
 
-var numProxyVms = max(
+var numProxyVms = min(max(
   (userCapacity + studentsPerProxy - 1) / studentsPerProxy,
   minProxyVms
-)
+), 10)
 
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
-var vmCreationBatchTemplateUri = '[[param:vmCreationBatchTemplateUri]]'
+var vmCreationTemplateUri = '[[param:vmCreationTemplateUri]]'
 
 // all resources are deployed in the region of the resource group
 // the region in which the resource group is created, is configured in the AVD add-on in the Schoolyear admin dashboard
@@ -189,41 +187,6 @@ module proxyDeployment 'proxyDeployment.bicep' = {
   }
 }
 
-// The very last thing we run is the VMCreation
-// in order to skip some error that might happen if 
-// VMCreation fails
-module vmDeployment 'vmDeployment.bicep' = {
-  name: 'vmDeployment'
-
-  dependsOn: [
-    proxyDeployment
-  ]
-
-  params: {
-    location: location
-    batchVmCreationTemplateUri: vmCreationBatchTemplateUri
-    vmNamePrefix: vmNamePrefix
-    vmSize: 'Standard_D2s_v5'
-    vmDiskType: 'Premium_LRS'
-    vmCustomImageSourceId: vmCustomImageSourceId
-    vmAdministratorAccountUsername: vmAdminUser
-    vmAdministratorAccountPassword: vmAdminPassword
-    sessionhostsSubnetResourceId: network.outputs.sessionHostsSubnetId
-    virtualMachineTags: {
-      apiBaseUrl: apiBaseUrl
-      examId: examId
-      instanceId: instanceId
-      entraAuthority: entraAuthority
-      entraClientId: entraClientId
-      proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
-      proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
-    }
-    hostpoolName: hostpoolName
-    vmNumberOfInstances: vmNumberOfInstances
-    hostpoolRegistrationToken: avdDeployment.outputs.hostpoolRegistrationToken
-  }
-}
-
 output publicIps array = network.outputs.ipAddresses
 output proxyConfig object = {
   domains: [
@@ -241,3 +204,49 @@ output hostpoolName string = hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
 output appGroupId string = avdDeployment.outputs.appGroupId
+
+// Will be used by the BE to prefix vm names
+// like:
+//        ${vmNamePrefix}-0
+//        ${vmNamePrefix}-1
+//        ${vmNamePrefix}-2
+output vmNamePrefix string = vmNamePrefix
+
+// the template that is responsible for deploying a single VM
+// needed by the SY backend to initiate VM deployments
+output vmCreationTemplateUri string = vmCreationTemplateUri
+// common input parameters for vmCreation template
+// all of these are going to be passed to the vmCreation template
+// and do not change per vm
+output vmCreationTemplateCommonInputParameters object = {
+  location:  location
+  sessionhostsSubnetId:  network.outputs.sessionHostsSubnetId
+  vmTags:  {
+    apiBaseUrl: apiBaseUrl
+    examId: examId
+    instanceId: instanceId
+    entraAuthority: entraAuthority
+    entraClientId: entraClientId
+    proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
+    proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
+  }
+  vmSize: 'Standard_D2s_v5'
+  vmAdminUser: vmAdminUser
+  vmDiskType: 'Premium_LRS'
+  vmImageId:  vmCustomImageSourceId
+  artifactsLocation:  'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip'
+  hostPoolName:  hostpoolName
+  hostPoolToken:  avdDeployment.outputs.hostpoolRegistrationToken
+}
+
+// These urls will not leak any resources at the end of the deployment
+// however they are necessary to completely remove a failing vm deployment 
+// and restart it from a clean slate. 
+// NOTE: {{vmName}} will be substituted by the BE with the actual vmName of each deployment
+// NOTE: In case you change the name of the nic from the vmCreation template make sure to also modify the nic deletion url
+// /subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Compute/virtualMachines/${vmName}
+// /subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/networkInterfaces/${vmName}-nic
+output vmCreationResourceUrls array = [
+ 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().id}/providers/Microsoft.Compute/virtualMachines/{{vmName}}?api-version=2021-04-01' 
+ 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().id}/providers/Microsoft.Network/networkInterfaces/{{vmName}}-nic?api-version=2021-04-01' 
+]
