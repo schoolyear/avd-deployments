@@ -19,8 +19,15 @@ var hostPoolToken = commonInputParameters.hostPoolToken
 // and is controlled by the one (SY backend) deploying this template
 param vmName string
 
+// NOTE: These will be sent by the BE and are required to run the
+// autoUpdateVdiBrowser script, removing them will break deployments
+param latestAgentVersion string
+param msiDownloadUrl string
+
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
+// NOTE: will be baked in with each release
+var autoUpdateScriptLocation = ''
 
 @secure()
 param vmAdminPassword string = newGuid()
@@ -148,7 +155,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
       typeHandlerVersion: '1.10'
       autoUpgradeMinorVersion: true
       settings: {
-        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "& { . \'C:\\SessionhostScripts\\sessionhost_setup.ps1\'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute \'PowerShell\' -Argument \'-Command Restart-Computer -Force\') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName \'reboot\' }"'
+        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "& { $scriptUrl = \'${autoUpdateScriptLocation}\'; $scriptPath = \'C:\\SessionhostScripts\\auto_update_vdi_browser.ps1\'; Invoke-WebRequest -Uri $scriptUrl -OutFile $scriptPath; & $scriptPath -LatestAgentVersion \'${latestAgentVersion}\' -MsiDownloadUrl \'${msiDownloadUrl}\' -Wait; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Remove-Item -Path $scriptPath -Force; . \'C:\\SessionhostScripts\\sessionhost_setup.ps1\'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute \'PowerShell\' -Argument \'-Command Restart-Computer -Force\') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName \'reboot\' }"'
       }
     }
   }
