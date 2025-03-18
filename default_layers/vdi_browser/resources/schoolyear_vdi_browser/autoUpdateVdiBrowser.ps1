@@ -184,15 +184,11 @@ function Update-VdiAgentMsi {
   # Kill the app executable if it's running
   Kill-SchoolyearExamsProcess
     
-  # Prepare msiexec command
-  $cmdLine = "msiexec.exe /i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`" REBOOT=Force"
-  Write-Info -Message "MSI command: $cmdLine"
-    
   if ($Wait) {
     # Execute msiexec and wait for it to finish
     Write-Info -Message "Installing MSI and waiting for it to finish"
     try {
-      $process = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`" REBOOT=Force" -Wait -PassThru
+      $process = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`"" -Wait -PassThru
       if ($process.ExitCode -ne 0) {
         Write-Error -Message "msiexec failed with exit code: $($process.ExitCode)"
         return $false
@@ -209,7 +205,7 @@ function Update-VdiAgentMsi {
   else {
     # Start msiexec without waiting
     try {
-      Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`" REBOOT=Force" -NoNewWindow
+      Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`"" -NoNewWindow
       Write-Info -Message "Installing MSI (not waiting for completion)"
       return $true
     }
