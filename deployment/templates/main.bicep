@@ -74,7 +74,7 @@ var workspaceName = '${defaultNamingPrefix}ws'
 
 // Sessionhosts
 var vmNumberOfInstances = userCapacity
-var vmNamePrefix = 'syvm${substring(examId,0,7)}'
+var vmNamePrefix = 'syvm${substring(examId,0,6)}'
 var vmCustomImageSourceId = '[[param:vmCustomImageSourceId]]]'
 
 // Proxy servers
