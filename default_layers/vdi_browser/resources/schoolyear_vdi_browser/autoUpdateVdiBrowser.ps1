@@ -130,12 +130,7 @@ function Compare-SemVer {
 
 # Gets the current version by reading the build-metadata.json file
 function Get-CurrentVersion {
-  param (
-    [string]$env
-  )
-
-  $schoolyearInstallationFolder = Join-Path -Path $schoolyearInstallationBaseFolder -ChildPath $schoolyearBrowserInstallationFolderNames[$env]
-  $buildMetadataFile = Join-Path -Path $schoolyearInstallationFolder -ChildPath "shell\resources\build-metadata.json"
+  $buildMetadataFile = Join-Path -Path $schoolyearBrowserInstallationFolderName -ChildPath "shell\resources\build-metadata.json"
   if (!(Test-Path $buildMetadataFile)) {
     throw "Could not find metadata file: $buildMetadataFile"
   }
@@ -226,7 +221,7 @@ function Auto-UpdateVdiAgent {
   Write-Info -Message "Starting auto-update check for VDI agent"
     
   # Get current version
-  $currentVersion = Get-CurrentVersion -env $env
+  $currentVersion = Get-CurrentVersion
 
   # Compare with SkipAutoUpdateMinVersion
   $cmpRes = Compare-SemVer -Version1 $SkipAutoUpdateMinVersion -Version2 $currentVersion
@@ -253,20 +248,6 @@ function Auto-UpdateVdiAgent {
     return $false
   }
 }
-
-function Read-BuildMetadataFile {
-  $schoolyearInstallationFolder = Join-Path -Path $schoolyearInstallationBaseFolder -ChildPath $schoolyearBrowserInstallationFolderNames[$env]
-  $buildMetadataFile = Join-Path -Path $schoolyearInstallationFolder -ChildPath "shell\resources\build-metadata.json"
-  if (!(Test-Path $buildMetadataFile)) {
-    throw "Could not find metadata file: $buildMetadataFile"
-  }
-
-  $jsonContent = Get-Content -Path $buildMetadataFile -Raw | ConvertFrom-Json
-  $version = $jsonContent.version
-
-  return $version
-}
-
 
 ## /Function definitions ##
 
