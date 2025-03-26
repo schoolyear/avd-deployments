@@ -104,6 +104,9 @@ var keyVaultName = '[[param:keyVaultName]]]'
 var keyVaultCertificateName = '[[param:keyVaultCertificateName]]]'
 var keyVaultRoleAssignmentDeploymentName = 'keyvaultRoleAssignment'
 
+// Proxy SSH access - disabled by default
+var enableProxySsh = '[[param:enableProxySsh]]]'
+
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
   name: 'network-deployment'
@@ -140,7 +143,6 @@ module avdDeployment './avdDeployment.bicep' = {
   }
 }
 
-var disableSsh = empty(sshPubKey) ? true : false
 module proxyNetwork 'proxyNetwork.bicep' = {
   name: 'proxyNetwork'
 
@@ -151,7 +153,7 @@ module proxyNetwork 'proxyNetwork.bicep' = {
     proxyNicName: proxyNicName
     proxyVmName: proxyVmName
     servicesSubnetId: network.outputs.servicesSubnetId
-    disableSsh: disableSsh
+    disableSsh: !bool(enableProxySsh)
     numProxyVms: numProxyVms
   }
 }
