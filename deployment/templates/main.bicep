@@ -153,7 +153,7 @@ module proxyNetwork 'proxyNetwork.bicep' = {
     proxyNicName: proxyNicName
     proxyVmName: proxyVmName
     servicesSubnetId: network.outputs.servicesSubnetId
-    disableSsh: !bool(enableProxySsh)
+    disableSsh: !bool(empty(enableProxySsh) ? 'false' : enableProxySsh)
     numProxyVms: numProxyVms
   }
 }
