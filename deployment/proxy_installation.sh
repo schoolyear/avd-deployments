@@ -225,6 +225,8 @@ if [ "$TRUSTED_PROXY_READY_STATUS" -ne 200 ]; then
   echo "All Trusted proxy readiness checks failed, last status: $TRUSTED_PROXY_READY_STATUS"
   echo "Response body:"
   echo $TRUSTED_PROXY_READY_BODY
+  echo "Service log:"
+  journalctl -u $TRUSTED_PROXY_SERVICE_NAME.service -n 1000
   exit 54
 fi
 
