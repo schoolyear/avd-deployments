@@ -20,7 +20,6 @@ param appGroupName string
 param servicesSubnetResourceId string
 param privateLinkZoneName string
 
-var maxSessionLimit = max(vmNumberOfInstances, 1)
 var privateEndpointZoneLinkName = 'default'
 var privateEndpointConnectionName = 'schoolyear-secure-endpoint-connection'
 var privateEndpointConnectionNicName = '${privateEndpointConnectionName}-nic'
@@ -35,9 +34,9 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview'
 
   properties: {
     description: 'Created by Schoolyear'
-    hostPoolType: 'Pooled'
-    maxSessionLimit: maxSessionLimit
-    loadBalancerType: 'BreadthFirst'
+    hostPoolType: 'Personal'
+    maxSessionLimit: 1
+    loadBalancerType: 'Persistent'
     validationEnvironment: false
     preferredAppGroupType: 'Desktop'
     ring: null
