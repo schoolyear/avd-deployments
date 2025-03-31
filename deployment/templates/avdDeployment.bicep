@@ -35,7 +35,6 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview'
   properties: {
     description: 'Created by Schoolyear'
     hostPoolType: 'Personal'
-    maxSessionLimit: 1
     loadBalancerType: 'Persistent'
     validationEnvironment: false
     preferredAppGroupType: 'Desktop'
