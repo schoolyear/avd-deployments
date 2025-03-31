@@ -1,0 +1,46 @@
+// this file describes the steps performed during image building
+//
+// this file gets merged with the building_steps.json from all the other steps (first layer executed first)
+// to deviate from the default ordering, you can specify an ordering preference by placing the step in the "pre" or "post" list
+//
+// by default, you should put your installation steps in the "default" list
+//
+// the steps must be formatted as Image Template Customizers: https://learn.microsoft.com/en-us/azure/templates/microsoft.virtualmachineimages/imagetemplates?pivots=deployment-language-arm-template#imagetemplatecustomizer-objects-1
+{
+  // if you need to execute steps before any `default` steps are executed
+  pre: [
+  {
+    name: "Run Example 1",
+    type: "PowerShell",
+    inline: [
+      "C:\\imagebuild_resources\\python\\hello_world.ps1"
+    ],
+    runAsSystem: true,
+    runElevated: true
+  }
+  ],
+  // the default place to put your building steps
+  default: [
+  {
+    name: "Run Example 2",
+    type: "PowerShell",
+    inline: [
+      "C:\\imagebuild_resources\\python\\python_installation.ps1"
+    ],
+    runAsSystem: true,
+    runElevated: true
+  }
+  ],
+  // if you need to execute steps after all `default` steps are executed
+  post: [
+  {
+    name: "Run Example 3",
+    type: "PowerShell",
+    inline: [
+      "C:\\imagebuild_resources\\python\\HWBegin.ps1"
+    ],
+    runAsSystem: true,
+    runElevated: true
+  }
+  ]
+}
