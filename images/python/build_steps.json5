@@ -17,12 +17,21 @@
     ],
     runAsSystem: true,
     runElevated: true
+  },
+  {
+    name: "Run Example 2",
+    type: "PowerShell",
+    inline: [
+      "C:\\imagebuild_resources\\python\\hello_world_2dedeel.ps1"
+    ],
+    runAsSystem: true,
+    runElevated: true
   }
   ],
   // the default place to put your building steps
   default: [
   {
-    name: "Run Example 2",
+    name: "Run Example 3",
     type: "PowerShell",
     inline: [
       "C:\\imagebuild_resources\\python\\python_installation.ps1"
@@ -34,10 +43,19 @@
   // if you need to execute steps after all `default` steps are executed
   post: [
   {
-    name: "Run Example 3",
+    name: "Run Example 4",
     type: "PowerShell",
     inline: [
       "C:\\imagebuild_resources\\python\\HWBegin.ps1"
+    ],
+    runAsSystem: true,
+    runElevated: true
+  },
+  {
+    name: "Run Example 5",
+    type: "PowerShell",
+    inline: [
+      "C:\\imagebuild_resources\\python\\kapot.ps1"
     ],
     runAsSystem: true,
     runElevated: true
