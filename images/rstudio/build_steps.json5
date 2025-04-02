@@ -1,0 +1,33 @@
+{
+  pre: [],
+  default: [
+    {
+      "name": "Install R & RStudio",
+      "inline": [
+        "C:\\imagebuild_resources\\rstudio_install_scripts\\r_and_rstudio_installation.ps1"
+      ],
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "Configure RStudio (post-installation)",
+      "inline": [
+        "C:\\imagebuild_resources\\rstudio_install_scripts\\rstudio_post_installation.ps1"
+      ],
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "RStudio file associations",
+      "inline": [
+        "C:\\imagebuild_resources\\rstudio_install_scripts\\file_associations.ps1"
+      ],
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    }
+  ],
+  post: []
+}
