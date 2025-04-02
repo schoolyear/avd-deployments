@@ -1,16 +1,13 @@
-Write-Host "Start Script, Python installatie"
+$scriptName = Split-Path -Path $PSCommandPath -Leaf
+$logFile = "C:\${scriptName}.log"
+#TODO, path aanpassen naar C:\imagebuild_resources\python\
+. "C:\imagebuild_resources\python\helperFunctions.ps1"
 
-function Log-Message {
-    param (
-        [string]$message
-    )
-    Write-Host $message
-    
-}
+Log-Message "Start Script, Python installatie"
 
 $pythonInstallerName = "python-3.11.6.exe"
 $pythonInstallerURL = "https://www.python.org/ftp/python/3.11.6/python-3.11.6-amd64.exe"
-$pythonInstallerDownloadPath = "C:\$pythonInstallerName"
+$pythonInstallerDownloadPath = "C:\${pythonInstallerName}"
 
 if (!(Test-Path $pythonInstallerDownloadPath)) {
   Log-Message "Python Installer not found, downloading..."
@@ -31,5 +28,4 @@ try {
   }
 } catch {
   Log-Message "Failed to install python: $_"
-  Write-Error "Failed to install python: $_"
 }
