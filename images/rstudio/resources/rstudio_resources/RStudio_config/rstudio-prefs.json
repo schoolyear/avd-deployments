@@ -1,0 +1,14 @@
+{
+    "initial_working_directory": "~",
+    "use_internet2": false,
+    "use_secure_download": false,
+    "pdf_previewer": "none",
+    "windows_terminal_shell": "win-cmd",
+    "cran_mirror": {
+        "name": "Global (CDN)",
+        "host": "RStudio",
+        "url": "http://cran.rstudio.com/",
+        "secondary": "",
+        "country": "us"
+    }
+}

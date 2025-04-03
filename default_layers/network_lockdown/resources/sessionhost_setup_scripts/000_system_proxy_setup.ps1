@@ -45,16 +45,39 @@ foreach ($proxyIpAddr in $splitProxyIpAddresses) {
 # and not use a single proxy to get back the pac file
 $hostsFilepath = "C:\Windows\System32\drivers\etc\hosts"
 $domain = "proxies.local"
+$hostsFileUpdated = $false
 foreach ($proxyIpAddr in $splitProxyIpAddresses) {
     # add line by line each proxy ip pointing to that domain
     # ex.
     #    10.0.16.4 proxies.local
     #    10.0.16.5 proxies.local
     $ipWithoutPort = ($proxyIpAddr -split ":")[0]
-    Add-Content -Path $hostsFilepath -Value "$ipWithoutPort $domain"
+    $retryWaitTimeInSeconds = 5
+
+    for($($retry = 1; $maxRetries = 5); $retry -le $maxRetries; $retry++) {
+        try {
+            # Prior to PowerShell 6.2, Add-Content takes a read lock, so if another process is already reading
+            # the hosts file by the time we attempt to write to it, the cmdlet fails. This is a bug in older versions of PS.
+            # https://github.com/PowerShell/PowerShell/issues/5924
+            #
+            # Using Out-File cmdlet with -Append flag reduces the chances of failure.
+
+            "$ipWithoutPort $domain" | Out-File -FilePath $hostsFilepath -Encoding Default -Append
+            $hostsFileUpdated = $true;
+            break
+        } catch {
+            Write-Host "Failed to update hosts file. Trying again... ($retry/$maxRetries)";
+            Start-Sleep -Seconds $retryWaitTimeInSeconds
+        }
+    }
 }
 
-Write-Host "Updated hosts file"
+if (!$hostsFileUpdated) {
+    Write-Error "Could not update hosts file."
+    exit 1
+}
+
+Write-Host "Hosts file updated."
 
 # Flush dns
 ipconfig /flushdns
