@@ -3,7 +3,7 @@
 ## Image package
 
 ```cmd
-avd-cli image package \
+avdcli image package \
     -l default_layers/common_config \
     -l default_layers/clean \
     -l default_layers/vdot \
@@ -18,10 +18,11 @@ avd-cli image package \
 ## Package deployment
 
 ```cmd
-avd-cli package deploy \
+avdcli package deploy \
     -n office365 \
     -s <<azure subscription id>> \
-    -rg imagebuilder \
+    -rg imagebuilding \
     -r "https://<storageaccount>.blob.core.windows.net/<containername>" \
+    -dto out/resolved_template.json \
     --start
 ```
