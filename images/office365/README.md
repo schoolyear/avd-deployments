@@ -23,5 +23,6 @@ avdcli package deploy \
     -s <<azure subscription id>> \
     -rg imagebuilding \
     -r "https://<storageaccount>.blob.core.windows.net/<containername>" \
+    -dto out/resolved_template.json \
     --start
 ```
