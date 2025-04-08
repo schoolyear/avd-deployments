@@ -1,0 +1,4 @@
+Nieuwe Python versie
+restricted mode van vscode?
+Traagheid?
+Snelkoppeling voor VC code

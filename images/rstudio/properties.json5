@@ -1,0 +1,10 @@
+{
+  // cran.rstudio.com is necessary to allow for the insallation
+  // of external R packages.
+  // Remove these lines if you do NOT want to allow for the installation
+  // of external packages during an exam.
+  whitelistedHosts: {
+    "cran.rstudio.com:443": {},
+    "cran.rstudio.com:80": {},
+  }
+}

@@ -1,17 +1,36 @@
+// All the 'common' parameters needed by this creation template
+// These parameters are the same for all VMs
+// The SY backend shouldn't care about these parameter
+// and they are coming straight out of the main template
+param commonInputParameters object
 
-param location string
+var location = commonInputParameters.location 
+var sessionhostsSubnetId = commonInputParameters.sessionhostsSubnetid 
+var vmTags = commonInputParameters.vmTags 
+var vmSize = commonInputParameters.vmSize 
+var vmAdminUser = commonInputParameters.vmAdminUser 
+var vmDiskType = commonInputParameters.vmDiskType 
+var vmImageId = commonInputParameters.vmImageId 
+var artifactsLocation = commonInputParameters.artifactsLocation 
+var hostPoolName = commonInputParameters.hostPoolName 
+var hostPoolToken = commonInputParameters.hostPoolToken 
+
+// vmName is actually dependent on the vm being created 
+// and is controlled by the one (SY backend) deploying this template
 param vmName string
-param sessionhostsSubnetid string
-param vmTags object
-param vmSize string
-param vmAdminUser string
+
+// NOTE: These will be sent by the BE and are required to run the
+// autoUpdateVdiBrowser script, removing them will break deployments
+param latestAgentVersion string
+param msiDownloadUrl string
+
+// NOTE: will be baked in with each release
+var templateVersion = '0.0.0'
+// NOTE: will be baked in with each release
+var autoUpdateScriptLocation = ''
+
 @secure()
-param vmAdminPassword string
-param vmDiskType string
-param vmImageId string
-param artifactsLocation string
-param hostPoolName string
-param hostPoolToken string
+param vmAdminPassword string = newGuid()
 
 resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
   name: '${vmName}-nic'
@@ -24,7 +43,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
-            id: sessionhostsSubnetid
+            id: sessionhostsSubnetId
           }
         }
       }
@@ -136,8 +155,10 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
       typeHandlerVersion: '1.10'
       autoUpgradeMinorVersion: true
       settings: {
-        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "& { . \'C:\\SessionhostScripts\\sessionhost_setup.ps1\'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute \'PowerShell\' -Argument \'-Command Restart-Computer -Force\') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName \'reboot\' }"'
+        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "& { $scriptUrl = \'${autoUpdateScriptLocation}\'; $scriptPath = \'C:\\SessionhostScripts\\auto_update_vdi_browser.ps1\'; Invoke-WebRequest -Uri $scriptUrl -OutFile $scriptPath; & $scriptPath -LatestAgentVersion \'${latestAgentVersion}\' -MsiDownloadUrl \'${msiDownloadUrl}\' -Wait; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Remove-Item -Path $scriptPath -Force; . \'C:\\SessionhostScripts\\sessionhost_setup.ps1\'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute \'PowerShell\' -Argument \'-Command Restart-Computer -Force\') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName \'reboot\' }"'
       }
     }
   }
 }
+
+output templateVersion string = templateVersion

@@ -1,0 +1,79 @@
+{
+	"general": {
+		"ignoredUpdateVersions": [],
+		"clipboardMonitoring": true
+	},
+	"font": {
+		"proportionalFont": "",
+		"fixedWidthFont": ""
+	},
+	"view": {
+		"zoomLevel": 1,
+		"windowBounds": {
+			"x": 0,
+			"y": 0,
+			"width": 1200,
+			"height": 900
+		},
+		"accessibility": false,
+		"disableRendererAccessibility": false
+	},
+	"remote_session": {
+		"lastRemoteSessionUrl": "",
+		"authCookies": [],
+		"tempAuthCookies": []
+	},
+	"renderer": {
+		"engine": "auto",
+		"useGpuExclusionList": true,
+		"useGpuDriverBugWorkarounds": true
+	},
+	"platform": {
+		"windows": {
+			"rBinDir": "",
+			"preferR64": true,
+			"rExecutablePath": "C:\\Program Files\\R\\R-4.4.1\\bin\\x64\\Rterm.exe"
+		}
+	},
+	"context_id": "",
+	"auto_created_profile": false,
+	"theme": {
+		"name": "Textmate (default)",
+		"url": "theme/default/textmate.rstheme",
+		"isDark": false
+	},
+	"default_project_location": "",
+	"clear_hidden": true,
+	"export_plot_options": {
+		"width": 550,
+		"height": 450,
+		"keepRatio": false,
+		"format": "PNG",
+		"viewAfterSave": false,
+		"copyAsMetafile": false
+	},
+	"export_viewer_options": {},
+	"save_plot_as_pdf_options": {},
+	"compile_r_notebook_prefs": {},
+	"compile_r_markdown_notebook_prefs": {
+		"format": "html_document"
+	},
+	"show_publish_ui": true,
+	"enable_rsconnect_publish_ui": true,
+	"publish_account": {
+		"name": "",
+		"server": ""
+	},
+	"document_outline_width": 110,
+	"connect_via": "connect-r-console",
+	"error_handler_type": "traceback",
+	"using_mingw_gcc49": false,
+	"visual_mode_confirmed": false,
+	"bibliography_default_type": "bib",
+	"citation_default_in_text": false,
+	"zotero_connection_type": "auto",
+	"zotero_use_better_bibtex": false,
+	"zotero_api_key": "",
+	"zotero_data_dir": "",
+	"quarto_website_sync_editor": false
+}

@@ -22,15 +22,23 @@ jobs:
         id: template_versioning
         run: |
           sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/main.bicep
-          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreationBatch.bicep
+          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreation.bicep
 
-      - name: Link vmCreationBatchTemplateUri in main template
-        id: vmcreationbatchuri_link
+      - name: Link vmCreationTemplateUri in main template
+        id: vmcreationuri_link
         run: |
-          sed -i "s|\[\[param:vmCreationBatchTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreationBatch.json|" deployment/templates/main.bicep
+          sed -i "s|\[\[param:vmCreationTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreation.json|" deployment/templates/main.bicep
+
+      - name: Link autoUpdateScript in vm deployment template
+        id: autoupdatescript_link
+        run: |
+          sed -i "s|var autoUpdateScriptLocation = ''|var autoUpdateScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/autoUpdateVdiBrowser.ps1'|" deployment/templates/linked/vmCreation.bicep
 
       - name: Output directory
         run: mkdir -p out
+
+      - name: Copy autoUpdateVdiBrowser.ps1 to output directory
+        run: cp default_layers/vdi_browser/resources/schoolyear_vdi_browser/autoUpdateVdiBrowser.ps1 out/
 
       - name: Build main deployment template
         uses: Azure/bicep-build-action@v1.0.0
@@ -38,17 +46,18 @@ jobs:
           bicepFilePath: deployment/templates/main.bicep
           outputFilePath: out/main.json
 
-      - name: Build vmCreationBatch
+      - name: Build vmCreation
         uses: Azure/bicep-build-action@v1.0.0
         with:
-          bicepFilePath: deployment/templates/linked/vmCreationBatch.bicep
-          outputFilePath: out/vmCreationBatch.json
+          bicepFilePath: deployment/templates/linked/vmCreation.bicep
+          outputFilePath: out/vmCreation.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             out/main.json
-            out/vmCreationBatch.json
+            out/vmCreation.json
+            out/autoUpdateVdiBrowser.ps1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
