@@ -1,4 +1,8 @@
 {
-  whitelistedHosts: {},
+  whitelistedHosts: {
+    "https://files.pythonhosted.org:443": {},
+    "https://pypi.python.org:443": {},
+    "https://pypi.org:443": {}
+  },
   imageTemplate: {}
 }

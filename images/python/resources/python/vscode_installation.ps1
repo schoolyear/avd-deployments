@@ -12,6 +12,7 @@ $vsCodeZipURL = "https://code.visualstudio.com/sha/download?build=stable&os=win3
 $vsCodeZipName = "vscode.zip"
 $vsCodeZipDownloadPath = "C:\${vsCodeZipName}"
 $vsCodeZipExtractPath = "C:\VSCode"
+$vsCodeSettingsPath = Join-Path $env:APPDATA "Code"
 
 if (!(Test-Path $vsCodeZipDownloadPath)) {
   Log-Message "VSCode installer not found, downloading..."
@@ -41,8 +42,8 @@ try {
 
 # Creating data file
 try {
-  Log-Message "Copying over data folder to $vsCodeZipExtractPath..."
-  Copy-Item "C:\imagebuild_resources\python\files\vscode\user-data" $vsCodeZipExtractPath -Force -Recurse | Out-Null
+  Log-Message "Copying over data folder to $vsCodeSettingsPath..."
+  Copy-Item "C:\imagebuild_resources\python\files\vscode\User" $vsCodeSettingsPath -Force -Recurse | Out-Null
   Log-Message "Successfully copied over data folder"
 } catch {
   Log-Message "Failed to copy over data folder: $_"

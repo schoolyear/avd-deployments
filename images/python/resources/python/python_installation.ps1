@@ -5,8 +5,8 @@ $logFile = "C:\${scriptName}.log"
 
 Log-Message "Start Script, Python installatie"
 
-$pythonInstallerName = "python-3.11.6.exe"
-$pythonInstallerURL = "https://www.python.org/ftp/python/3.11.6/python-3.11.6-amd64.exe"
+$pythonInstallerName = "python-3.13.3-amd64.exe"
+$pythonInstallerURL = "https://www.python.org/ftp/python/3.13.3/python-3.13.3-amd64.exe"
 $pythonInstallerDownloadPath = "C:\${pythonInstallerName}"
 
 if (!(Test-Path $pythonInstallerDownloadPath)) {

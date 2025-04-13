@@ -1,5 +1,5 @@
 
-$pipExecutable = "C:\Program Files\Python311\Scripts\pip.exe"
+$pipExecutable = "C:\Program Files\Python313\Scripts\pip.exe"
 try {
   Write-Host "Installing ipykernel package"
   Start-Process -FilePath $pipExecutable -ArgumentList "install", "ipykernel" -Wait -NoNewWindow
