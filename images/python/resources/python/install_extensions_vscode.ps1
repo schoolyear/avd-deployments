@@ -1,6 +1,7 @@
-$scriptName = Split-Path -Path $PSCommandPath -Leaf
+﻿$scriptName = Split-Path -Path $PSCommandPath -Leaf
 $logFile = "C:\${scriptName}.log"
-#TODO, path aanpassen naar C:\imagebuild_resources\python\
+
+# TODO, path aanpassen naar C:\imagebuild_resources\python\
 . "C:\imagebuild_resources\python\helperFunctions.ps1"
 
 $extensions = @(
@@ -14,10 +15,34 @@ $extensions = @(
 )
 
 $codeCommandLinePath = "C:\VSCode\bin\code.cmd"
+
+function Install-VSCodeExtension {
+    param (
+        [string]$Extension,
+        [int]$Retries = 3
+    )
+
+    for ($i = 0; $i -lt $Retries; $i++) {
+        try {
+            Log-Message "Attempting to install extension: $Extension (try $($i + 1)/$Retries)"
+            Start-Process -FilePath $codeCommandLinePath -ArgumentList "--install-extension", $Extension -Wait -NoNewWindow -ErrorAction Stop
+            Log-Message "Successfully installed: $Extension"
+            return
+        } catch {
+            if ($i -eq $Retries - 1) {
+                Log-Message "❌ Failed to install $Extension after $Retries attempts: $_"
+            } else {
+                Log-Message "Retrying $Extension due to error: $_"
+                Start-Sleep -Seconds 5
+            }
+        }
+    }
+}
+
 try {
-  foreach ($extension in $extensions) {
-    Start-Process -FilePath $codeCommandLinePath -ArgumentList "--install-extension", $extension -Wait -NoNewWindow
-  }
+    foreach ($extension in $extensions) {
+        Install-VSCodeExtension -Extension $extension
+    }
 } catch {
-  Log-Message "Failed to install VSCode extensions: $_"
+    Log-Message "⚠️ General failure during extension installation process: $_"
 }
