@@ -12,7 +12,7 @@ $vsCodeZipURL = "https://code.visualstudio.com/sha/download?build=stable&os=win3
 $vsCodeZipName = "vscode.zip"
 $vsCodeZipDownloadPath = "C:\${vsCodeZipName}"
 $vsCodeZipExtractPath = "C:\VSCode"
-$vsCodeSettingsPath = Join-Path $env:APPDATA "Code"
+$vsCodeSettingsPath = "C:\Users\Default\AppData\Roaming\Code"
 
 if (!(Test-Path $vsCodeZipDownloadPath)) {
   Log-Message "VSCode installer not found, downloading..."
