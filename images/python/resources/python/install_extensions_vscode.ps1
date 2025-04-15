@@ -11,7 +11,8 @@ $extensions = @(
   "ms-toolsai.vscode-jupyter-cell-tags",
   "ms-toolsai.jupyter-keymap",
   "ms-toolsai.jupyter-renderers",
-  "ms-toolsai.vscode-jupyter-slideshow"
+  "ms-toolsai.vscode-jupyter-slideshow",
+  "tankashing.blinds-theme"
 )
 
 $codeCommandLinePath = "C:\VSCode\bin\code.cmd"
