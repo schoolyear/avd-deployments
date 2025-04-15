@@ -4,7 +4,7 @@ $logFile = "C:\${scriptName}.log"
 . "C:\imagebuild_resources\python\helperFunctions.ps1"
 
 $pythonIconOriginalPath = "C:\imagebuild_resources\python\files\python.ico"
-$pythonIconDestinationPath = "C:\Program Files\Python311\python.ico"
+$pythonIconDestinationPath = "C:\Program Files\Python313\python.ico"
 $registryKey = "registry::HKEY_CLASSES_ROOT"
 $vsCodeExecutable = "C:\VSCode\Code.exe"
 
