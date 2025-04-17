@@ -31,3 +31,9 @@ try {
 } catch {
   Log-Message "Failed to install file associations: $_"
 }
+
+try {
+  C:\imagebuild_resources\python\install_tool_pinToTaskbar.ps1
+} catch {
+  Log-Message "Failed to install PinToTaskbar Tool: $_"
+}
