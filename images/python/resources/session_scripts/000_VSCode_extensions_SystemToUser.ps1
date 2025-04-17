@@ -1,3 +1,5 @@
+Param ($username)
+
 # This file is a placeholder and can be removed
 # The files in this folder (000_name.ps1) are executed for each user session starting on a session host
 # The files are executed from the SYSTEM account and have admin priviledges
