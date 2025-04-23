@@ -47,3 +47,9 @@ try {
 } catch {
     Log-Message "⚠️ General failure during extension installation process: $_"
 }
+Try {
+    Copy-Item -Path "C:\Windows\System32\config\systemprofile\.vscode\extensions" -Destination "C:\users\Default\.vscode" -Recurse -Force
+    }
+    Catch {
+        Log-Message "Failed to copy extensions to Default user due to error: $_"
+    }
