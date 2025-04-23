@@ -10,5 +10,5 @@ avdcli image package  -l default_layers/common_config -l default_layers/clean -l
 ## Package deployment
 
 ```cmd
-avdcli package deploy -n python -s b0604914-cd2c-4ac9-91bf-c25b32fd0892 -rg imagebuilding -r "https://stschoolyearimageres.blob.core.windows.net/resources" -dto out/resolved_template.json --start
+avdcli package deploy -n python -s <subscription ID> -rg imagebuilding -r "https://<name of storage account>.blob.core.windows.net/<name of container>" -dto out/resolved_template.json --start
 ```
