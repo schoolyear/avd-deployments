@@ -16,7 +16,24 @@ $username | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
 $homedir | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
 $sourcePath | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
 $destinationPath | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
+whoami | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
 # Log content of source folder to file for debugging
+Try {
 Get-ChildItem C:\Windows\System32\config\systemprofile\.vscode\extensions | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
+}
+Catch {
+$_ | Out-File -Append -FilePath C:\temp\ErrorLog.log
+}
+Finally {
+"Dir listing completed." | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
+}
 # Copy the contents recursively, preserving structure
-Copy-Item -Path "$sourcePath" -Destination $destinationPath -Recurse -Force
+Try {
+Copy-Item -Path "$sourcePath" -Destination "$destinationPath" -Recurse -Force | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
+}
+Catch {
+$_ | Out-File -Append -FilePath C:\temp\ErrorLog.log
+}
+Finally {
+"Copy folder completed." | Out-File -Append -FilePath C:\temp\SessionScriptVars.log
+}
