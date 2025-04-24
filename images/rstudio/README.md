@@ -54,7 +54,7 @@ The `rstudio` folder consists of the following subfolders/files
 ## Image package
 
 ```cmd
-avdcli image package \
+avd-cli image package \
     -l default_layers/common_config \
     -l default_layers/clean \
     -l default_layers/vdot \
@@ -68,11 +68,11 @@ avdcli image package \
 ## Package deployment
 
 ```cmd
-avdcli package deploy \
+avd-cli.exe package deploy \
     -n rstudio \
     -s <<azure subscription id>> \
-    -rg imagebuilding \
+    -rg imagebuilder \
     -r "https://<storageaccount>.blob.core.windows.net/<containername>" \
-    -dto out/resolved_template.json
+    -dto out/deployment_template.json
     --start
 ```
