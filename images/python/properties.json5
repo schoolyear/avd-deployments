@@ -1,6 +1,7 @@
 {
   whitelistedHosts: {
     "files.pythonhosted.org:443": {},
+    "pythonhosted.org:443": {},
     "pypi.python.org:443": {},
     "pypi.org:443": {},
   }
