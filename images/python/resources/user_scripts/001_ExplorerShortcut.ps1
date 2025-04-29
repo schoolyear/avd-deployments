@@ -4,7 +4,7 @@
 # All files must exit without an error for the VDI Browser to start up properly
 
 # Define paths
-$targetPath = ""C:\Windows\explorer.exe""  # Make sure this path is correct on your system
+$targetPath = "C:\Windows\explorer.exe"
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $shortcutName = "File Explorer.lnk"
 $shortcutPath = Join-Path $desktopPath $shortcutName
@@ -22,7 +22,7 @@ $desktopShortcut.WorkingDirectory = Split-Path $targetPath
 $desktopShortcut.IconLocation = "$targetPath, 0"
 $desktopShortcut.Save()
 
-# Copy shortcut to Start Menu Programs folder (adds to Start menu)
+# Adds shortcut to Start menu
 Copy-Item -Path $shortcutPath -Destination $startMenuPath -Force
 
 # Pin to taskbar using pttb.exe
