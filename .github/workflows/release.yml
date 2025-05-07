@@ -18,6 +18,12 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
+      - name: Extract major version from version
+        id: get_major_version
+        run: |
+          MAJOR_VERSION=$(echo ${{ env.VERSION }} | sed -E 's/v([0-9]+)\..*/\1/')
+          echo "MAJOR_VERSION=$MAJOR_VERSION" >> $GITHUB_ENV
+
       - name: Bake version in templates
         id: template_versioning
         run: |
@@ -52,12 +58,31 @@ jobs:
           bicepFilePath: deployment/templates/linked/vmCreation.bicep
           outputFilePath: out/vmCreation.json
 
-      - name: Create GitHub Release
+      - name: Build infrastructure installation
+        uses: Azure/bicep-build-action@v1.0.0
+        with:
+          bicepFilePath: deployment/infrastructure/infrastructureInstallation.bicep
+          outputFilePath: out/v${{ env.MAJOR_VERSION }}-infrastructure-installation.json
+
+      - name: Create GitHub Release for v0 and v1
+        if: env.MAJOR_VERSION == '0' || env.MAJOR_VERSION == '1'
         uses: softprops/action-gh-release@v1
         with:
           files: |
             out/main.json
             out/vmCreation.json
             out/autoUpdateVdiBrowser.ps1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release for v2+
+        if: env.MAJOR_VERSION != '0' && env.MAJOR_VERSION != '1'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            out/main.json
+            out/vmCreation.json
+            out/autoUpdateVdiBrowser.ps1
+            out/v${{ env.MAJOR_VERSION }}-infrastructure-installation.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
