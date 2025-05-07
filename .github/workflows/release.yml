@@ -33,7 +33,7 @@ jobs:
       - name: Bake version in infrastructure installation script
         id: template_versioning_infrastructure_installation
         run: |
-          sed -i "s/var version = '0.0.0'/var version = '${{ env.VERSION }}'" deployment/infrastructure/infrastructureInstallation.bicep
+          sed -i "s/var version = '0.0.0'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureInstallation.bicep
 
       - name: Link vmCreationTemplateUri in main template
         id: vmcreationuri_link
