@@ -28,22 +28,26 @@ jobs:
         id: template_versioning
         run: |
           sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/main.bicep
+          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/main.bicep
           sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreation.bicep
+          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/linked/vmCreation.bicep
 
       - name: Bake version in infrastructure installation script
         id: template_versioning_infrastructure_installation
         run: |
           sed -i "s/var version = '0.0.0'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureInstallation.bicep
 
-      - name: Link vmCreationTemplateUri in main template
+      - name: Link vmCreationTemplateUri in main templates
         id: vmcreationuri_link
         run: |
           sed -i "s|\[\[param:vmCreationTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreation.json|" deployment/templates/main.bicep
+          sed -i "s|\[\[param:vmCreationTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/managed-vmCreation.json|" deployment/managed/templates/main.bicep
 
-      - name: Link autoUpdateScript in vm deployment template
+      - name: Link autoUpdateScript in vm deployment templates
         id: autoupdatescript_link
         run: |
           sed -i "s|var autoUpdateScriptLocation = ''|var autoUpdateScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/autoUpdateVdiBrowser.ps1'|" deployment/templates/linked/vmCreation.bicep
+          sed -i "s|var autoUpdateScriptLocation = ''|var autoUpdateScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/autoUpdateVdiBrowser.ps1'|" deployment/managed/templates/linked/vmCreation.bicep
 
       - name: Output directory
         run: mkdir -p out
@@ -57,11 +61,23 @@ jobs:
           bicepFilePath: deployment/templates/main.bicep
           outputFilePath: out/main.json
 
+      - name: Build managed main deployment template
+        uses: Azure/bicep-build-action@v1.0.0
+        with:
+          bicepFilePath: deployment/managed/templates/main.bicep
+          outputFilePath: out/managed-main.json
+
       - name: Build vmCreation
         uses: Azure/bicep-build-action@v1.0.0
         with:
           bicepFilePath: deployment/templates/linked/vmCreation.bicep
           outputFilePath: out/vmCreation.json
+
+      - name: Build managed vmCreation
+        uses: Azure/bicep-build-action@v1.0.0
+        with:
+          bicepFilePath: deployment/managed/templates/linked/vmCreation.bicep
+          outputFilePath: out/managed-vmCreation.json
 
       - name: Build infrastructure installation
         uses: Azure/bicep-build-action@v1.0.0
@@ -89,5 +105,7 @@ jobs:
             out/vmCreation.json
             out/autoUpdateVdiBrowser.ps1
             out/v${{ env.MAJOR_VERSION }}-infrastructure-installation.json
+            out/managed-main.json
+            out/managed-vmCreation.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
