@@ -10,9 +10,6 @@ param avdMetadataLocation string
 @description('The name of the workspace to be attach to new Applicaiton Group.')
 param workSpaceName string = ''
 
-@description('Number of session hosts that will be created and added to the hostpool.')
-param vmNumberOfInstances int = 0
-
 @description('Hostpool token expiration time')
 param tokenExpirationTime string
 

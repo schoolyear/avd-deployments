@@ -134,7 +134,6 @@ module avdDeployment './avdDeployment.bicep' = {
     hostpoolName: hostpoolName
     location: location
     avdMetadataLocation: avdMetadataLocation
-    vmNumberOfInstances: vmNumberOfInstances
     workSpaceName: workspaceName
     tokenExpirationTime: tokenExpirationTime
     appGroupName: appGroupName
