@@ -1,8 +1,4 @@
 param userCapacity int
-// startTime & endTime are not actually used
-// but the BE sends them over, so this template fails if we don't supply them.
-param startTime string
-param endTime string
 param examId string
 param instanceId string
 @secure()
@@ -17,14 +13,9 @@ param proxyAdminUsername string = 'syuser'
 param studentsPerProxy int = 10
 @description('Minimum number of proxy VMs to deploy')
 param minProxyVms int = 2
-// will be replaced interactively during deployment
-param internalServiceLinkIdsJSON string = '[[builtin:internalServiceLinkIdsJSON]]]'
 
-// A map object of domain names - Azure Private Link Service Ids.
-// Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
-// This is used to initiate connections to license servers and other customer provided internal services.
-// The Azure Private Link Services must be configured to auto-accept connections from the subscription in which the Private Services will be deployed.
-var internalServiceLinkIds = json(internalServiceLinkIdsJSON)
+// NOTE: Added to replace {param, builtin, props}
+param internalServiceLinkIdsJSON string = '{}'
 // Example:
 // param licenseServerLinkServiceIds object = {
 //   matlab: '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/privateLinkServices/matlab-license-server-private-link-service'
@@ -32,7 +23,26 @@ var internalServiceLinkIds = json(internalServiceLinkIdsJSON)
 // }
 // -> matlab will result in a domain of matlab.customerinternalservices.syavd.local
 // -> spss will result in a domain of spss.customerinternalservices.syavd.local
-var internalServicesPrivateDNSZoneName = '[[param:internalServicesPrivateDNSZoneName]]]'
+param internalServicesPrivateDNSZoneName string = ''
+param vmCustomImageSourceId string
+param proxyRSAPublicKey string
+param sessionHostProxyWhitelist string
+param dnsZoneResourceGroup string
+param dnsZoneName string
+param keyVaultResourceGroup string
+param keyVaultName string
+param keyVaultCertificateName string
+// Proxy servers
+// User may pass a string of ip CIDRs for the proxy to whitelist
+// SECURITY: only do this for ranges reserved for Chromebooks that are exclusively run the Schoolyear client
+// ex. '31.149.165.25/32,31.149.163.0/24'
+param ipRangesWhitelist string
+
+// A map object of domain names - Azure Private Link Service Ids.
+// Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
+// This is used to initiate connections to license servers and other customer provided internal services.
+// The Azure Private Link Services must be configured to auto-accept connections from the subscription in which the Private Services will be deployed.
+var internalServiceLinkIds = json(internalServiceLinkIdsJSON)
 
 var numProxyVms = min(max(
   (userCapacity + studentsPerProxy - 1) / studentsPerProxy,
@@ -75,14 +85,7 @@ var workspaceName = '${defaultNamingPrefix}ws'
 // Sessionhosts
 var vmNumberOfInstances = userCapacity
 var vmNamePrefix = 'syvm${substring(examId,0,6)}'
-var vmCustomImageSourceId = '[[param:vmCustomImageSourceId]]]'
 
-// Proxy servers
-// User may pass an array of ip CIDRs for the proxy to whitelist
-// SECURITY: only do this for ranges reserved for Chromebooks that are exclusively run the Schoolyear client
-// ex. [31.149.165.25/32, 31.149.163.0/24]
-var ipRangesWhitelist = []
-var sshPubKey = '[[param:proxyRSAPublicKey]]]' // NOTE: if left empty, ssh for the proxy VM will be disabled
 var proxyVmSize = 'Standard_D1_v2'
 var proxyIpName = '${defaultNamingPrefix}proxy-ip'
 var proxyNsgName = '${defaultNamingPrefix}proxy-nsg'
@@ -91,21 +94,12 @@ var proxyVmName = '${defaultNamingPrefix}proxy-vm'
 var proxyInstallScriptUrl = 'https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh'
 var proxyInstallScriptName = 'proxy_installation.sh'
 var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
-var sessionHostProxyWhitelist = '[[builtin:sessionHostProxyWhitelist]]]'
 
 // Proxy DNS deployment
 var proxyDnsEntryDeploymentName = 'proxy-dns-entry'
-var dnsZoneResourceGroup = '[[param:dnsZoneResourceGroup]]]'
-var dnsZoneName = '[[param:dnsZoneName]]]'
 
 // Keyvault
-var keyVaultResourceGroup = '[[param:keyVaultResourceGroup]]]'
-var keyVaultName = '[[param:keyVaultName]]]'
-var keyVaultCertificateName = '[[param:keyVaultCertificateName]]]'
 var keyVaultRoleAssignmentDeploymentName = 'keyvaultRoleAssignment'
-
-// Proxy SSH access - disabled by default
-var enableProxySsh = '[[param:enableProxySsh]]]'
 
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
@@ -152,7 +146,6 @@ module proxyNetwork 'proxyNetwork.bicep' = {
     proxyNicName: proxyNicName
     proxyVmName: proxyVmName
     servicesSubnetId: network.outputs.servicesSubnetId
-    disableSsh: !bool(empty(enableProxySsh) ? 'false' : enableProxySsh)
     numProxyVms: numProxyVms
   }
 }
@@ -166,7 +159,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     proxyVmSize: proxyVmSize
     proxyNicIDs: proxyNetwork.outputs.proxyNicIDs
     proxyAdminUsername: proxyAdminUsername
-    sshPubKey: sshPubKey
+    sshPubKey: proxyRSAPublicKey
     keyVaultRoleAssignmentDeploymentName: keyVaultRoleAssignmentDeploymentName
     examId: examId
     keyVaultResourceGroup: keyVaultResourceGroup
