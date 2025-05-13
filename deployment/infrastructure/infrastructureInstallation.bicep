@@ -131,6 +131,8 @@ output installationOutput object = {
   image_builder_rg_location: imageBuildingResourceGroup.location
   image_builder_managed_identity_name: imageBuildingResources.outputs.managedIdentityId
   image_gallery_name: imageBuildingResources.outputs.imageGalleryName
+
+  dynamic_device_group_id: dynamicDeviceGroup.id 
   dynamic_device_group_name: dynamicDeviceGroupName
 
   // not needed by BE
