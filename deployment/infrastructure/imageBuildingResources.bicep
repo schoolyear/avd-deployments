@@ -93,18 +93,18 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-
   tags: tags
 }
 
-// // 'Storage Blob Data Reader' role to the managed identity
-// var storageBlobDataReaderRoleDefinitionId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
-// resource managedIdentityStorageBlobDataReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-//   name: guid(tenant().tenantId, managedIdentity.id, userPrincipalId, storageBlobDataReaderRoleDefinitionId)
-//   scope: storageAccount
+// 'Storage Blob Data Reader' role to the managed identity
+var storageBlobDataReaderRoleDefinitionId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
+resource managedIdentityStorageBlobDataReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(tenant().tenantId, managedIdentity.id, storageBlobDataReaderRoleDefinitionId)
+  scope: storageAccount
 
-//   properties: {
-//     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataReaderRoleDefinitionId)
-//     principalId: managedIdentity.properties.principalId
-//     principalType: 'ServicePrincipal'
-//   }
-// }
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataReaderRoleDefinitionId)
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
 
 // Create the custom role definition for 'schoolyearavd-imagebuilder'
 // You cannot have the same name for custom roles in a tenant, so we differentiate 
