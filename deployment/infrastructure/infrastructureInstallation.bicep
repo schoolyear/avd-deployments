@@ -121,7 +121,7 @@ module imageBuildingResources 'imageBuildingResources.bicep' = {
 output installationOutput object = {
   // infra config needed by the BE
   tenant_id: tenant().tenantId
-  subscription_id: subscription().id
+  subscription_id: subscription().subscriptionId
   app_registration_client_id: appRegistration.outputs.appId
   base_rg_name: baseResourceGroupName
   base_rg_location: baseResourceGroup.location
