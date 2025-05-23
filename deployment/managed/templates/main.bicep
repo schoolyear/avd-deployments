@@ -37,6 +37,18 @@ param keyVaultCertificateName string
 // SECURITY: only do this for ranges reserved for Chromebooks that are exclusively run the Schoolyear client
 // ex. '31.149.165.25/32,31.149.163.0/24'
 param ipRangesWhitelist string
+param proxyVmSize string
+// all resources are deployed in the region of the resource group
+// the region in which the resource group is created, is configured in the AVD add-on in the Schoolyear admin dashboard
+//
+// AVD metadata resources can only be created in some select regions
+// notably, in Europe the regions that do support these resources are heavily constrained on VM capacity
+//
+// location: the region in which you want to deploy your VMs
+// avdMetadataLocation: a region that supports AVD resources: 'centralindia,uksouth,ukwest,japaneast,japanwest,australiaeast,canadaeast,canadacentral,northeurope,westeurope,southafricanorth,eastus,eastus2,westus,westus2,westus3,northcentralus,southcentralus,westcentralus,centralus'.
+param location string
+param avdMetadataLocation string
+param vmSize string
 
 // A map object of domain names - Azure Private Link Service Ids.
 // Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
@@ -52,17 +64,6 @@ var numProxyVms = min(max(
 // NOTE: will be baked in with each release
 var templateVersion = '0.0.0'
 var vmCreationTemplateUri = '[[param:vmCreationTemplateUri]]'
-
-// all resources are deployed in the region of the resource group
-// the region in which the resource group is created, is configured in the AVD add-on in the Schoolyear admin dashboard
-//
-// AVD metadata resources can only be created in some select regions
-// notably, in Europe the regions that do support these resources are heavily constrained on VM capacity
-//
-// location: the region in which you want to deploy your VMs
-// avdMetadataLocation: a region that supports AVD resources: 'centralindia,uksouth,ukwest,japaneast,japanwest,australiaeast,canadaeast,canadacentral,northeurope,westeurope,southafricanorth,eastus,eastus2,westus,westus2,westus3,northcentralus,southcentralus,westcentralus,centralus'.
-var location = resourceGroup().location
-var avdMetadataLocation = 'westeurope'
 
 var defaultNamingPrefix = resourceGroup().name
 
@@ -86,7 +87,6 @@ var workspaceName = '${defaultNamingPrefix}ws'
 var vmNumberOfInstances = userCapacity
 var vmNamePrefix = 'syvm${substring(examId,0,6)}'
 
-var proxyVmSize = 'Standard_D1_v2'
 var proxyIpName = '${defaultNamingPrefix}proxy-ip'
 var proxyNsgName = '${defaultNamingPrefix}proxy-nsg'
 var proxyNicName = '${defaultNamingPrefix}proxy-nic'
@@ -230,7 +230,7 @@ output vmCreationTemplateCommonInputParameters object = {
     proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
     proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
   }
-  vmSize: 'Standard_D2s_v5'
+  vmSize: vmSize
   vmAdminUser: vmAdminUser
   vmDiskType: 'Premium_LRS'
   vmImageId:  vmCustomImageSourceId
