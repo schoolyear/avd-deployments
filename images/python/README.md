@@ -1,4 +1,4 @@
-## VS Code + Python (incl. Jupyter Notebook) script created by TU/e, based partly on the Schoolyear "Schoolyear Cloud" for Python script.
+## VS Code + Python (incl. Jupyter Notebook) script created by Jim van Boven and Dirk van Nunen (TU/e), based partly on the Schoolyear "Schoolyear Cloud" for Python script.
 
 ## Image package
 

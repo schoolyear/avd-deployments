@@ -16,7 +16,7 @@ if (!(Test-Path $pythonInstallerDownloadPath)) {
 }
 
 
-# Install Python
+# Installs Python
 try {
   Log-Message "Installing python..."
   $process = Start-Process -FilePath $pythonInstallerDownloadPath -Args "/quiet InstallAllUsers=1 AssociateFiles=1 PrependPath=1" -Wait -NoNewWindow -PassThru
