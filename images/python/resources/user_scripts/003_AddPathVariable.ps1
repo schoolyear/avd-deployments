@@ -1,10 +1,8 @@
-# This file is a placeholder and can be removed
 # The files in this folder (000_name.ps1) are executed for each user session starting on a session host
 # The files are executed from the user account and have no admin priviledges
 # All files must exit without an error for the VDI Browser to start up properly
 
-# Define paths
-# Define the folder you want to add to the PATH
+#This scripts add a folder to the path variable, this ensures additional installed packages can be used using a path variable
 $folderToAdd = "$env:USERPROFILE\AppData\Roaming\Python\Python313\Scripts"
 
 # Get the current user PATH environment variable
