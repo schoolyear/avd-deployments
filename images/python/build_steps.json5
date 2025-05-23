@@ -8,6 +8,7 @@
 // the steps must be formatted as Image Template Customizers: https://learn.microsoft.com/en-us/azure/templates/microsoft.virtualmachineimages/imagetemplates?pivots=deployment-language-arm-template#imagetemplatecustomizer-objects-1
 {
   // if you need to execute steps before any `default` steps are executed
+  // "Run main", was placed in the "pre step" since we noticed azure builds sometimes fail without reason, this was easier with troubleshooting
   pre: [
   {
     name: "Run main",

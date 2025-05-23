@@ -1,4 +1,4 @@
-# Python
+## VS Code + Python (incl. Jupyter Notebook) script created by TU/e, based partly on the Schoolyear "Schoolyear Cloud" for Python script.
 
 ## Image package
 

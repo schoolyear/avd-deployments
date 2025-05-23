@@ -1,6 +1,6 @@
 $scriptName = Split-Path -Path $PSCommandPath -Leaf
 $logFile = "C:\${scriptName}.log"
-#TODO, path aanpassen naar C:\imagebuild_resources\python\
+
 . "C:\imagebuild_resources\python\helperFunctions.ps1"
 
 try {

@@ -4,16 +4,16 @@ param (
 
 $scriptName = Split-Path -Path $PSCommandPath -Leaf
 $logFile = "C:\${scriptName}.log"
-#TODO, path aanpassen naar C:\imagebuild_resources\python\
+
 . "C:\imagebuild_resources\python\helperFunctions.ps1"
 
-# NOTE: Maybe we shouldn't use latest for this
 $vsCodeZipURL = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive"
 $vsCodeZipName = "vscode.zip"
 $vsCodeZipDownloadPath = "C:\${vsCodeZipName}"
 $vsCodeZipExtractPath = "C:\VSCode"
 $vsCodeSettingsPath = "C:\Users\Default\AppData\Roaming\Code"
 
+#Downloads installer if necessary
 if (!(Test-Path $vsCodeZipDownloadPath)) {
   Log-Message "VSCode installer not found, downloading..."
   try {
@@ -32,6 +32,7 @@ if (Test-Path $vsCodeZipExtractPath) {
   Log-Message "Removed $vsCodeZipExtractPath"
 }
 
+#This extracts VS Code installation files
 try {
   Log-Message "Extracting VSCode..."
   Expand-Archive $vsCodeZipDownloadPath $vsCodeZipExtractPath | Out-Null  
@@ -40,7 +41,7 @@ try {
   Log-Message "Failed to extract VSCode: $_"
 }
 
-# Creating data file
+# This configures VS Code, a.o. it disables recommendation pop-ups, it trusts external files automatically, a theme is set-up, and the welcome walkthrough is disabled
 try {
   Log-Message "Copying over data folder to $vsCodeSettingsPath..."
   Copy-Item "C:\imagebuild_resources\python\files\vscode\User" $vsCodeSettingsPath -Force -Recurse | Out-Null
@@ -49,6 +50,7 @@ try {
   Log-Message "Failed to copy over data folder: $_"
 }
 
+#This removes the installer
 if ($RemoveInstaller) {
   Log-Message "Removing downloaded installer (.zip file)"
   Remove-Item $vsCodeZipDownloadPath | Out-Null

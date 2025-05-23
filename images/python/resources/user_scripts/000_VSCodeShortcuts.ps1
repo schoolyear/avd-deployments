@@ -3,14 +3,11 @@
 # The files are executed from the user account and have no admin priviledges
 # All files must exit without an error for the VDI Browser to start up properly
 
-# Define paths
-$targetPath = "C:\VSCode\code.exe"  # Make sure this path is correct on your system
+$targetPath = "C:\VSCode\code.exe"
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $shortcutName = "Visual Studio Code.lnk"
 $shortcutPath = Join-Path $desktopPath $shortcutName
 $startMenuPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\$shortcutName"
-
-# Use the directory for tools
 $toolsDir = "C:\Tools"
 $pttbPath = Join-Path $toolsDir "pttb.exe"
 
@@ -22,8 +19,8 @@ $desktopShortcut.WorkingDirectory = Split-Path $targetPath
 $desktopShortcut.IconLocation = "$targetPath, 0"
 $desktopShortcut.Save()
 
-# Copy shortcut to Start Menu Programs folder (adds to Start menu)
+# Copy shortcut to Start menu
 Copy-Item -Path $shortcutPath -Destination $startMenuPath -Force
 
-# Pin to taskbar using pttb.exe
+# Pin icon to taskbar using pttb.exe
 Start-Process -FilePath $pttbPath -ArgumentList "`"$targetPath`"" -Wait

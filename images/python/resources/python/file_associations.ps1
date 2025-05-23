@@ -1,6 +1,6 @@
 $scriptName = Split-Path -Path $PSCommandPath -Leaf
 $logFile = "C:\${scriptName}.log"
-#TODO, path aanpassen naar C:\imagebuild_resources\python\
+
 . "C:\imagebuild_resources\python\helperFunctions.ps1"
 
 $pythonIconOriginalPath = "C:\imagebuild_resources\python\files\python.ico"
@@ -15,6 +15,7 @@ try {
   Log-Message "Failed to copy over python icon: $_"
 }
 
+#Sets up file associations for python
 Write-Host "Setting up file associations for python..."
 New-Item -Path "$registryKey\.py" -Force | Out-Null
 New-Item -Path "$registryKey\.python" -Force | Out-Null

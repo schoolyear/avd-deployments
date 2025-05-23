@@ -1,7 +1,7 @@
-# Stop script on first error in order for the Schoolyear Agent to catch and report it.
+# Stop script on first error in order to catch and report it.
 $ErrorActionPreference = "Stop"
 
-# The main purpose of this script is to set up Python in order to use our Trusted Proxy.
+# The main purpose of this script is to set up Python in order to use the SY Trusted Proxy.
 # Which in turn is configured to whitelist the hosts specified in our properties.json5 file.
 # Configuring Python to use a proxy is as simple as creating a `pip.ini` file which is read by
 # Python on startup.
@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 # from the final build
 
 # Within the VM SessionHosts Azure provides a `Metadata` service which contains (among others)
-# the ip address of our proxy server which we can use to configure RStudio.
+# the ip address of the SY proxy server which we can use to configure pip.
 $url = "http://169.254.169.254/metadata/instance/compute/tagsList?api-version=2021-02-01"
 $headers = @{
   "Metadata" = "true"

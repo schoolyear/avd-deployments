@@ -1,5 +1,4 @@
-﻿
-
+﻿#This installs the tool that is used to pin shortcuts to the taskbar
 
 # Use a user-writable directory for tools
 $toolsDir = "C:\Tools"

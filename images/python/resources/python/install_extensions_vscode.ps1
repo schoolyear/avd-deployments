@@ -1,7 +1,6 @@
 ﻿$scriptName = Split-Path -Path $PSCommandPath -Leaf
 $logFile = "C:\${scriptName}.log"
 
-# TODO, path aanpassen naar C:\imagebuild_resources\python\
 . "C:\imagebuild_resources\python\helperFunctions.ps1"
 
 $extensions = @(
@@ -17,6 +16,7 @@ $extensions = @(
 
 $codeCommandLinePath = "C:\VSCode\bin\code.cmd"
 
+#This installs some VS Code extensions, including a colour blindness theme
 function Install-VSCodeExtension {
     param (
         [string]$Extension,
@@ -47,6 +47,8 @@ try {
 } catch {
     Log-Message "⚠️ General failure during extension installation process: $_"
 }
+
+#Installing extensions creates some necesarry files in the User profile, since the System user installs these, the files need to be copied to the student user
 Try {
     Copy-Item -Path "C:\Windows\System32\config\systemprofile\.vscode\extensions" -Destination "C:\users\Default\.vscode\extensions" -Recurse -Force
     }
