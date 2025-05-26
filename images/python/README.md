@@ -1,6 +1,10 @@
 # VS Code + Python (incl. Jupyter Notebook) script
 ## created by Jim van Boven and Dirk van Nunen (TU/e), based partly on the Schoolyear "Schoolyear Cloud" for Python script.
 
+A Python image that installs VS Code, Python and some Jupyter notebook extensions for VS Code. It also includes a colour blindness theme. Please note: The image has network access to python package repositories.
+
+The image was tested at TU/e, but so far only by IT staff.
+
 ### Image package
 
 ```cmd
