@@ -6,4 +6,3 @@ local.*
 images/local*
 local/
 *.exe
-.env
