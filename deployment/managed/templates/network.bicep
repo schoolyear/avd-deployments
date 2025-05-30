@@ -10,6 +10,7 @@ param servicesSubnetCIDR string
 param privatelinkZoneName string
 param internalServiceLinkIds object
 param internalServicesPrivateDNSZoneName string
+param tags object
 
 // convert license server link service ids to array for iteration
 var serviceIds = items(internalServiceLinkIds)
@@ -21,6 +22,7 @@ var resolvedInternalServicesPrivateDNSZoneName = !empty(internalServicesPrivateD
 resource natPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
   name: natIpName
   location: location
+  tags: tags
   sku: {
     name: 'Standard'
     tier: 'Regional'
@@ -41,6 +43,7 @@ resource natPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
 resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
   name: natName
   location: location
+  tags: tags
   sku: {
     name: 'Standard'
   }
@@ -59,6 +62,7 @@ resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: vnetName
   location: location
+  tags: tags
 
   properties: {
     addressSpace: {
@@ -116,6 +120,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 resource privateLinkDNSZone 'Microsoft.Network/privateDnsZones@2018-09-01' = {
   name: privatelinkZoneName
   location: 'global'
+  tags: tags
 }
 
 var virtualNetworkLinkName = '${privatelinkZoneName}/vnetLink'
@@ -123,6 +128,7 @@ var virtualNetworkLinkName = '${privatelinkZoneName}/vnetLink'
 resource virtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2018-09-01' = {
   name: virtualNetworkLinkName
   location: 'global'
+  tags: tags
 
   properties: {
     registrationEnabled: false
@@ -142,6 +148,7 @@ resource virtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLin
 resource privateEndpoints 'Microsoft.Network/privateEndpoints@2024-05-01' = [for service in serviceIds: {
   name: '${service.key}-private-endpoint'
   location: location
+  tags: tags
 
   properties: {
     privateLinkServiceConnections: [
@@ -177,11 +184,13 @@ var deployPrivateDNSZoneForInternalServices = !empty(serviceIds)
 resource licenseServersPrivateDNSZone 'Microsoft.Network/privateDnsZones@2024-06-01' = if (deployPrivateDNSZoneForInternalServices) {
   name: resolvedInternalServicesPrivateDNSZoneName
   location: 'global'
+  tags: tags
 
   // Link Private DNS Zone to VNet
   resource deployLicenseServerDNSZoneVNetLink 'virtualNetworkLinks' = {
     name: '${resolvedInternalServicesPrivateDNSZoneName}-vnet-link'
     location: 'global'
+    tags: tags
 
     properties: {
       virtualNetwork: {

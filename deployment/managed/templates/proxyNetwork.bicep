@@ -5,11 +5,13 @@ param proxyNicName string
 param proxyVmName string
 param servicesSubnetId string
 param numProxyVms int
+param tags object
 
 // Ip Address of proxy
 resource proxyPublicIPAddresses 'Microsoft.Network/publicIPAddresses@2023-04-01' = [for i in range(0, numProxyVms): {
   name: '${proxyIpName}-${i}'
   location: location
+  tags: tags
   sku: {
     name: 'Standard'
     tier: 'Regional'
@@ -60,6 +62,7 @@ var securityRules = concat([httpsInboundRule], [sshInboundRule])
 resource proxyNetworkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-04-01' = {
   name: proxyNsgName
   location: location
+  tags: tags
 
   properties: {
     securityRules: securityRules
@@ -69,6 +72,7 @@ resource proxyNetworkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023
 resource proxyNetworkInterfaces 'Microsoft.Network/networkInterfaces@2020-06-01' = [for i in range(0, numProxyVms): {
   name: '${proxyNicName}-${i}'
   location: location
+  tags: tags
 
   properties: {
     ipConfigurations: [

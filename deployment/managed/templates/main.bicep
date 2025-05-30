@@ -49,6 +49,8 @@ param proxyVmSize string
 param location string
 param avdMetadataLocation string
 param vmSize string
+// Optional tags provided by the customer
+param tags object = {}
 
 // A map object of domain names - Azure Private Link Service Ids.
 // Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
@@ -101,6 +103,11 @@ var proxyDnsEntryDeploymentName = 'proxy-dns-entry'
 // Keyvault
 var keyVaultRoleAssignmentDeploymentName = 'keyvaultRoleAssignment'
 
+// Combine user-provided tags with the template version
+var tagsWithVersion = union(tags, {
+  Version: templateVersion
+})
+
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
   name: 'network-deployment'
@@ -118,6 +125,7 @@ module network './network.bicep' = {
     privatelinkZoneName: privatelinkZoneName
     internalServiceLinkIds: internalServiceLinkIds
     internalServicesPrivateDNSZoneName: internalServicesPrivateDNSZoneName
+    tags: tagsWithVersion
   }
 }
 
@@ -133,6 +141,7 @@ module avdDeployment './avdDeployment.bicep' = {
     appGroupName: appGroupName
     servicesSubnetResourceId: network.outputs.servicesSubnetId
     privateLinkZoneName: privatelinkZoneName
+    tags: tagsWithVersion
   }
 }
 
@@ -147,6 +156,7 @@ module proxyNetwork 'proxyNetwork.bicep' = {
     proxyVmName: proxyVmName
     servicesSubnetId: network.outputs.servicesSubnetId
     numProxyVms: numProxyVms
+    tags: tagsWithVersion
   }
 }
 
@@ -178,6 +188,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     trustedProxyBinaryUrl: trustedProxyBinaryUrl
     keyVaultCertificateName: keyVaultCertificateName
     ipRangesWhitelist: ipRangesWhitelist
+    tags: tagsWithVersion
   }
 }
 
@@ -237,6 +248,7 @@ output vmCreationTemplateCommonInputParameters object = {
   artifactsLocation:  'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip'
   hostPoolName:  hostpoolName
   hostPoolToken:  avdDeployment.outputs.hostpoolRegistrationToken
+  tags: tagsWithVersion
 }
 
 // These urls will not leak any resources at the end of the deployment

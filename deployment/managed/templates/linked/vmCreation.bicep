@@ -14,6 +14,7 @@ var vmImageId = commonInputParameters.vmImageId
 var artifactsLocation = commonInputParameters.artifactsLocation 
 var hostPoolName = commonInputParameters.hostPoolName 
 var hostPoolToken = commonInputParameters.hostPoolToken 
+var tags = commonInputParameters.tags
 
 // vmName is actually dependent on the vm being created 
 // and is controlled by the one (SY backend) deploying this template
@@ -35,6 +36,7 @@ param vmAdminPassword string = newGuid()
 resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
   name: '${vmName}-nic'
   location: location
+  tags: tags
 
   properties: {
     ipConfigurations: [
@@ -54,7 +56,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
 resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   name: vmName
   location: location
-  tags: vmTags
+  tags: union(tags, vmTags)
   
   identity: {
     type: 'SystemAssigned'
@@ -93,6 +95,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   resource dsc 'extensions' = {
     name: 'Microsoft.PowerShell.DSC'
     location: location
+    tags: tags
 
     properties: {
       publisher: 'Microsoft.Powershell'
@@ -124,6 +127,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   resource aadLogin 'extensions' = {
     name: 'AADLoginForWindows'
     location: location
+    tags: tags
 
     dependsOn: [
       dsc
@@ -143,6 +147,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   resource scheduledReboot 'extensions' = {
     name: 'scheduledReboot'
     location: location
+    tags: tags
 
     dependsOn: [
       dsc

@@ -16,6 +16,7 @@ param tokenExpirationTime string
 param appGroupName string
 param servicesSubnetResourceId string
 param privateLinkZoneName string
+param tags object
 
 var privateEndpointZoneLinkName = 'default'
 var privateEndpointConnectionName = 'schoolyear-secure-endpoint-connection'
@@ -28,6 +29,7 @@ var privateEndpointFeedZoneLinkName = '${privateEndpointFeedName}/${privateEndpo
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview' = {
   name: hostpoolName
   location: avdMetadataLocation
+  tags: tags
 
   properties: {
     description: 'Created by Schoolyear'
@@ -51,6 +53,7 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview'
 resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-08-preview' = {
   name: appGroupName
   location: avdMetadataLocation
+  tags: tags
   properties: {
     hostPoolArmPath: hostpool.id
     friendlyName: 'Default Desktop'
@@ -62,6 +65,7 @@ resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-08-
 resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-08-preview' = {
   name: workSpaceName
   location: avdMetadataLocation
+  tags: tags
 
   properties: {
     applicationGroupReferences: [appGroup.id]
@@ -73,6 +77,7 @@ resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-08-previe
 resource privateEndpointConnection 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   name: privateEndpointConnectionName
   location: location
+  tags: tags
   properties: {
     subnet: {
       id: servicesSubnetResourceId
@@ -112,6 +117,7 @@ resource privateEndpointConnectionZoneLink 'Microsoft.Network/privateEndpoints/p
 resource privateEndpointFeed 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   name: privateEndpointFeedName
   location: location
+  tags: tags
 
   properties: {
     subnet: {

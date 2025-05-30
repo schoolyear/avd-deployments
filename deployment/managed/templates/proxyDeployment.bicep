@@ -23,15 +23,16 @@ param apiBaseUrl string
 param trustedProxyBinaryUrl string
 param keyVaultCertificateName string
 param ipRangesWhitelist string
-
 @secure()
 param proxyVmAdminPassword string = newGuid()
+param tags object
 
 var disableSsh = empty(sshPubKey) ? true : false
 
 resource proxyVMs 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in range(0, length(proxyNicIDs)): {
   name: '${proxyVmName}-${i}'
   location: location
+  tags: tags
 
   identity: {
     type: 'SystemAssigned'
@@ -115,6 +116,7 @@ resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020
   parent: proxyVMs[i]
   name: 'CustomScriptExtensionName'
   location: location
+  tags: tags
 
   properties: {
     publisher: 'Microsoft.Azure.Extensions'
