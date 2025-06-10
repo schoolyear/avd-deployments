@@ -79,12 +79,9 @@ var numProxyVms = min(max(
 var templateVersion = '0.0.0'
 var vmCreationTemplateUri = '[[param:vmCreationTemplateUri]]'
 
-var defaultNamingPrefix = resourceGroup().name
+var shortExamId = substring(examId, 0, 6)
 
 // VNET
-var natIpName = '${defaultNamingPrefix}ip'
-var natName = '${defaultNamingPrefix}nat'
-var vnetName = '${defaultNamingPrefix}vnet'
 var vnetSubnetCIDR = '10.0.0.0/19'
 var sessionhostsSubnetCIDR = '10.0.0.0/20'
 var sessionhostsSubnetName = 'sessionhosts'
@@ -92,19 +89,10 @@ var servicesSubnetCIDR = '10.0.16.0/20'
 var servicesSubnetName = 'services'
 var privatelinkZoneName = 'privatelink.wvd.microsoft.com'
 
-// AVD
-var hostpoolName = '${defaultNamingPrefix}pool'
-var appGroupName = '${defaultNamingPrefix}dag'
-var workspaceName = '${defaultNamingPrefix}ws'
-
 // Sessionhosts
 var vmNumberOfInstances = userCapacity
 var vmNamePrefix = 'syvm${substring(examId,0,6)}'
 
-var proxyIpName = '${defaultNamingPrefix}proxy-ip'
-var proxyNsgName = '${defaultNamingPrefix}proxy-nsg'
-var proxyNicName = '${defaultNamingPrefix}proxy-nic'
-var proxyVmName = '${defaultNamingPrefix}proxy-vm'
 var proxyInstallScriptUrl = 'https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh'
 var proxyInstallScriptName = 'proxy_installation.sh'
 var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
@@ -120,18 +108,18 @@ var tagsWithVersion = union(tags, {
   Version: templateVersion
 })
 
-var natIpNameWithPrefix = '${resourceTypeNamePrefixPip}${natIpName}'
-var natNameWithPrefix = '${resourceTypeNamePrefixNat}${natName}'
-var vnetNameWithPrefix = '${resourceTypeNamePrefixVnet}${vnetName}'
+var natIpName = '${resourceTypeNamePrefixPip}${shortExamId}'
+var natName = '${resourceTypeNamePrefixNat}${shortExamId}'
+var vnetName = '${resourceTypeNamePrefixVnet}${shortExamId}'
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
   name: 'network-deployment'
 
   params: {
     location: location
-    natIpName: natIpNameWithPrefix
-    natName: natNameWithPrefix
-    vnetName: vnetNameWithPrefix
+    natIpName: natIpName
+    natName: natName
+    vnetName: vnetName
     vnetSubnetCIDR: vnetSubnetCIDR
     sessionhostsSubnetName: sessionhostsSubnetName
     sessionhostsSubnetCIDR: sessionhostsSubnetCIDR
@@ -147,9 +135,9 @@ module network './network.bicep' = {
 var privateEndpointConnectionName = 'sy-endpoint-connection'
 var privateEndpointFeedName = 'sy-endpoint-feed'
 
-var hostpoolNameWithPrefix = '${resourceTypeNamePrefixHp}${hostpoolName}'
-var appGroupNameWithPrefix = '${resourceTypeNamePrefixAg}${appGroupName}'
-var workspaceNameWithPrefix = '${resourceTypeNamePrefixWs}${workspaceName}'
+var hostpoolName = '${resourceTypeNamePrefixHp}${shortExamId}'
+var appGroupName = '${resourceTypeNamePrefixAg}${shortExamId}'
+var workspaceNameWithPrefix = '${resourceTypeNamePrefixWs}${shortExamId}'
 var privateEndpointConnectionNameWithPrefix = '${resourceTypeNamePrefixPep}${privateEndpointConnectionName}'
 var privateEndpointConnectionLinkNameWithPrefix = '${resourceTypeNamePrefixPdnsLink}default'
 var privateEndpointFeedNameWithPrefix = '${resourceTypeNamePrefixPep}${privateEndpointFeedName}'
@@ -160,8 +148,8 @@ module avdDeployment './avdDeployment.bicep' = {
   params: {
     location: location
     avdMetadataLocation: avdMetadataLocation
-    hostpoolName: hostpoolNameWithPrefix
-    appGroupName: appGroupNameWithPrefix
+    hostpoolName: hostpoolName
+    appGroupName: appGroupName
     workSpaceName: workspaceNameWithPrefix
     privateEndpointConnectionName: privateEndpointConnectionNameWithPrefix
     privateEndpointConnectionLinkName: privateEndpointConnectionLinkNameWithPrefix
@@ -174,19 +162,19 @@ module avdDeployment './avdDeployment.bicep' = {
   }
 }
 
-var proxyIpNameWithPrefix = '${resourceTypeNamePrefixPip}${proxyIpName}'
-var proxyNsgNameWithPrefix = '${resourceTypeNamePrefixNsg}${proxyNsgName}'
-var proxyNicNameWithPrefix = '${resourceTypeNamePrefixNic}${proxyNicName}'
-var proxyVmNameWithPrefix = '${resourceTypeNamePrefixVm}${proxyVmName}'
+var proxyIpName = '${resourceTypeNamePrefixPip}-proxy'
+var proxyNsgName = '${resourceTypeNamePrefixNsg}-proxy'
+var proxyNicName = '${resourceTypeNamePrefixNic}-proxy'
+var proxyVmName = '${resourceTypeNamePrefixVm}-proxy'
 module proxyNetwork 'proxyNetwork.bicep' = {
   name: 'proxyNetwork'
 
   params: {
     location: location
-    proxyIpName: proxyIpNameWithPrefix
-    proxyNsgName: proxyNsgNameWithPrefix
-    proxyNicName: proxyNicNameWithPrefix
-    proxyVmName: proxyVmNameWithPrefix
+    proxyIpName: proxyIpName
+    proxyNsgName: proxyNsgName
+    proxyNicName: proxyNicName
+    proxyVmName: proxyVmName
     servicesSubnetId: network.outputs.servicesSubnetId
     numProxyVms: numProxyVms
     tags: tagsWithVersion
@@ -198,7 +186,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
   
   params: {
     location: location
-    proxyVmName: proxyVmNameWithPrefix
+    proxyVmName: proxyVmName
     proxyVmSize: proxyVmSize
     proxyNicIDs: proxyNetwork.outputs.proxyNicIDs
     proxyAdminUsername: proxyAdminUsername
@@ -244,7 +232,7 @@ output resourceUrlsToDelete array = [
   ...proxyDeployment.outputs.keyVaultRoleAssignmentDeploymentResourceUrls
   proxyDeployment.outputs.proxyDnsEntryDeploymentResourceUrl
 ]
-output hostpoolName string = hostpoolName
+output hostpoolName string = avdDeployment.outputs.hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
 output appGroupId string = avdDeployment.outputs.appGroupId
@@ -279,7 +267,7 @@ output vmCreationTemplateCommonInputParameters object = {
   vmDiskType: 'Premium_LRS'
   vmImageId:  vmCustomImageSourceId
   artifactsLocation:  'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip'
-  hostPoolName:  hostpoolName
+  hostPoolName:  avdDeployment.outputs.hostpoolName
   hostPoolToken:  avdDeployment.outputs.hostpoolRegistrationToken
   tags: tagsWithVersion
   resourceTypeNamePrefixNic: resourceTypeNamePrefixNic
