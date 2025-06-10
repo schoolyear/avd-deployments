@@ -1,13 +1,26 @@
 targetScope = 'subscription'
 
 param location string = 'germanywestcentral'
-param baseResourceGroupName string = 'schoolyear-base'
-param dnsZoneName string
-param keyVaultName string
+param tags object = {}
+
+// App registration is created before this installation script is run
+// however we need these params here to automate the 
+// necessary role assignment (needs ownership on the subscription)
 param appRegistrationName string
 param appRegistrationServicePrincipalId string
-param imageBuildingResourceGroupName string = 'imagebuilding'
-param tags object = {}
+
+// Resources that may be renamed
+param baseResourceGroupName string = 'rg-sy-base'
+param dnsZoneName string
+param keyVaultName string
+param imageBuildingResourceGroupName string = 'rg-sy-imagebuilding'
+param imageGalleryName string = 'sig-sy-avd'
+param imageDefinitionName string = 'img-office365'
+param storageAccountName string = 'stsy'
+param storageAccountBlobServiceName string = 'default'
+param storageAccountContainerName string = 'resources'
+param imageBuilderCustomRoleDefinitionName string = 'rd-syavd-imagebuilder'
+param managedIdentityName string = 'mi-sy-imagebuilder'
 
 // NOTE: Will be baked in with each release
 var version = '0.0.0'
@@ -72,12 +85,15 @@ module imageBuildingResources 'imageBuildingResources.bicep' = {
 
   params: {
     location: location
-    imageGalleryName: 'schoolyear_avd_gallery'
-    imageDefinitionName: 'office365'
-    storageAccountName: 'imageresources${subscriptionShortId}'
-    containerName: 'resources'
-    imagebuilderCustomRoleName: imagebuilderCustomRoleName
     tags: tags
+    imageGalleryName: imageGalleryName
+    imageDefinitionName: imageDefinitionName
+    storageAccountName: storageAccountName
+    storageAccountBlobServiceName: storageAccountBlobServiceName
+    storageAccountContainerName: storageAccountContainerName
+    imagebuilderCustomRoleName: imagebuilderCustomRoleName
+    imageBuilderCustomRoleDefinitionName: imageBuilderCustomRoleDefinitionName
+    managedIdentityName: managedIdentityName
   }
 }
 

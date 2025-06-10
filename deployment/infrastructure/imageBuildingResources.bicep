@@ -1,10 +1,14 @@
 param location string
+param tags object
+
 param imageGalleryName string
 param imageDefinitionName string
 param storageAccountName string
-param containerName string
+param storageAccountBlobServiceName string
+param storageAccountContainerName string
 param imagebuilderCustomRoleName string
-param tags object
+param imageBuilderCustomRoleDefinitionName string
+param managedIdentityName string
 
 resource imageGallery 'Microsoft.Compute/galleries@2022-03-03' = {
   name: imageGalleryName
@@ -54,7 +58,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
 
 resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2022-09-01' = {
   parent: storageAccount
-  name: 'default'
+  name: storageAccountBlobServiceName
 
   properties: {
     deleteRetentionPolicy: {
@@ -70,7 +74,7 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2022-09-01'
 
 resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = {
   parent: blobService
-  name: containerName
+  name: storageAccountContainerName
 }
 
 // // Grant the 'Storage Blob Data Contributor' role for the user to the Storage Account
@@ -88,7 +92,7 @@ resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@20
 
 // Managed Identity
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
-  name: 'imagebuilder'
+  name: managedIdentityName
   location: location
   tags: tags
 }
@@ -107,10 +111,8 @@ resource managedIdentityStorageBlobDataReaderRoleAssignment 'Microsoft.Authoriza
 }
 
 // Create the custom role definition for 'schoolyearavd-imagebuilder'
-// You cannot have the same name for custom roles in a tenant, so we differentiate 
-// the naming of this custom role by suffixing the last part of the subscription uuid to it
 resource customRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
-  name: guid(tenant().tenantId, subscription().id, 'schoolyearavd-imagebuilder')
+  name: imageBuilderCustomRoleDefinitionName
 
   properties: {
     roleName: imagebuilderCustomRoleName
