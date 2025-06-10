@@ -51,6 +51,18 @@ param avdMetadataLocation string
 param vmSize string
 // Optional tags provided by the customer
 param tags object = {}
+// Resource type name prefixes provided by the customer
+param resourceTypeNamePrefixPip string
+param resourceTypeNamePrefixNat string
+param resourceTypeNamePrefixVnet string
+param resourceTypeNamePrefixHp string
+param resourceTypeNamePrefixAg string
+param resourceTypeNamePrefixWs string
+param resourceTypeNamePrefixPep string
+param resourceTypeNamePrefixPdnsLink string
+param resourceTypeNamePrefixNsg string
+param resourceTypeNamePrefixNic string
+param resourceTypeNamePrefixVm string
 
 // A map object of domain names - Azure Private Link Service Ids.
 // Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
@@ -108,15 +120,18 @@ var tagsWithVersion = union(tags, {
   Version: templateVersion
 })
 
+var natIpNameWithPrefix = '${resourceTypeNamePrefixPip}${natIpName}'
+var natNameWithPrefix = '${resourceTypeNamePrefixNat}${natName}'
+var vnetNameWithPrefix = '${resourceTypeNamePrefixVnet}${vnetName}'
 // Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
 module network './network.bicep' = {
   name: 'network-deployment'
 
   params: {
     location: location
-    natIpName: natIpName
-    natName: natName
-    vnetName: vnetName
+    natIpName: natIpNameWithPrefix
+    natName: natNameWithPrefix
+    vnetName: vnetNameWithPrefix
     vnetSubnetCIDR: vnetSubnetCIDR
     sessionhostsSubnetName: sessionhostsSubnetName
     sessionhostsSubnetCIDR: sessionhostsSubnetCIDR
@@ -129,31 +144,49 @@ module network './network.bicep' = {
   }
 }
 
+var privateEndpointConnectionName = 'sy-endpoint-connection'
+var privateEndpointFeedName = 'sy-endpoint-feed'
+
+var hostpoolNameWithPrefix = '${resourceTypeNamePrefixHp}${hostpoolName}'
+var appGroupNameWithPrefix = '${resourceTypeNamePrefixAg}${appGroupName}'
+var workspaceNameWithPrefix = '${resourceTypeNamePrefixWs}${workspaceName}'
+var privateEndpointConnectionNameWithPrefix = '${resourceTypeNamePrefixPep}${privateEndpointConnectionName}'
+var privateEndpointConnectionLinkNameWithPrefix = '${resourceTypeNamePrefixPdnsLink}default'
+var privateEndpointFeedNameWithPrefix = '${resourceTypeNamePrefixPep}${privateEndpointFeedName}'
+var privateEndpointFeedLinkNameWithPrefix = '${resourceTypeNamePrefixPdnsLink}default'
 module avdDeployment './avdDeployment.bicep' = {
   name: 'avd-deployment'
 
   params: {
-    hostpoolName: hostpoolName
     location: location
     avdMetadataLocation: avdMetadataLocation
-    workSpaceName: workspaceName
+    hostpoolName: hostpoolNameWithPrefix
+    appGroupName: appGroupNameWithPrefix
+    workSpaceName: workspaceNameWithPrefix
+    privateEndpointConnectionName: privateEndpointConnectionNameWithPrefix
+    privateEndpointConnectionLinkName: privateEndpointConnectionLinkNameWithPrefix
+    privateEndpointFeedName: privateEndpointFeedNameWithPrefix
+    privateEndpointFeedLinkName: privateEndpointFeedLinkNameWithPrefix
     tokenExpirationTime: tokenExpirationTime
-    appGroupName: appGroupName
     servicesSubnetResourceId: network.outputs.servicesSubnetId
     privateLinkZoneName: privatelinkZoneName
     tags: tagsWithVersion
   }
 }
 
+var proxyIpNameWithPrefix = '${resourceTypeNamePrefixPip}${proxyIpName}'
+var proxyNsgNameWithPrefix = '${resourceTypeNamePrefixNsg}${proxyNsgName}'
+var proxyNicNameWithPrefix = '${resourceTypeNamePrefixNic}${proxyNicName}'
+var proxyVmNameWithPrefix = '${resourceTypeNamePrefixVm}${proxyVmName}'
 module proxyNetwork 'proxyNetwork.bicep' = {
   name: 'proxyNetwork'
 
   params: {
     location: location
-    proxyIpName: proxyIpName
-    proxyNsgName: proxyNsgName
-    proxyNicName: proxyNicName
-    proxyVmName: proxyVmName
+    proxyIpName: proxyIpNameWithPrefix
+    proxyNsgName: proxyNsgNameWithPrefix
+    proxyNicName: proxyNicNameWithPrefix
+    proxyVmName: proxyVmNameWithPrefix
     servicesSubnetId: network.outputs.servicesSubnetId
     numProxyVms: numProxyVms
     tags: tagsWithVersion
@@ -165,7 +198,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
   
   params: {
     location: location
-    proxyVmName: proxyVmName
+    proxyVmName: proxyVmNameWithPrefix
     proxyVmSize: proxyVmSize
     proxyNicIDs: proxyNetwork.outputs.proxyNicIDs
     proxyAdminUsername: proxyAdminUsername
@@ -249,6 +282,8 @@ output vmCreationTemplateCommonInputParameters object = {
   hostPoolName:  hostpoolName
   hostPoolToken:  avdDeployment.outputs.hostpoolRegistrationToken
   tags: tagsWithVersion
+  resourceTypeNamePrefixNic: resourceTypeNamePrefixNic
+  resourceTypeNamePrefixVm: resourceTypeNamePrefixVm
 }
 
 // These urls will not leak any resources at the end of the deployment

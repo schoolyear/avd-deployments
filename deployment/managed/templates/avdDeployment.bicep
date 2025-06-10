@@ -16,15 +16,11 @@ param tokenExpirationTime string
 param appGroupName string
 param servicesSubnetResourceId string
 param privateLinkZoneName string
+param privateEndpointConnectionName string
+param privateEndpointConnectionLinkName string
+param privateEndpointFeedName string
+param privateEndpointFeedLinkName string
 param tags object
-
-var privateEndpointZoneLinkName = 'default'
-var privateEndpointConnectionName = 'schoolyear-secure-endpoint-connection'
-var privateEndpointConnectionNicName = '${privateEndpointConnectionName}-nic'
-var privateEndpointConnectionZoneLinkName = '${privateEndpointConnectionName}/${privateEndpointZoneLinkName}'
-var privateEndpointFeedName = 'schoolyear-secure-endpoint-feed'
-var privateEndpointFeedNicName = '${privateEndpointFeedName}-nic'
-var privateEndpointFeedZoneLinkName = '${privateEndpointFeedName}/${privateEndpointZoneLinkName}'
 
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview' = {
   name: hostpoolName
@@ -82,7 +78,6 @@ resource privateEndpointConnection 'Microsoft.Network/privateEndpoints@2021-05-0
     subnet: {
       id: servicesSubnetResourceId
     }
-    customNetworkInterfaceName: privateEndpointConnectionNicName
     privateLinkServiceConnections: [
       {
         name: privateEndpointConnectionName
@@ -98,7 +93,9 @@ resource privateEndpointConnection 'Microsoft.Network/privateEndpoints@2021-05-0
 }
 
 resource privateEndpointConnectionZoneLink 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
-  name: privateEndpointConnectionZoneLinkName
+  name: privateEndpointConnectionLinkName
+  parent: privateEndpointConnection
+
   properties: {
     privateDnsZoneConfigs: [
       {
@@ -109,9 +106,6 @@ resource privateEndpointConnectionZoneLink 'Microsoft.Network/privateEndpoints/p
       }
     ]
   }
-  dependsOn: [
-    privateEndpointConnection
-  ]
 }
 
 resource privateEndpointFeed 'Microsoft.Network/privateEndpoints@2021-05-01' = {
@@ -123,7 +117,6 @@ resource privateEndpointFeed 'Microsoft.Network/privateEndpoints@2021-05-01' = {
     subnet: {
       id: servicesSubnetResourceId
     }
-    customNetworkInterfaceName: privateEndpointFeedNicName
     privateLinkServiceConnections: [
       {
         name: privateEndpointFeedName
@@ -139,7 +132,9 @@ resource privateEndpointFeed 'Microsoft.Network/privateEndpoints@2021-05-01' = {
 }
 
 resource privateEndpointFeedZoneLink 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
-  name: privateEndpointFeedZoneLinkName
+  name: privateEndpointFeedLinkName
+  parent: privateEndpointFeed
+
   properties: {
     privateDnsZoneConfigs: [
       {
@@ -150,9 +145,6 @@ resource privateEndpointFeedZoneLink 'Microsoft.Network/privateEndpoints/private
       }
     ]
   }
-  dependsOn: [
-    privateEndpointFeed
-  ]
 }
 
 output workspaceId string = workSpace.properties.objectId

@@ -15,6 +15,8 @@ var artifactsLocation = commonInputParameters.artifactsLocation
 var hostPoolName = commonInputParameters.hostPoolName 
 var hostPoolToken = commonInputParameters.hostPoolToken 
 var tags = commonInputParameters.tags
+var resourceTypeNamePrefixNic = commonInputParameters.resourceTypeNamePrefixNic
+var resourceTypeNamePrefixVm = commonInputParameters.resourceTypeNamePrefixVm
 
 // vmName is actually dependent on the vm being created 
 // and is controlled by the one (SY backend) deploying this template
@@ -33,8 +35,9 @@ var autoUpdateScriptLocation = ''
 @secure()
 param vmAdminPassword string = newGuid()
 
+var vmNameNicNameWithPrefix = '${resourceTypeNamePrefixNic}${vmName}-nic'
 resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
-  name: '${vmName}-nic'
+  name: vmNameNicNameWithPrefix
   location: location
   tags: tags
 
@@ -53,8 +56,10 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
   }
 }
 
+// Only use prefix for the vmName, now the computer name, which is limited to 15 chars
+var vmNameWithPrefix = '${resourceTypeNamePrefixVm}${vmName}'
 resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
-  name: vmName
+  name: vmNameWithPrefix
   location: location
   tags: union(tags, vmTags)
   

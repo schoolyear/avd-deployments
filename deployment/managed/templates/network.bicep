@@ -124,7 +124,6 @@ resource privateLinkDNSZone 'Microsoft.Network/privateDnsZones@2018-09-01' = {
 }
 
 var virtualNetworkLinkName = '${privatelinkZoneName}/vnetLink'
-
 resource virtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2018-09-01' = {
   name: virtualNetworkLinkName
   location: 'global'
