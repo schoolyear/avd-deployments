@@ -21,6 +21,10 @@ var resourceTypeNamePrefixVm = commonInputParameters.resourceTypeNamePrefixVm
 // vmName is actually dependent on the vm being created 
 // and is controlled by the one (SY backend) deploying this template
 param vmName string
+// vmComputerName is also controlled by the SY backend
+// while vmName controls the vm resource name, vmComputerName controls 
+// the underlying os computer name
+param vmComputerName string
 
 // NOTE: These will be sent by the BE and are required to run the
 // autoUpdateVdiBrowser script, removing them will break deployments
@@ -72,7 +76,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
       vmSize: vmSize
     }
     osProfile: {
-      computerName: vmName
+      computerName: vmComputerName
       adminUsername: vmAdminUser
       adminPassword: vmAdminPassword
     }

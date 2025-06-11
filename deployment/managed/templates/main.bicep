@@ -91,7 +91,8 @@ var privatelinkZoneName = 'privatelink.wvd.microsoft.com'
 
 // Sessionhosts
 var vmNumberOfInstances = userCapacity
-var vmNamePrefix = 'syvm${substring(examId,0,6)}'
+var vmNamePrefix = '${resourceTypeNamePrefixVm}${shortExamId}'
+var vmComputerNamePrefix = 'syvm${shortExamId}'
 
 var proxyInstallScriptUrl = 'https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh'
 var proxyInstallScriptName = 'proxy_installation.sh'
@@ -243,6 +244,10 @@ output appGroupId string = avdDeployment.outputs.appGroupId
 //        ${vmNamePrefix}-1
 //        ${vmNamePrefix}-2
 output vmNamePrefix string = vmNamePrefix
+// Will be used by the BE to prefix internal computer names
+// these are necessary to allow sessionhosts connectivity.
+// depends on how we configured the dynamic group
+output vmComputerNamePrefix string = vmComputerNamePrefix
 
 // the template that is responsible for deploying a single VM
 // needed by the SY backend to initiate VM deployments
