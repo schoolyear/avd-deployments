@@ -1,0 +1,10 @@
+{
+  "workbench.startupEditor": "none",
+  "[python]": {
+      "editor.formatOnType": true
+  },
+  "extensions.ignoreRecommendations": true,
+  "security.workspace.trust.enabled": false,
+  "workbench.colorTheme": "Default Light Modern",
+  "workbench.welcomePage.walkthroughs.openOnInstall": false
+}
