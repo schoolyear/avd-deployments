@@ -6,8 +6,7 @@ param imageDefinitionName string
 param storageAccountName string
 param storageAccountBlobServiceName string
 param storageAccountContainerName string
-param imagebuilderCustomRoleName string
-param imageBuilderCustomRoleDefinitionName string
+param imageBuilderCustomRoleName string
 param managedIdentityName string
 
 resource imageGallery 'Microsoft.Compute/galleries@2022-03-03' = {
@@ -112,10 +111,10 @@ resource managedIdentityStorageBlobDataReaderRoleAssignment 'Microsoft.Authoriza
 
 // Create the custom role definition for 'schoolyearavd-imagebuilder'
 resource customRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
-  name: imageBuilderCustomRoleDefinitionName
+  name: guid(tenant().tenantId, subscription().subscriptionId, imageBuilderCustomRoleName)
 
   properties: {
-    roleName: imagebuilderCustomRoleName
+    roleName: imageBuilderCustomRoleName
     description: 'Custom role for Azure Image Builder service'
     type: 'CustomRole'
     permissions: [

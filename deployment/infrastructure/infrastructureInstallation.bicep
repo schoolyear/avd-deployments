@@ -19,7 +19,7 @@ param imageDefinitionName string = 'img-office365'
 param storageAccountName string = 'stsy'
 param storageAccountBlobServiceName string = 'default'
 param storageAccountContainerName string = 'resources'
-param imageBuilderCustomRoleDefinitionName string = 'rd-syavd-imagebuilder'
+param imageBuilderCustomRoleName string = 'rd-syavd-imagebuilder'
 param managedIdentityName string = 'mi-sy-imagebuilder'
 
 // Network specific
@@ -93,8 +93,6 @@ resource imageBuildingResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-
 }
 
 // Image building resources
-var subscriptionShortId = substring(last(split(subscription().id, '-')), 0, 4)
-var imagebuilderCustomRoleName = 'schoolyearavd-imagebuilder-${subscriptionShortId}'
 module imageBuildingResources 'imageBuildingResources.bicep' = {
   scope: imageBuildingResourceGroup
 
@@ -106,8 +104,7 @@ module imageBuildingResources 'imageBuildingResources.bicep' = {
     storageAccountName: storageAccountName
     storageAccountBlobServiceName: storageAccountBlobServiceName
     storageAccountContainerName: storageAccountContainerName
-    imagebuilderCustomRoleName: imagebuilderCustomRoleName
-    imageBuilderCustomRoleDefinitionName: imageBuilderCustomRoleDefinitionName
+    imageBuilderCustomRoleName: imageBuilderCustomRoleName
     managedIdentityName: managedIdentityName
   }
 }
