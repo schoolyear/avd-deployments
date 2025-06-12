@@ -49,8 +49,19 @@ param proxyVmSize string
 param location string
 param avdMetadataLocation string
 param vmSize string
+
+param sessionhostsSubnetId string
+param sessionhostsSubnetIpRange string
+param servicesSubnetId string
+param servicesSubnetIpRange string
+param avdEndpointsSubnetId string
+param avdEndpointsSubnetIpRange string
+param privateDnsZoneId string
+param publicIps array
+
 // Optional tags provided by the customer
 param tags object = {}
+
 // Resource type name prefixes provided by the customer
 param resourceTypeNamePrefixPip string
 param resourceTypeNamePrefixNat string
@@ -81,14 +92,6 @@ var vmCreationTemplateUri = '[[param:vmCreationTemplateUri]]'
 
 var shortExamId = substring(examId, 0, 6)
 
-// VNET
-var vnetSubnetCIDR = '10.0.0.0/19'
-var sessionhostsSubnetCIDR = '10.0.0.0/20'
-var sessionhostsSubnetName = 'sessionhosts'
-var servicesSubnetCIDR = '10.0.16.0/20'
-var servicesSubnetName = 'services'
-var privatelinkZoneName = 'privatelink.wvd.microsoft.com'
-
 // Sessionhosts
 var vmNumberOfInstances = userCapacity
 var vmNamePrefix = '${resourceTypeNamePrefixVm}${shortExamId}'
@@ -108,30 +111,6 @@ var keyVaultRoleAssignmentDeploymentName = 'keyvaultRoleAssignment'
 var tagsWithVersion = union(tags, {
   Version: templateVersion
 })
-
-var natIpName = '${resourceTypeNamePrefixPip}${shortExamId}'
-var natName = '${resourceTypeNamePrefixNat}${shortExamId}'
-var vnetName = '${resourceTypeNamePrefixVnet}${shortExamId}'
-// Our network for AVD Deployment, contains VNET, subnets and dns zones / links etc
-module network './network.bicep' = {
-  name: 'network-deployment'
-
-  params: {
-    location: location
-    natIpName: natIpName
-    natName: natName
-    vnetName: vnetName
-    vnetSubnetCIDR: vnetSubnetCIDR
-    sessionhostsSubnetName: sessionhostsSubnetName
-    sessionhostsSubnetCIDR: sessionhostsSubnetCIDR
-    servicesSubnetName: servicesSubnetName
-    servicesSubnetCIDR: servicesSubnetCIDR
-    privatelinkZoneName: privatelinkZoneName
-    internalServiceLinkIds: internalServiceLinkIds
-    internalServicesPrivateDNSZoneName: internalServicesPrivateDNSZoneName
-    tags: tagsWithVersion
-  }
-}
 
 var privateEndpointConnectionName = 'sy-endpoint-connection'
 var privateEndpointFeedName = 'sy-endpoint-feed'
@@ -157,8 +136,8 @@ module avdDeployment './avdDeployment.bicep' = {
     privateEndpointFeedName: privateEndpointFeedNameWithPrefix
     privateEndpointFeedLinkName: privateEndpointFeedLinkNameWithPrefix
     tokenExpirationTime: tokenExpirationTime
-    servicesSubnetResourceId: network.outputs.servicesSubnetId
-    privateLinkZoneName: privatelinkZoneName
+    avdEndpointsSubnetId: avdEndpointsSubnetId
+    privateDnsZoneId: privateDnsZoneId
     tags: tagsWithVersion
   }
 }
@@ -176,7 +155,7 @@ module proxyNetwork 'proxyNetwork.bicep' = {
     proxyNsgName: proxyNsgName
     proxyNicName: proxyNicName
     proxyVmName: proxyVmName
-    servicesSubnetId: network.outputs.servicesSubnetId
+    servicesSubnetId: servicesSubnetId
     numProxyVms: numProxyVms
     tags: tagsWithVersion
   }
@@ -214,7 +193,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
   }
 }
 
-output publicIps array = network.outputs.ipAddresses
+output publicIps array = publicIps
 output proxyConfig object = {
   domains: [
     // Proxy traffic related to the hostpool of this exam
@@ -257,7 +236,6 @@ output vmCreationTemplateUri string = vmCreationTemplateUri
 // and do not change per vm
 output vmCreationTemplateCommonInputParameters object = {
   location:  location
-  sessionhostsSubnetId:  network.outputs.sessionHostsSubnetId
   vmTags:  {
     apiBaseUrl: apiBaseUrl
     examId: examId
@@ -267,6 +245,11 @@ output vmCreationTemplateCommonInputParameters object = {
     proxyVmIpAddr: '${proxyNetwork.outputs.proxyNicPrivateIpAddresses[0]}:8080'
     proxyVmIpAddresses: join(map(proxyNetwork.outputs.proxyNicPrivateIpAddresses, ipAddr => '${ipAddr}:8080'), ',')
   }
+  vmUserData: {
+    version: templateVersion
+    avdEndpointsIpRange: avdEndpointsSubnetIpRange
+    servicesIpRange: servicesSubnetIpRange
+  }
   vmSize: vmSize
   vmAdminUser: vmAdminUser
   vmDiskType: 'Premium_LRS'
@@ -274,7 +257,10 @@ output vmCreationTemplateCommonInputParameters object = {
   artifactsLocation:  'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip'
   hostPoolName:  avdDeployment.outputs.hostpoolName
   hostPoolToken:  avdDeployment.outputs.hostpoolRegistrationToken
+  sessionhostsSubnetId:  sessionhostsSubnetId
+  sessionhostsSubnetIpRange: sessionhostsSubnetIpRange
   tags: tagsWithVersion
+  resourceTypeNamePrefixNsg: resourceTypeNamePrefixNsg
   resourceTypeNamePrefixNic: resourceTypeNamePrefixNic
   resourceTypeNamePrefixVm: resourceTypeNamePrefixVm
 }

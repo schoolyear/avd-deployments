@@ -14,7 +14,11 @@ var vmImageId = commonInputParameters.vmImageId
 var artifactsLocation = commonInputParameters.artifactsLocation 
 var hostPoolName = commonInputParameters.hostPoolName 
 var hostPoolToken = commonInputParameters.hostPoolToken 
+var sessionhostsSubnetIpRange = commonInputParameters.sessionhostsSubnetIpRange
+// this is an object that will be serialized, base64-encoded and passed to the VM through the IMDS
+var vmUserData = commonInputParameters.vmUserData
 var tags = commonInputParameters.tags
+var resourceTypeNamePrefixNsg = commonInputParameters.resourceTypeNamePrefixNsg
 var resourceTypeNamePrefixNic = commonInputParameters.resourceTypeNamePrefixNic
 var resourceTypeNamePrefixVm = commonInputParameters.resourceTypeNamePrefixVm
 
@@ -39,9 +43,33 @@ var autoUpdateScriptLocation = ''
 @secure()
 param vmAdminPassword string = newGuid()
 
-var vmNameNicNameWithPrefix = '${resourceTypeNamePrefixNic}${vmName}-nic'
+var nsgName = '${resourceTypeNamePrefixNsg}${vmName}-nsg'
+resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+  name: nsgName 
+  location: location
+
+  properties: {
+    securityRules: [
+      {
+        name: 'DenySessionHostsOutbound'
+        properties: {
+          priority: 200
+          direction: 'Outbound'
+          access: 'Deny'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: sessionhostsSubnetIpRange
+        }
+      }
+    ]
+  }
+}
+
+var nicName = '${resourceTypeNamePrefixNic}${vmName}-nic'
 resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
-  name: vmNameNicNameWithPrefix
+  name: nicName
   location: location
   tags: tags
 
@@ -57,6 +85,10 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
         }
       }
     ]
+
+    networkSecurityGroup: {
+      id: nsg.id
+    }
   }
 }
 
@@ -72,6 +104,8 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   }
 
   properties: {
+    userData: base64(string(vmUserData))
+
     hardwareProfile: {
       vmSize: vmSize
     }
@@ -153,8 +187,8 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   // NOTE: This must be run last because it locks down the VM internet access
   // if you skip the dependsOn of this extension
   // the DSC will most likely fail
-  resource scheduledReboot 'extensions' = {
-    name: 'scheduledReboot'
+  resource sessionhostSetup 'extensions' = {
+    name: 'sessionhost-setup'
     location: location
     tags: tags
 

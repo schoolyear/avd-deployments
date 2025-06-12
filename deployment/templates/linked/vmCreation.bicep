@@ -140,8 +140,8 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   // NOTE: This must be run last because it locks down the VM internet access
   // if you skip the dependsOn of this extension
   // the DSC will most likely fail
-  resource scheduledReboot 'extensions' = {
-    name: 'scheduledReboot'
+  resource sessionhostSetup 'extensions' = {
+    name: 'sessionhost-setup'
     location: location
 
     dependsOn: [

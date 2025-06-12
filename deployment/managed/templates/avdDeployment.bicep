@@ -14,8 +14,9 @@ param workSpaceName string = ''
 param tokenExpirationTime string
 
 param appGroupName string
-param servicesSubnetResourceId string
-param privateLinkZoneName string
+param avdEndpointsSubnetId string
+param privateDnsZoneId string
+
 param privateEndpointConnectionName string
 param privateEndpointConnectionLinkName string
 param privateEndpointFeedName string
@@ -76,7 +77,7 @@ resource privateEndpointConnection 'Microsoft.Network/privateEndpoints@2021-05-0
   tags: tags
   properties: {
     subnet: {
-      id: servicesSubnetResourceId
+      id: avdEndpointsSubnetId
     }
     privateLinkServiceConnections: [
       {
@@ -101,7 +102,7 @@ resource privateEndpointConnectionZoneLink 'Microsoft.Network/privateEndpoints/p
       {
         name: 'privatelink-wvd-microsoft-com'
         properties: {
-          privateDnsZoneId: resourceId('Microsoft.Network/privateDnsZones', privateLinkZoneName)
+          privateDnsZoneId: privateDnsZoneId
         }
       }
     ]
@@ -115,7 +116,7 @@ resource privateEndpointFeed 'Microsoft.Network/privateEndpoints@2021-05-01' = {
 
   properties: {
     subnet: {
-      id: servicesSubnetResourceId
+      id: avdEndpointsSubnetId
     }
     privateLinkServiceConnections: [
       {
@@ -140,7 +141,7 @@ resource privateEndpointFeedZoneLink 'Microsoft.Network/privateEndpoints/private
       {
         name: 'privatelink-wvd-microsoft-com'
         properties: {
-          privateDnsZoneId: resourceId('Microsoft.Network/privateDnsZones', privateLinkZoneName)
+          privateDnsZoneId: privateDnsZoneId
         }
       }
     ]
