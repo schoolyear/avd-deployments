@@ -14,7 +14,7 @@ param baseResourceGroupName string = 'rg-sy-base'
 param dnsZoneName string
 param keyVaultName string
 param imageBuildingResourceGroupName string = 'rg-sy-imagebuilding'
-param imageGalleryName string = 'sig-sy-avd'
+param imageGalleryName string = 'sig_sy_avd'
 param imageDefinitionName string = 'img-office365'
 param storageAccountName string = 'stsy'
 param storageAccountBlobServiceName string = 'default'
