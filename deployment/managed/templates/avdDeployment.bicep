@@ -23,7 +23,7 @@ param privateEndpointFeedName string
 param privateEndpointFeedLinkName string
 param tags object
 
-resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview' = {
+resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-03' = {
   name: hostpoolName
   location: avdMetadataLocation
   tags: tags
@@ -47,7 +47,7 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-08-preview'
   }
 }
 
-resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-08-preview' = {
+resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-03' = {
   name: appGroupName
   location: avdMetadataLocation
   tags: tags
@@ -59,7 +59,7 @@ resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-08-
   }
 }
 
-resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-08-preview' = {
+resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-03' = {
   name: workSpaceName
   location: avdMetadataLocation
   tags: tags
