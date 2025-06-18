@@ -1,0 +1,499 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json",
+  "view": {
+    "kind": "Form",
+    "properties": {
+      "title": "Schoolyear AVD v2",
+      "steps": [
+        {
+          "name": "basics",
+          "label": "Basics",
+          "elements": [
+            {
+              "name": "resourceScope",
+              "type": "Microsoft.Common.ResourceScope",
+              "instanceDetailsLabel": "Regions",
+              "location": {
+                "resourceTypes": [
+                  "Microsoft.VirtualMachineImages",
+                  "Microsoft.Storage",
+                  "Microsoft.Compute",
+                  "Microsoft.KeyVault",
+                  "Microsoft.ContainerInstance",
+                  "Microsoft.Network",
+                  "Microsoft.Resources",
+                  "Microsoft.Authorization"
+                ]
+              },
+              "subscription": {
+                "resourceProviders": [
+                  "Microsoft.VirtualMachineImages",
+                  "Microsoft.Storage",
+                  "Microsoft.Compute",
+                  "Microsoft.KeyVault",
+                  "Microsoft.ContainerInstance",
+                  "Microsoft.Network",
+                  "Microsoft.Resources",
+                  "Microsoft.Authorization"
+                ]
+              }
+            },
+            {
+              "name": "explainer",
+              "type": "Microsoft.Common.InfoBox",
+              "options": {
+                "style": "Warning",
+                "text": "It is strongly recommended to <b>not</b> use West Europe for large VM deployments, due to limited resource availability. It is fine to use West Europe for AVD Metadata."
+              }
+            },
+            {
+              "type": "Microsoft.Common.LocationSelector",
+              "name": "avdMetadataLocation",
+              "label": "AVD metadata region",
+              "toolTip": "AVD metadata resources can only be deployed to specific regions. Select a supported region close to your main deployment region.",
+              "resourceTypes": [
+                "Microsoft.DesktopVirtualization/hostPools",
+                "Microsoft.DesktopVirtualization/applicationgroups",
+                "Microsoft.DesktopVirtualization/workspaces"
+              ],
+              "scope": {
+                "subscriptionId": "[steps('basics').resourceScope.subscription.subscriptionId]"
+              }
+            }
+          ]
+        },
+        {
+          "name": "base",
+          "label": "Base infrastructure",
+          "elements": [
+            {
+              "name": "resourceGroupName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Base resource group name",
+              "toolTip": "A new resource group for base infrastructure will be deployed. You can configure the name of the resource group here.",
+              "defaultValue": "rg-sy-base",
+              "constraints": {
+                "required": true
+              }
+            },
+            {
+              "name": "dnsZoneName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "AVD subdomain",
+              "placeholder": "schoolyearavd.contoso.com",
+              "toolTip": "Schoolyear AVD requires a subdomain hosted by your organisation. Later, you will need to request a wildcard certificate on this subdomain.",
+              "constraints": {
+                "required": true,
+                "regex": "^([a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,}$",
+                "validationMessage": "Please enter a valid domain name (e.g., schoolyearavd.contoso.com)"
+              }
+            },
+            {
+              "name": "keyVaultName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Key Vault name",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z][a-zA-Z0-9](?!.*--)[a-zA-Z0-9-]*[a-zA-Z0-9]$",
+                "validationMessage": "Please enter a valid Key Vault name. The name must be 3-24 characters long, and may contain only letters, numbers, and hyphens."
+              },
+              "infoMessages": [
+                {
+                  "text": "This name must be globally unique, across all of Azure",
+                  "style": "Warning"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "network",
+          "label": "Network",
+          "elements": [
+            {
+              "name": "resourceGroupName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Network resource group",
+              "toolTip": "A new resource group for network resources will be deployed. You can configure the name of the resource group here.",
+              "defaultValue": "rg-sy-exams-network",
+              "constraints": {
+                "required": true
+              }
+            },
+            {
+              "name": "natName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "NAT name",
+              "toolTip": "A new NAT will be deployed to route outgoing traffic. You can configure the name of the NAT resource here.",
+              "defaultValue": "nat-sy",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9_]$",
+                "validationMessage": "Must be 1-80 characters: Alphanumerics, underscores, periods, and hyphens. Start with alphanumeric. End with alphanumeric or underscore."
+              }
+            },
+            {
+              "name": "natIpName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "NAT IP address name",
+              "toolTip": "A new public IP will be created for outgoing traffic. You can configure the name of the IP address resource here.",
+              "defaultValue": "ip-sy-nat",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9_]$",
+                "validationMessage": "Must be 1-80 characters: Alphanumerics, underscores, periods, and hyphens. Start with alphanumeric. End with alphanumeric or underscore."
+              }
+            },
+            {
+              "name": "vnetSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Exam network",
+              "elements": [
+                {
+                  "name": "vnetExplainer",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Warning",
+                    "text": "A new VNet will be deployed. This network will be used to connect the sessionhosts used during exams. If students need access to license servers or other internal services, <b>make sure you pick a network range that is still available within your organisation</b>."
+                  }
+                },
+                {
+                  "name": "vnetName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "VNet name",
+                  "toolTip": "A new VNet will be created. You can configure the name of the resource here.",
+                  "defaultValue": "vnet-sy",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}[a-zA-Z0-9_]$",
+                    "validationMessage": "Must be 2-64 characters: Alphanumerics, underscores, periods, and hyphens. Start with alphanumeric. End with alphanumeric or underscore."
+                  }
+                },
+                {
+                  "name": "vnetSubnetCIDR",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "VNet IP range",
+                  "toolTip": "A new VNet will be created. You can configure the IP range here.",
+                  "defaultValue": "10.0.0.0/19",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))$",
+                    "validationMessage": "Please enter a valid IPv4 CIDR range (e.g. 10.0.0.0/19)"
+                  }
+                },
+                {
+                  "name": "subnetExplainer",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Error",
+                    "text": "Manually verify that the subnets you configure here are in the VNet's address space and do not overlap with each other. This is not validated automatically, but it will result in a deployment failure."
+                  }
+                },
+                {
+                  "name": "sessionhostsSubnetName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Sessionhosts subnet",
+                  "toolTip": "The VNet will have a subnet dedicated to sessionhosts. You can configure the name of the subnet here.",
+                  "defaultValue": "sessionhosts",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9_]$",
+                    "validationMessage": "Must be 1-80 characters: Alphanumerics, underscores, periods, and hyphens. Start with alphanumeric. End with alphanumeric or underscore."
+                  }
+                },
+                {
+                  "name": "sessionhostsSubnetCIDR",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Sessionhosts subnet IP range",
+                  "subLabel": "One address must be available for each student taking an exam at the same time",
+                  "toolTip": "The VNet will have a subnet dedicated to sessionhosts. You can configure the IP range of the subnet here.",
+                  "defaultValue": "10.0.0.0/20",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))$",
+                        "message": "Please enter a valid IPv4 CIDR range (e.g. 10.0.0.0/20)"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "servicesSubnetName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Services subnet",
+                  "toolTip": "The VNet will have a subnet dedicated to network services. You can configure the name of the subnet here.",
+                  "defaultValue": "services",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9_]$",
+                    "validationMessage": "Must be 1-80 characters: Alphanumerics, underscores, periods, and hyphens. Start with alphanumeric. End with alphanumeric or underscore."
+                  }
+                },
+                {
+                  "name": "servicesSubnetCIDR",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Services subnet IP range",
+                  "subLabel": "Range must be 5-10x the number of the maximum concurrent exams",
+                  "toolTip": "The VNet will have a subnet dedicated to network services. You can configure the IP range of the subnet here.",
+                  "defaultValue": "10.0.16.0/23",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))$",
+                        "message": "Please enter a valid IPv4 CIDR range (e.g. 10.0.0.0/20)"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "avdSubnetName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "AVD subnet",
+                  "toolTip": "The VNet will have a subnet dedicated to AVD services. You can configure the name of the subnet here.",
+                  "defaultValue": "avd-endpoints",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9_]$",
+                    "validationMessage": "Must be 1-80 characters: Alphanumerics, underscores, periods, and hyphens. Start with alphanumeric. End with alphanumeric or underscore."
+                  }
+                },
+                {
+                  "name": "avdSubnetCIDR",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "AVD subnet IP range",
+                  "subLabel": "Range must be 4x the number of the maximum concurrent exams",
+                  "toolTip": "The VNet will have a subnet dedicated to AVD services. You can configure the IP range of the subnet here.",
+                  "defaultValue": "10.0.18.0/24",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))$",
+                        "message": "Please enter a valid IPv4 CIDR range (e.g. 10.0.0.0/20)"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "imagebuilding",
+          "label": "Image Building",
+          "elements": [
+            {
+              "name": "resourceGroupName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Image building resource group",
+              "toolTip": "A new resource group for image building will be deployed. You can configure the name of the resource group here.",
+              "defaultValue": "rg-sy-imagebuilding",
+              "constraints": {
+                "required": true
+              }
+            },
+            {
+              "name": "gallerySection",
+              "type": "Microsoft.Common.Section",
+              "label": "Image Gallery",
+              "elements": [
+                {
+                  "name": "explainer",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Info",
+                    "text": "Images used in AVD will be stored in an Image Gallery. The gallery can contain multiple image definitions. To get you started, this template creates one by default. If you want to create more images yourself later, you can through the Azure Portal."
+                  }
+                },
+                {
+                  "name": "galleryName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Gallery name",
+                  "toolTip": "A new Image Gallery will be created. You can configure the name of the resource here.",
+                  "defaultValue": "sigsyavd",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9.]{0,78}[a-zA-Z0-9]$",
+                    "validationMessage": "Must be 1-80 Alphanumerics and periods. Start and end with alphanumeric."
+                  }
+                },
+                {
+                  "name": "imageName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Default image name",
+                  "toolTip": "A new image version will be created to get started quickly. This is usually an Office 365 image. You can configure the name of the resource here.",
+                  "defaultValue": "image-office365",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9]$",
+                    "validationMessage": "Must be 1-80 Alphanumerics, underscores, hyphens, and periods. Start and end with alphanumeric."
+                  }
+                }
+              ]
+            },
+            {
+              "name": "storageSection",
+              "type": "Microsoft.Common.Section",
+              "label": "Storage bucket",
+              "elements": [
+                {
+                  "name": "explainer",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Info",
+                    "text": "This template will create a new storage account to store files required during the image building process, such as MSIs."
+                  }
+                },
+                {
+                  "name": "storageAccountName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Storage account name",
+                  "placeholder": "syimagebuildingstorage",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-z0-9][a-z0-9]{1,22}[a-z0-9]$",
+                    "validationMessage": "Please enter a valid Storage Account name. The name must be 3-24 characters long, and may contain only lowercase letters and numbers."
+                  },
+                  "infoMessages": [
+                    {
+                      "text": "This name must be globally unique, across all of Azure",
+                      "style": "Warning"
+                    }
+                  ]
+                },
+                {
+                  "name": "containerName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Container name",
+                  "toolTip": "A new container will be created in the storage account. You can configure the name of the resource here.",
+                  "defaultValue": "resources",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$",
+                    "validationMessage": "Must be 3-64 Lowercase letters, numbers, and hyphens. Start with lowercase letter or number. Can't use consecutive hyphens."
+                  }
+                }
+              ]
+            },
+            {
+              "name": "identitySection",
+              "type": "Microsoft.Common.Section",
+              "label": "Managed Identity",
+              "elements": [
+                {
+                  "name": "explainer",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Info",
+                    "text": "This template will create a new Managed Identity and assign a custom role to it, to use during automated image building."
+                  }
+                },
+                {
+                  "name": "managedIdentityName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Managed Identity name",
+                  "defaultValue": "mi-sy-imagebuilder",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,126}[a-zA-Z0-9]$",
+                    "validationMessage": "Please enter a valid Key Vault name. The name must be 3-128 characters long, and may contain alphanumerics, hyphens, and underscores. Start with a letter or number."
+                  }
+                },
+                {
+                  "name": "roleName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "Custom role name",
+                  "toolTip": "A new role will be created to assign to the managed identity. You can configure the name of the role here.",
+                  "defaultValue": "Schoolyear AVD Image Builder",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{1,62}[a-zA-Z0-9]$",
+                    "validationMessage": "Must be 3-64 letters, numbers, and hyphens. Start and end with letter or number. Can't use consecutive hyphens."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tags",
+          "label": "Tags",
+          "elements": [
+            {
+              "name": "tags",
+              "type": "Microsoft.Common.TagsByResource",
+              "resources": [
+                "Microsoft.Compute/galleries",
+                "Microsoft.Compute/galleries/images",
+                "Microsoft.Storage/storageAccounts",
+                "Microsoft.Storage/storageAccounts/blobServices",
+                "Microsoft.Storage/storageAccounts/blobServices/containers",
+                "Microsoft.ManagedIdentity/userAssignedIdentities",
+                "Microsoft.Authorization/roleAssignments",
+                "Microsoft.Authorization/roleDefinitions",
+                "Microsoft.Resources/resourceGroups",
+                "Microsoft.KeyVault/vaults",
+                "Microsoft.Network/publicIPAddresses",
+                "Microsoft.Network/virtualNetworks",
+                "Microsoft.Network/dnsZones",
+                "Microsoft.Network/privateDnsZones",
+                "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                "Microsoft.Network/privateEndpoints",
+                "Microsoft.Network/natGateways",
+                "Microsoft.DesktopVirtualization/hostPools",
+                "Microsoft.DesktopVirtualization/applicationgroups",
+                "Microsoft.DesktopVirtualization/workspaces",
+                "Microsoft.Network/privateEndpoints",
+                "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+                "Microsoft.Network/networkSecurityGroups",
+                "Microsoft.Network/networkInterfaces",
+                "Microsoft.Compute/virtualMachines",
+                "Microsoft.Compute/virtualMachines/extensions",
+                "Microsoft.Resources/deployments"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "outputs": {
+      "kind": "Subscription",
+      "location": "[steps('basics').resourceScope.location.name]",
+      "subscriptionId": "[steps('basics').resourceScope.subscription.id]",
+      "parameters": {
+        "avdMetadataLocation": "[steps('basics').avdMetadataLocation",
+        "baseResourceGroupName": "[steps('base').resourceGroupName]",
+        "dnsZoneName": "[steps('base')].dnsZoneName",
+        "keyVaultName": "[steps('base')].keyVaultName",
+        "networkRgLocation": "[steps('basics').resourceScope.location.name]",
+        "networkRgName": "[steps('network').resourceGroupName]",
+        "natName": "[steps('network').natName]",
+        "natIpName": "[steps('network').natIpName]",
+        "vnetName": "[steps('network').vnetSection.vnetName]",
+        "vnetSubnetCIDR": "[steps('network').vnetSection.vnetSubnetCIDR]",
+        "sessionhostsSubnetName": "[steps('network').vnetSection.sessionhostsSubnetName]",
+        "sessionhostsSubnetCIDR": "[steps('network').vnetSection.sessionhostsSubnetCIDR]",
+        "servicesSubnetName": "[steps('network').vnetSection.servicesSubnetName]",
+        "servicesSubnetCIDR": "[steps('network').vnetSection.servicesSubnetCIDR]",
+        "avdEndpointsSubnetName": "[steps('network').vnetSection.avdSubnetName]",
+        "avdEndpointsSubnetCIDR": "[steps('network').vnetSection.avdSubnetCIDR]",
+        "tagsByResource": "[steps('tags').tags]",
+
+        "imageBuildingResourceGroupName": "[steps('imagebuilding').resourceGroupName]",
+        "imageGalleryName": "[steps('imagebuilding').gallerySection.galleryName]",
+        "imageDefinitionName": "[steps('imagebuilding').gallerySection.imageName]",
+        "storageAccountName": "[steps('imagebuilding').storageSection.storageAccountName]",
+        "storageAccountBlobServiceName": "default",
+        "storageAccountContainerName": "[steps('imagebuilding').storageSection.containerName]",
+        "imageBuilderCustomRoleName": "[steps('imagebuilding').identitySection.roleName]",
+        "managedIdentityName": "[steps('imagebuilding').identitySection.managedIdentityName]",
+
+        "appRegistrationName": "[parameters('appRegistrationName')]",
+        "appRegistrationServicePrincipalId": "[parameters('appRegistrationServicePrincipalId')]",
+        "privatelinkZoneName": "privatelink.wvd.microsoft.com"
+      }
+    }
+  }
+}
