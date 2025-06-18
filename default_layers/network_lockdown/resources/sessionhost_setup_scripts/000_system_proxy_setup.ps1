@@ -1,5 +1,87 @@
 $ErrorActionPreference = "Stop"
 
+$url = "http://169.254.169.254/metadata/instance/compute/userData?api-version=2021-01-01&format=text"
+$headers = @{
+    "Metadata" = "true"
+}
+
+try {
+    $response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+} catch {
+    Write-Error "Could not make request to metadata endpoint (userData): $_"
+    exit 1
+}
+
+# decode userData string blob (base64) and parse as json
+$userData = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($response)) | ConvertFrom-Json
+
+# Find version, we need to decide if this is managed or unmanaged version
+$version = $userData.version
+if (![string]::IsNullOrEmpty($version)) {
+    # Managed version
+    $proxyLoadBalancerPrivateIpAddress = $userData.proxyLoadBalancerPrivateIpAddress
+    if ([string]::IsNullOrEmpty($proxyLoadBalancerPrivateIpAddress)) {
+        Write-Error "proxyLoadBalancerPrivateIpAddress is empty"
+        exit 1
+    }
+
+    Write-Host "Open firewall to sessionhost proxy LB: $proxyLoadBalancerPrivateIpAddress"
+    New-NetFirewallRule -DisplayName "Allow sessionhost proxy LB outbound ($proxyLoadBalancerPrivateIpAddress)" -RemoteAddress $proxyLoadBalancerPrivateIpAddress -Direction Outbound -Action Allow -Profile Any | Out-Null
+
+    # We map a local domain name to point to the LB private IP
+    $hostsFilepath = "C:\Windows\System32\drivers\etc\hosts"
+    $domain = "proxies.local"
+    $hostsFileUpdated = $false
+
+    $retryWaitTimeInSeconds = 5
+    for($($retry = 1; $maxRetries = 5); $retry -le $maxRetries; $retry++) {
+        try {
+            # Prior to PowerShell 6.2, Add-Content takes a read lock, so if another process is already reading
+            # the hosts file by the time we attempt to write to it, the cmdlet fails. This is a bug in older versions of PS.
+            # https://github.com/PowerShell/PowerShell/issues/5924
+            #
+            # Using Out-File cmdlet with -Append flag reduces the chances of failure.
+
+            "$proxyLoadBalancerPrivateIpAddress $domain" | Out-File -FilePath $hostsFilepath -Encoding Default -Append
+            $hostsFileUpdated = $true;
+            break
+        } catch {
+            Write-Host "Failed to update hosts file. Trying again... ($retry/$maxRetries)";
+            Start-Sleep -Seconds $retryWaitTimeInSeconds
+        }
+    }
+
+    if (!$hostsFileUpdated) {
+        Write-Error "Could not update hosts file."
+        exit 1
+    }
+
+    Write-Host "Updated hosts file"
+
+    ipconfig /flushdns
+
+    $proxyBytes = [System.Text.Encoding]::UTF8.GetBytes("PROXY $($proxyLoadBalancerPrivateIpAddress):8080")
+    $proxyStringBase64 = [Convert]::ToBase64String($proxyBytes)
+    $matchingProxyBase64 = $proxyStringBase64.Replace('+','-').Replace('/','_').TrimEnd('=')
+    $pacUrl = "http://${domain}:8080/proxy.pac?matchingProxyBase64=$matchingProxyBase64&defaultProxy=DIRECT"
+
+    try
+    {
+        Write-Host "Setting system proxy..."
+        bitsadmin /util /setieproxy LOCALSYSTEM AUTOSCRIPT "$pacUrl"
+        bitsadmin /util /setieproxy NETWORKSERVICE AUTOSCRIPT "$pacUrl"
+    }
+    catch
+    {
+        Write-Error "Could not set system proxy: $_"
+        exit 1
+    }
+
+    exit 0
+}
+
+# Unmanaged
+
 $url = "http://169.254.169.254/metadata/instance/compute/tagsList?api-version=2021-02-01"
 $headers = @{
     "Metadata" = "true"

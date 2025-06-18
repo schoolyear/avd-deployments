@@ -10,7 +10,7 @@ param keyVaultResourceGroup string
 param keyVaultName string
 param proxyDnsEntryDeploymentName string
 param dnsZoneResourceGroup string
-param proxyPublicIpAddresses array
+param proxyLoadBalancerPublicIpAddress string
 param dnsZoneName string
 param proxyInstallScriptUrl string
 param proxyInstallScriptName string
@@ -105,7 +105,7 @@ module proxyDnsEntryDeployment './proxyDnsEntryDeployment.bicep' = {
   scope: resourceGroup(dnsZoneResourceGroup)
   
   params: {
-    ipv4Addresses: proxyPublicIpAddresses
+    ipv4Address: proxyLoadBalancerPublicIpAddress
     dnsZoneName: dnsZoneName
     dnsRecord: examId
   }

@@ -64,8 +64,6 @@ param tags object = {}
 
 // Resource type name prefixes provided by the customer
 param resourceTypeNamePrefixPip string
-param resourceTypeNamePrefixNat string
-param resourceTypeNamePrefixVnet string
 param resourceTypeNamePrefixHp string
 param resourceTypeNamePrefixAg string
 param resourceTypeNamePrefixWs string
@@ -74,6 +72,7 @@ param resourceTypeNamePrefixPdnsLink string
 param resourceTypeNamePrefixNsg string
 param resourceTypeNamePrefixNic string
 param resourceTypeNamePrefixVm string
+param resourceTypeNamePrefixLb string
 
 // A map object of domain names - Azure Private Link Service Ids.
 // Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
@@ -142,16 +141,20 @@ module avdDeployment './avdDeployment.bicep' = {
   }
 }
 
-var proxyIpName = '${resourceTypeNamePrefixPip}-proxy'
-var proxyNsgName = '${resourceTypeNamePrefixNsg}-proxy'
-var proxyNicName = '${resourceTypeNamePrefixNic}-proxy'
-var proxyVmName = '${resourceTypeNamePrefixVm}-proxy'
+var proxyPublicLbIpName = '${resourceTypeNamePrefixPip}lb-proxy-public'
+var proxyPublicLbName = '${resourceTypeNamePrefixLb}proxy-public'
+var proxyInternalLbName = '${resourceTypeNamePrefixLb}proxy-internal'
+var proxyNsgName = '${resourceTypeNamePrefixNsg}proxy'
+var proxyNicName = '${resourceTypeNamePrefixNic}proxy'
+var proxyVmName = '${resourceTypeNamePrefixVm}proxy'
 module proxyNetwork 'proxyNetwork.bicep' = {
   name: 'proxyNetwork'
 
   params: {
     location: location
-    proxyIpName: proxyIpName
+    proxyPublicLbIpName: proxyPublicLbIpName
+    proxyPublicLbName: proxyPublicLbName
+    proxyInternalLbName: proxyInternalLbName
     proxyNsgName: proxyNsgName
     proxyNicName: proxyNicName
     proxyVmName: proxyVmName
@@ -177,7 +180,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     keyVaultName: keyVaultName
     proxyDnsEntryDeploymentName: proxyDnsEntryDeploymentName
     dnsZoneResourceGroup: dnsZoneResourceGroup
-    proxyPublicIpAddresses: proxyNetwork.outputs.proxyPublicIpAddresses
+    proxyLoadBalancerPublicIpAddress: proxyNetwork.outputs.proxyLoadBalancerPublicIpAddress
     dnsZoneName: dnsZoneName
     proxyInstallScriptUrl: proxyInstallScriptUrl
     proxyInstallScriptName: proxyInstallScriptName
@@ -248,7 +251,7 @@ output vmCreationTemplateCommonInputParameters object = {
   vmUserData: {
     version: templateVersion
     avdEndpointsIpRange: avdEndpointsSubnetIpRange
-    servicesIpRange: servicesSubnetIpRange
+    proxyLoadBalancerPrivateIpAddress: proxyNetwork.outputs.proxyLoadBalancerPrivateIpAddress
   }
   vmSize: vmSize
   vmAdminUser: vmAdminUser

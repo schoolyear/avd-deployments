@@ -1,4 +1,4 @@
-param ipv4Addresses array
+param ipv4Address string
 param dnsZoneName string
 param dnsRecord string
 
@@ -6,9 +6,11 @@ resource dnsZoneRecord 'Microsoft.Network/dnsZones/A@2018-05-01' = {
   name: '${dnsZoneName}/${dnsRecord}'
   properties: {
     TTL: 3600
-    ARecords: [for ipv4 in ipv4Addresses: {
-      ipv4Address: ipv4
-    }]
+    ARecords: [
+      {
+        ipv4Address: ipv4Address
+      }
+    ]
   }
 }
 

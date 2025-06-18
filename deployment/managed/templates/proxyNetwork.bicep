@@ -1,5 +1,7 @@
 param location string
-param proxyIpName string
+param proxyPublicLbIpName string
+param proxyPublicLbName string
+param proxyInternalLbName string
 param proxyNsgName string
 param proxyNicName string
 param proxyVmName string
@@ -7,25 +9,186 @@ param servicesSubnetId string
 param numProxyVms int
 param tags object
 
-// Ip Address of proxy
-resource proxyPublicIPAddresses 'Microsoft.Network/publicIPAddresses@2023-04-01' = [for i in range(0, numProxyVms): {
-  name: '${proxyIpName}-${i}'
+resource proxyLoadBalancerPublicIp 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
+  name: proxyPublicLbIpName
   location: location
   tags: tags
   sku: {
     name: 'Standard'
-    tier: 'Regional'
   }
 
   properties: {
-    publicIPAddressVersion: 'IPv4'
     publicIPAllocationMethod: 'Static'
-    idleTimeoutInMinutes: 4
-    ddosSettings: {
-      protectionMode: 'VirtualNetworkInherited'
-    }
   }
-}]
+}
+
+resource proxyLoadBalancerPublic 'Microsoft.Network/loadBalancers@2024-07-01' = {
+  name: proxyPublicLbName
+  location: location
+  tags: tags
+  sku: {
+    name: 'Standard'
+  }
+
+
+  properties: {
+    frontendIPConfigurations: [
+      {
+        name: 'frontend'
+        properties: {
+          publicIPAddress: {
+            id: proxyLoadBalancerPublicIp.id
+          }
+        }
+      }
+    ]
+    backendAddressPools: [
+      {
+        name: 'proxy-backend-pool'
+      }
+    ]
+    loadBalancingRules: [
+      {
+        name: 'http-8080'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', proxyPublicLbName, 'frontend')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/loadBalancers/backendAddressPools', proxyPublicLbName, 'proxy-backend-pool')
+          }
+          probe: {
+            id: resourceId('Microsoft.Network/loadBalancers/probes', proxyPublicLbName, 'http-8080-probe')
+          }
+          protocol: 'Tcp'
+          frontendPort: 8080
+          backendPort: 8080
+        }
+      }
+      {
+        name: 'https-443'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', proxyPublicLbName, 'frontend')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/loadBalancers/backendAddressPools', proxyPublicLbName, 'proxy-backend-pool')
+          }
+          probe: {
+            id: resourceId('Microsoft.Network/loadBalancers/probes', proxyPublicLbName, 'https-443-probe')
+          }
+          protocol: 'Tcp'
+          frontendPort: 443
+          backendPort: 443
+        }
+      }
+    ]
+    probes: [
+      {
+        name: 'http-8080-probe'
+        properties: {
+          protocol: 'Tcp'
+          port: 8080
+          intervalInSeconds: 5
+          numberOfProbes: 2
+        }
+      }
+      {
+        name: 'https-443-probe'
+        properties: {
+          protocol: 'Tcp'
+          port: 443
+          intervalInSeconds: 5
+          numberOfProbes: 2
+        }
+      }
+    ]
+  }
+}
+
+resource proxyInternalLoadBalancer 'Microsoft.Network/loadBalancers@2024-07-01' = {
+  name: proxyInternalLbName
+  location: location
+  tags: tags
+  sku: {
+    name: 'Standard'
+  }
+
+  properties: {
+    frontendIPConfigurations: [
+      {
+        name: 'frontend'
+        properties: {
+          privateIPAllocationMethod: 'Dynamic'
+          subnet: {
+            id: servicesSubnetId
+          }
+        }
+      }
+    ]
+    backendAddressPools: [
+      {
+        name: 'proxy-backend-pool'
+      }
+    ]
+    loadBalancingRules: [
+      {
+        name: 'http-8080'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', proxyInternalLbName, 'frontend')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/loadBalancers/backendAddressPools', proxyInternalLbName, 'proxy-backend-pool')
+          }
+          probe: {
+            id: resourceId('Microsoft.Network/loadBalancers/probes', proxyInternalLbName, 'http-8080-probe')
+          }
+          protocol: 'Tcp'
+          frontendPort: 8080
+          backendPort: 8080
+        }
+      }
+      {
+        name: 'https-443'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', proxyInternalLbName, 'frontend')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/loadBalancers/backendAddressPools', proxyInternalLbName, 'proxy-backend-pool')
+          }
+          probe: {
+            id: resourceId('Microsoft.Network/loadBalancers/probes', proxyInternalLbName, 'https-443-probe')
+          }
+          protocol: 'Tcp'
+          frontendPort: 443
+          backendPort: 443
+        }
+      }
+    ]
+    probes: [
+      {
+        name: 'http-8080-probe'
+        properties: {
+          protocol: 'Tcp'
+          port: 8080
+          intervalInSeconds: 5
+          numberOfProbes: 2
+        }
+      }
+      {
+        name: 'https-443-probe'
+        properties: {
+          protocol: 'Tcp'
+          port: 443
+          intervalInSeconds: 5
+          numberOfProbes: 2
+        }
+      }
+    ]
+  }
+}
 
 var httpsInboundRule = {
   name: 'AllowAnyHTTPSInbound'
@@ -80,12 +243,17 @@ resource proxyNetworkInterfaces 'Microsoft.Network/networkInterfaces@2020-06-01'
         name: '${proxyVmName}-${i}-nic-ipconfig'
         properties: {
           privateIPAllocationMethod: 'Dynamic'
-          publicIPAddress: {
-            id: proxyPublicIPAddresses[i].id
-          }
           subnet: {
             id: servicesSubnetId  
           }
+          loadBalancerBackendAddressPools: [
+            {
+              id: proxyLoadBalancerPublic.properties.backendAddressPools[0].id // public LB pool
+            }
+            {
+              id: proxyInternalLoadBalancer.properties.backendAddressPools[0].id // internal LB pool
+            }
+          ]
         }
       }
     ]
@@ -98,4 +266,5 @@ resource proxyNetworkInterfaces 'Microsoft.Network/networkInterfaces@2020-06-01'
 
 output proxyNicIDs array = [for i in range(0, numProxyVms): proxyNetworkInterfaces[i].id]
 output proxyNicPrivateIpAddresses array = [for i in range(0, numProxyVms): proxyNetworkInterfaces[i].properties.ipConfigurations[0].properties.privateIPAddress]
-output proxyPublicIpAddresses array = [for i in range(0, numProxyVms): proxyPublicIPAddresses[i].properties.ipAddress]
+output proxyLoadBalancerPublicIpAddress string = proxyLoadBalancerPublicIp.properties.ipAddress
+output proxyLoadBalancerPrivateIpAddress string = proxyInternalLoadBalancer.properties.frontendIPConfigurations[0].properties.privateIPAddress

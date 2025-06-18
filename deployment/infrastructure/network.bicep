@@ -100,6 +100,9 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
         name: servicesSubnetName
         properties: {
           addressPrefix: servicesCIDR
+          natGateway: {
+            id: natGateway.id
+          }
           delegations: []
           privateEndpointNetworkPolicies: 'Disabled'
           privateLinkServiceNetworkPolicies: 'Enabled'
