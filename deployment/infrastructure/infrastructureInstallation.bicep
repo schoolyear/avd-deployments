@@ -152,6 +152,8 @@ output installationOutput object = {
 
   virtual_networks: {
     '${networkResourceGroup.location}': {
+      name: vnetName
+      ip_range: vnetSubnetCIDR
       rg_name: networkResourceGroup.name
       public_ips: networkResources.outputs.ipAddresses
       private_dns_zone_id: networkResources.outputs.privateDnsZoneId
