@@ -55,6 +55,9 @@ jobs:
       - name: Copy autoUpdateVdiBrowser.ps1 to output directory
         run: cp default_layers/vdi_browser/resources/schoolyear_vdi_browser/autoUpdateVdiBrowser.ps1 out/
 
+      - name: Copy uiFormDefinition.json to output directory
+        run: cp deployment/infrastructure/uiFormDefinition.json out/
+
       - name: Build main deployment template
         uses: Azure/bicep-build-action@v1.0.0
         with:
@@ -107,5 +110,6 @@ jobs:
             out/v${{ env.MAJOR_VERSION }}-infrastructure-installation.json
             out/managed-main.json
             out/managed-vmCreation.json
+            out/uiFormDefinition.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
