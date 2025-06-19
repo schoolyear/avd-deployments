@@ -465,8 +465,8 @@
       "parameters": {
         "avdMetadataLocation": "[steps('basics').avdMetadataLocation",
         "baseResourceGroupName": "[steps('base').resourceGroupName]",
-        "dnsZoneName": "[steps('base')].dnsZoneName",
-        "keyVaultName": "[steps('base')].keyVaultName",
+        "dnsZoneName": "[steps('base').dnsZoneName]",
+        "keyVaultName": "[steps('base').keyVaultName]",
         "networkRgLocation": "[steps('basics').resourceScope.location.name]",
         "networkRgName": "[steps('network').resourceGroupName]",
         "natName": "[steps('network').natName]",
