@@ -1,6 +1,9 @@
 targetScope = 'subscription'
 
 param location string = 'germanywestcentral'
+// unused, remove
+param tags object = {}
+
 param tagsByResource object = {}
 
 // App registration is created before this installation script is run
