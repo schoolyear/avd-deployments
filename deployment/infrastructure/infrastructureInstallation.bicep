@@ -6,6 +6,7 @@ param tags object = {}
 // App registration is created before this installation script is run
 // however we need this param here to automate the 
 // necessary role assignment (needs ownership on the subscription)
+param appRegistrationName string // not used, can be removed
 param appRegistrationServicePrincipalId string
 
 // Resources that may be renamed

@@ -406,7 +406,7 @@
                   "type": "Microsoft.Common.TextBox",
                   "label": "Custom role name",
                   "toolTip": "A new role will be created to assign to the managed identity. You can configure the name of the role here.",
-                  "defaultValue": "Schoolyear AVD Image Builder",
+                  "defaultValue": "syavd-imagebuilder",
                   "constraints": {
                     "required": true,
                     "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{1,62}[a-zA-Z0-9]$",
