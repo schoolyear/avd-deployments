@@ -4,9 +4,8 @@ param location string = 'germanywestcentral'
 param tags object = {}
 
 // App registration is created before this installation script is run
-// however we need these params here to automate the 
+// however we need this param here to automate the 
 // necessary role assignment (needs ownership on the subscription)
-param appRegistrationName string
 param appRegistrationServicePrincipalId string
 
 // Resources that may be renamed
@@ -78,7 +77,7 @@ var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 resource appRegistrationServicePrincipalRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: subscription()
 
-  name: guid(tenant().tenantId, subscription().id, appRegistrationName, ownerRoleDefinitionId)
+  name: guid(tenant().tenantId, subscription().id, appRegistrationServicePrincipalId, ownerRoleDefinitionId)
   properties: {
     principalId: appRegistrationServicePrincipalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', ownerRoleDefinitionId)
