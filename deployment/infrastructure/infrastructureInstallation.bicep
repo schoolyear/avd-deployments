@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 param location string = 'germanywestcentral'
-param tags object = {}
+param tagsByResource object = {}
 
 // App registration is created before this installation script is run
 // however we need this param here to automate the 
@@ -41,34 +41,39 @@ param privatelinkZoneName string = 'privatelink.wvd.microsoft.com'
 var version = '0.0.0'
 
 // Always append the version to already provided tags
-var tagsWithVersion = union(tags, {
-  Version: version
-})
+var tagsByResourceWithVersion = reduce(items(tagsByResource), {}, (acc, item) => union(acc, {
+  '${item.key}': union(item.value, {
+    Version: version
+  })
+}))
 
 // Create your main resource group after providers are registered
+var rgTags = tagsByResourceWithVersion['Microsoft.Resources/resourceGroups']
 resource baseResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: baseResourceGroupName
   location: location
-  tags: tagsWithVersion
+  tags: rgTags
 }
 
 // DNS Zone deployment
+var dnsZoneTags = tagsByResourceWithVersion['Microsoft.Network/dnsZones']
 module dnsZone 'dnsDeployment.bicep' = {
   scope: baseResourceGroup
 
   params : {
     dnsZoneName: dnsZoneName
-    tags: tagsWithVersion
+    dnsZoneTags: dnsZoneTags
   }
 }
 
 // KeyVault Deployment
+var keyVaultTags = tagsByResourceWithVersion['Microsoft.KeyVault/vaults']
 module keyVaultDeployment 'keyVaultDeployment.bicep' = {
   scope: baseResourceGroup
 
   params: {
     keyVaultName: keyVaultName 
-    tags: tagsWithVersion
+    keyVaultTags: keyVaultTags
   }
 }
 
@@ -89,16 +94,23 @@ resource appRegistrationServicePrincipalRoleAssignment 'Microsoft.Authorization/
 resource imageBuildingResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: imageBuildingResourceGroupName
   location: location
-  tags: tagsWithVersion
+  tags: rgTags
 }
 
 // Image building resources
+var imageGalleryTags = tagsByResourceWithVersion['Microsoft.Compute/galleries']
+var imageDefinitionTags = tagsByResourceWithVersion['Microsoft.Compute/galleries/images']
+var storageAccountTags = tagsByResourceWithVersion['Microsoft.Storage/storageAccounts']
+var managedIdentityTags = tagsByResourceWithVersion['Microsoft.ManagedIdentity/userAssignedIdentities']
 module imageBuildingResources 'imageBuildingResources.bicep' = {
   scope: imageBuildingResourceGroup
 
   params: {
     location: location
-    tags: tags
+    imageGalleryTags: imageGalleryTags
+    imageDefinitionTags: imageDefinitionTags
+    storageAccountTags: storageAccountTags
+    managedIdentityTags: managedIdentityTags
     imageGalleryName: imageGalleryName
     imageDefinitionName: imageDefinitionName
     storageAccountName: storageAccountName
@@ -114,15 +126,24 @@ module imageBuildingResources 'imageBuildingResources.bicep' = {
 resource networkResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: networkRgName
   location: networkRgLocation
-  tags: tagsWithVersion
+  tags: rgTags
 }
 
+var publicIpAddressTags = tagsByResourceWithVersion['Microsoft.Network/publicIPAddresses']
+var natTags = tagsByResourceWithVersion['Microsoft.Network/natGateways']
+var vnetTags = tagsByResourceWithVersion['Microsoft.Network/virtualNetworks']
+var privateDnsZoneTags = tagsByResourceWithVersion['Microsoft.Network/privateDnsZones']
+var privateDnsZoneVnetLinkTags = tagsByResourceWithVersion['Microsoft.Network/privateDnsZones/virtualNetworkLinks']
 module networkResources 'network.bicep' = {
   scope: networkResourceGroup
 
   params: {
     location: location
-    tags: tagsWithVersion
+    publicIpAddressTags: publicIpAddressTags
+    natTags: natTags
+    vnetTags: vnetTags
+    privateDnsZoneTags: privateDnsZoneTags
+    privateDnsZoneVnetLinkTags: privateDnsZoneVnetLinkTags
     natIpName: natIpName
     natName: natName
     vnetName: vnetName
@@ -150,6 +171,8 @@ output installationOutput object = {
   image_builder_managed_identity_name: imageBuildingResources.outputs.managedIdentityId
   image_gallery_name: imageBuildingResources.outputs.imageGalleryName
 
+  tagsByResource: tagsByResource
+  
   virtual_networks: {
     '${networkResourceGroup.location}': {
       name: vnetName

@@ -1,5 +1,10 @@
 param location string
-param tags object
+
+param publicIpAddressTags object
+param natTags object
+param vnetTags object
+param privateDnsZoneTags object
+param privateDnsZoneVnetLinkTags object
 
 param natIpName string
 param natName string
@@ -17,7 +22,7 @@ param privatelinkZoneName string
 resource natPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
   name: natIpName
   location: location
-  tags: tags
+  tags: publicIpAddressTags
   sku: {
     name: 'Standard'
     tier: 'Regional'
@@ -38,7 +43,7 @@ resource natPublicIPAddress 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
 resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
   name: natName
   location: location
-  tags: tags
+  tags: natTags
   sku: {
     name: 'Standard'
   }
@@ -56,7 +61,7 @@ resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: vnetName
   location: location
-  tags: tags
+  tags: vnetTags
 
   properties: {
     addressSpace: {
@@ -132,7 +137,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 resource privateLinkDNSZone 'Microsoft.Network/privateDnsZones@2018-09-01' = {
   name: privatelinkZoneName
   location: 'global'
-  tags: tags
+  tags: privateDnsZoneTags
 }
 
 var virtualNetworkLinkName = '${privatelinkZoneName}/vnetLink'
@@ -140,7 +145,7 @@ var virtualNetworkLinkName = '${privatelinkZoneName}/vnetLink'
 resource virtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2018-09-01' = {
   name: virtualNetworkLinkName
   location: 'global'
-  tags: tags
+  tags: privateDnsZoneVnetLinkTags
 
   properties: {
     registrationEnabled: false
