@@ -51,7 +51,7 @@ var tagsByResourceWithVersion = reduce(items(tagsByResource), {}, (acc, item) =>
 }))
 
 // Create your main resource group after providers are registered
-var rgTags = tagsByResourceWithVersion['Microsoft.Resources/resourceGroups']
+var rgTags = tagsByResourceWithVersion[?'Microsoft.Resources/resourceGroups'] ?? {}
 resource baseResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: baseResourceGroupName
   location: location
@@ -59,7 +59,7 @@ resource baseResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
 }
 
 // DNS Zone deployment
-var dnsZoneTags = tagsByResourceWithVersion['Microsoft.Network/dnsZones']
+var dnsZoneTags = tagsByResourceWithVersion[?'Microsoft.Network/dnsZones'] ?? {}
 module dnsZone 'dnsDeployment.bicep' = {
   scope: baseResourceGroup
 
@@ -70,7 +70,7 @@ module dnsZone 'dnsDeployment.bicep' = {
 }
 
 // KeyVault Deployment
-var keyVaultTags = tagsByResourceWithVersion['Microsoft.KeyVault/vaults']
+var keyVaultTags = tagsByResourceWithVersion[?'Microsoft.KeyVault/vaults'] ?? {}
 module keyVaultDeployment 'keyVaultDeployment.bicep' = {
   scope: baseResourceGroup
 
@@ -101,10 +101,10 @@ resource imageBuildingResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-
 }
 
 // Image building resources
-var imageGalleryTags = tagsByResourceWithVersion['Microsoft.Compute/galleries']
-var imageDefinitionTags = tagsByResourceWithVersion['Microsoft.Compute/galleries/images']
-var storageAccountTags = tagsByResourceWithVersion['Microsoft.Storage/storageAccounts']
-var managedIdentityTags = tagsByResourceWithVersion['Microsoft.ManagedIdentity/userAssignedIdentities']
+var imageGalleryTags = tagsByResourceWithVersion[?'Microsoft.Compute/galleries'] ?? {}
+var imageDefinitionTags = tagsByResourceWithVersion[?'Microsoft.Compute/galleries/images'] ?? {}
+var storageAccountTags = tagsByResourceWithVersion[?'Microsoft.Storage/storageAccounts'] ?? {}
+var managedIdentityTags = tagsByResourceWithVersion[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
 module imageBuildingResources 'imageBuildingResources.bicep' = {
   scope: imageBuildingResourceGroup
 
@@ -132,11 +132,11 @@ resource networkResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = 
   tags: rgTags
 }
 
-var publicIpAddressTags = tagsByResourceWithVersion['Microsoft.Network/publicIPAddresses']
-var natTags = tagsByResourceWithVersion['Microsoft.Network/natGateways']
-var vnetTags = tagsByResourceWithVersion['Microsoft.Network/virtualNetworks']
-var privateDnsZoneTags = tagsByResourceWithVersion['Microsoft.Network/privateDnsZones']
-var privateDnsZoneVnetLinkTags = tagsByResourceWithVersion['Microsoft.Network/privateDnsZones/virtualNetworkLinks']
+var publicIpAddressTags = tagsByResourceWithVersion[?'Microsoft.Network/publicIPAddresses'] ?? {}
+var natTags = tagsByResourceWithVersion[?'Microsoft.Network/natGateways'] ?? {}
+var vnetTags = tagsByResourceWithVersion[?'Microsoft.Network/virtualNetworks'] ?? {}
+var privateDnsZoneTags = tagsByResourceWithVersion[?'Microsoft.Network/privateDnsZones'] ?? {}
+var privateDnsZoneVnetLinkTags = tagsByResourceWithVersion[?'Microsoft.Network/privateDnsZones/virtualNetworkLinks'] ?? {}
 module networkResources 'network.bicep' = {
   scope: networkResourceGroup
 
