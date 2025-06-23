@@ -174,7 +174,7 @@ output installationOutput object = {
   image_builder_managed_identity_name: imageBuildingResources.outputs.managedIdentityId
   image_gallery_name: imageBuildingResources.outputs.imageGalleryName
 
-  tagsByResource: tagsByResource
+  tagsByResource: tagsByResourceWithVersion
   
   virtual_networks: {
     '${networkResourceGroup.location}': {
