@@ -87,7 +87,6 @@ resource proxyVMs 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in ran
 // examId is as good as any
 module keyVaultRoleAssignmentDeployments 'keyVaultRoleAssignmentDeployment.bicep' = [for i in range(0, length(proxyNicIDs)): {
   name: '${keyVaultRoleAssignmentDeploymentName}-${examId}-${i}'
-  scope: resourceGroup(keyVaultResourceGroup)
 
   params: {
     proxyVmName: proxyVMs[i].name
