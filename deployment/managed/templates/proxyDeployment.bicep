@@ -118,6 +118,10 @@ resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020
   location: location
   tags: tags
 
+  dependsOn: [
+    keyVaultRoleAssignmentDeployments[i]
+  ]
+
   properties: {
     publisher: 'Microsoft.Azure.Extensions'
     type: 'CustomScript'
