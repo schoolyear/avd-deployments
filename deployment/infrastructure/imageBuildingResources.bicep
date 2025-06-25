@@ -143,3 +143,5 @@ resource managedIdentityCustomRoleAssignment 'Microsoft.Authorization/roleAssign
 
 output managedIdentityId string = managedIdentity.id
 output imageGalleryName string = imageGallery.name
+output storageAccountName string = storageAccount.name
+output storageAccountContainerName string = container.name

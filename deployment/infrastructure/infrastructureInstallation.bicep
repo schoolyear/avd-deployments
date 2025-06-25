@@ -170,6 +170,8 @@ output installationOutput object = {
   image_builder_rg_location: imageBuildingResourceGroup.location
   image_builder_managed_identity_name: imageBuildingResources.outputs.managedIdentityId
   image_gallery_name: imageBuildingResources.outputs.imageGalleryName
+  storage_account_name: imageBuildingResources.outputs.storageAccountName
+  storage_account_container_name: imageBuildingResources.outputs.storageAccountContainerName
   avd_metadata_location: avdMetadataLocation
 
   tags_by_resource: tagsByResourceWithVersion
