@@ -1,8 +1,8 @@
 targetScope = 'subscription'
 
-param location string = 'germanywestcentral'
-
-param tagsByResource object = {}
+param location string
+param tagsByResource object
+param avdMetadataLocation string
 
 // App registration is created before this installation script is run
 // however we need this param here to automate the 
@@ -10,32 +10,32 @@ param tagsByResource object = {}
 param appRegistrationServicePrincipalId string
 
 // Resources that may be renamed
-param baseResourceGroupName string = 'rg-sy-base'
+param baseResourceGroupName string
 param dnsZoneName string
 param keyVaultName string
-param imageBuildingResourceGroupName string = 'rg-sy-imagebuilding'
-param imageGalleryName string = 'sig_sy_avd'
-param imageDefinitionName string = 'img-office365'
-param storageAccountName string = 'stsy'
-param storageAccountBlobServiceName string = 'default'
-param storageAccountContainerName string = 'resources'
-param imageBuilderCustomRoleName string = 'rd-syavd-imagebuilder'
-param managedIdentityName string = 'mi-sy-imagebuilder'
+param imageBuildingResourceGroupName string
+param imageGalleryName string
+param imageDefinitionName string
+param storageAccountName string
+param storageAccountBlobServiceName string
+param storageAccountContainerName string
+param imageBuilderCustomRoleName string
+param managedIdentityName string
 
 // Network specific
-param networkRgName string = 'rg-sy-exams-network'
-param networkRgLocation string = location
-param natIpName string = 'pip-nat-sy'
-param natName string = 'nat-sy'
-param vnetName string = 'vnet-sy'
-param vnetSubnetCIDR string = '10.0.0.0/19'
-param avdEndpointsSubnetName string = 'avd-endpoints'
-param avdEndpointsSubnetCIDR string = '10.0.0.0/21'
-param sessionhostsSubnetName string = 'sessionhosts'
-param sessionhostsSubnetCIDR string = '10.0.8.0/21'
-param servicesSubnetName string = 'services'
-param servicesSubnetCIDR string = '10.0.16.0/21'
-param privatelinkZoneName string = 'privatelink.wvd.microsoft.com'
+param networkRgName string
+param networkRgLocation string
+param natIpName string
+param natName string
+param vnetName string
+param vnetSubnetCIDR string
+param avdEndpointsSubnetName string
+param avdEndpointsSubnetCIDR string
+param sessionhostsSubnetName string
+param sessionhostsSubnetCIDR string
+param servicesSubnetName string
+param servicesSubnetCIDR string
+param privatelinkZoneName string
 
 // NOTE: Will be baked in with each release
 var version = '0.0.0'
@@ -180,6 +180,7 @@ output installationOutput object = {
       rg_name: networkResourceGroup.name
       public_ips: networkResources.outputs.ipAddresses
       private_dns_zone_id: networkResources.outputs.privateDnsZoneId
+      avd_metadata_location: avdMetadataLocation
 
       avd_endpoints_subnet: {
         id: networkResources.outputs.avdEndpointsSubnetId
