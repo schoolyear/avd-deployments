@@ -265,7 +265,6 @@ output vmCreationTemplateCommonInputParameters object = {
   tags: tagsWithVersion
   resourceTypeNamePrefixNsg: resourceTypeNamePrefixNsg
   resourceTypeNamePrefixNic: resourceTypeNamePrefixNic
-  resourceTypeNamePrefixVm: resourceTypeNamePrefixVm
 }
 
 // These urls will not leak any resources at the end of the deployment

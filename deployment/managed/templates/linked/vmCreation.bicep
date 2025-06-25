@@ -20,7 +20,6 @@ var vmUserData = commonInputParameters.vmUserData
 var tags = commonInputParameters.tags
 var resourceTypeNamePrefixNsg = commonInputParameters.resourceTypeNamePrefixNsg
 var resourceTypeNamePrefixNic = commonInputParameters.resourceTypeNamePrefixNic
-var resourceTypeNamePrefixVm = commonInputParameters.resourceTypeNamePrefixVm
 
 // vmName is actually dependent on the vm being created 
 // and is controlled by the one (SY backend) deploying this template
@@ -43,7 +42,7 @@ var autoUpdateScriptLocation = ''
 @secure()
 param vmAdminPassword string = newGuid()
 
-var nsgName = '${resourceTypeNamePrefixNsg}${vmName}-nsg'
+var nsgName = '${resourceTypeNamePrefixNsg}${vmName}'
 resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   name: nsgName 
   location: location
@@ -67,7 +66,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-var nicName = '${resourceTypeNamePrefixNic}${vmName}-nic'
+var nicName = '${resourceTypeNamePrefixNic}${vmName}'
 resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
   name: nicName
   location: location
@@ -92,10 +91,9 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-01-01' = {
   }
 }
 
-// Only use prefix for the vmName, now the computer name, which is limited to 15 chars
-var vmNameWithPrefix = '${resourceTypeNamePrefixVm}${vmName}'
+// We don't use a prefix for this, it's already included in ${vmName}
 resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
-  name: vmNameWithPrefix
+  name: vmName
   location: location
   tags: union(tags, vmTags)
   
