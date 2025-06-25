@@ -170,6 +170,7 @@ output installationOutput object = {
   image_builder_rg_location: imageBuildingResourceGroup.location
   image_builder_managed_identity_name: imageBuildingResources.outputs.managedIdentityId
   image_gallery_name: imageBuildingResources.outputs.imageGalleryName
+  avd_metadata_location: avdMetadataLocation
 
   tags_by_resource: tagsByResourceWithVersion
   
@@ -180,7 +181,6 @@ output installationOutput object = {
       rg_name: networkResourceGroup.name
       public_ips: networkResources.outputs.ipAddresses
       private_dns_zone_id: networkResources.outputs.privateDnsZoneId
-      avd_metadata_location: avdMetadataLocation
 
       avd_endpoints_subnet: {
         id: networkResources.outputs.avdEndpointsSubnetId
