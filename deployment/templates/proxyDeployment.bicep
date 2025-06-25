@@ -84,15 +84,17 @@ resource proxyVMs 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in ran
 // NOTE: when running 'global' deployments you might run into a conflict
 // if same name deployments run at the same time, it's best to add a uuid to this
 // examId is as good as any
+var keyVaultSecretsUserRoleDefinitionId = '4633458b-17de-408a-b874-0445c86b69e6'
 module keyVaultRoleAssignmentDeployments 'keyVaultRoleAssignmentDeployment.bicep' = [for i in range(0, length(proxyNicIDs)): {
   name: '${keyVaultRoleAssignmentDeploymentName}-${examId}-${i}'
   scope: resourceGroup(keyVaultResourceGroup)
 
   params: {
-    proxyVmName: proxyVMs[i].name
+    roleAssignmentName: guid(resourceGroup().id, proxyVMs[i].name, examId, keyVaultSecretsUserRoleDefinitionId)
     proxyPrincipalId: proxyVMs[i].identity.principalId
     keyVaultResourceGroup: keyVaultResourceGroup
     keyVaultName: keyVaultName
+    keyVaultSecretsUserRoleDefinitionId: keyVaultSecretsUserRoleDefinitionId
   }
 }]
 
@@ -119,6 +121,10 @@ resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020
   parent: proxyVMs[i]
   name: 'CustomScriptExtensionName'
   location: location
+
+  dependsOn: [
+    keyVaultRoleAssignmentDeployments
+  ]
 
   properties: {
     publisher: 'Microsoft.Azure.Extensions'

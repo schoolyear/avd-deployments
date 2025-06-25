@@ -1,9 +1,8 @@
-param proxyVmName string
+param roleAssignmentName string
 param proxyPrincipalId string
 param keyVaultResourceGroup string
 param keyVaultName string
-
-var roleAssignmentName = guid(resourceGroup().id, proxyVmName, '4633458b-17de-408a-b874-0445c86b69e6')
+param keyVaultSecretsUserRoleDefinitionId string
 
 // We use the 'existing' keyword to reference this keyVault in the roleAssignment
 resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' existing = {
@@ -16,7 +15,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: keyVault
   
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', keyVaultSecretsUserRoleDefinitionId)
     principalId: proxyPrincipalId
     principalType: 'ServicePrincipal'
   }
