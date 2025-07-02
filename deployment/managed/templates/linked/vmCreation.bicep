@@ -38,6 +38,7 @@ param msiDownloadUrl string
 var templateVersion = '0.0.0'
 // NOTE: will be baked in with each release
 var autoUpdateScriptLocation = ''
+var sessionhostSetupScriptLocation = ''
 
 @secure()
 param vmAdminPassword string = newGuid()
@@ -182,16 +183,12 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
     }
   }
 
-  // NOTE: This must be run last because it locks down the VM internet access
-  // if you skip the dependsOn of this extension
-  // the DSC will most likely fail
-  resource sessionhostSetup 'extensions' = {
-    name: 'sessionhost-setup'
+  resource autoUpdateVdiBrowser 'extensions' = {
+    name: 'autoUpdateVdiBrowser'
     location: location
     tags: tags
 
     dependsOn: [
-      dsc
       aadLogin
     ]
 
@@ -201,7 +198,47 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
       typeHandlerVersion: '1.10'
       autoUpgradeMinorVersion: true
       settings: {
-        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "& { $scriptUrl = \'${autoUpdateScriptLocation}\'; $scriptPath = \'C:\\SessionhostScripts\\auto_update_vdi_browser.ps1\'; Invoke-WebRequest -Uri $scriptUrl -OutFile $scriptPath; & $scriptPath -LatestAgentVersion \'${latestAgentVersion}\' -MsiDownloadUrl \'${msiDownloadUrl}\' -Wait; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Remove-Item -Path $scriptPath -Force; . \'C:\\SessionhostScripts\\sessionhost_setup.ps1\'; Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute \'PowerShell\' -Argument \'-Command Restart-Computer -Force\') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName \'reboot\' }"'
+        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "$scriptPath = \'C:\\SessionhostScripts\\auto_update_vdi_browser.ps1\'; Invoke-WebRequest -Uri \'${autoUpdateScriptLocation}\' -OutFile $scriptPath; & $scriptPath -LatestAgentVersion \'${latestAgentVersion}\' -MsiDownloadUrl \'${msiDownloadUrl}\' -Wait; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"; Remove-Item -Path $scriptPath -Force'
+      }
+    }
+  }
+
+  resource sessionhostSetup 'extensions' = {
+    name: 'sessionhostSetup'
+    location: location
+    tags: tags
+
+    dependsOn: [
+      autoUpdateVdiBrowser
+    ]
+
+    properties: {
+      publisher: 'Microsoft.Compute'
+      type: 'CustomScriptExtension'
+      typeHandlerVersion: '1.10'
+      autoUpgradeMinorVersion: true
+      settings: {
+        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "$scriptPath = \'C:\\SessionhostScripts\\sessionhost_setup.ps1\'; Invoke-WebRequest -Uri \'${sessionhostSetupScriptLocation}\' -OutFile $scriptPath; & $scriptPath; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"; Remove-Item -Path $scriptPath -Force'
+      }
+    }
+  }
+
+  resource scheduleReboot 'extensions' = {
+    name: 'scheduleReboot'
+    location: location
+    tags: tags
+
+    dependsOn: [
+      sessionhostSetup
+    ]
+
+    properties: {
+      publisher: 'Microsoft.Compute'
+      type: 'CustomScriptExtension'
+      typeHandlerVersion: '1.10'
+      autoUpgradeMinorVersion: true
+      settings: {
+      commandToExecute: 'powershell -ExecutionPolicy Unrestricted -Command "Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute \'PowerShell\' -Argument \'-Command Restart-Computer -Force\') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName \'reboot\'"'
       }
     }
   }
