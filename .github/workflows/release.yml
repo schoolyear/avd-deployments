@@ -52,7 +52,7 @@ jobs:
       - name: Link sessionhostSetup script in vm deployment template (managed only)
         id: sessionhostSetup_link
         run: |
-          set -i "s|var sessionhostSetupScriptLocation = ''|var sessionhostSetupScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/sessionhostSetup.ps1'|" deployment/managed/templates/linked/vmCreation.bicep
+          sed -i "s|var sessionhostSetupScriptLocation = ''|var sessionhostSetupScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/sessionhostSetup.ps1'|" deployment/managed/templates/linked/vmCreation.bicep
 
       - name: Output directory
         run: mkdir -p out
