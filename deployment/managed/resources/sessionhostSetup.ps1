@@ -1,6 +1,3 @@
-$ProgressPreference = 'SilentlyContinue'
-$ErrorActionPreference = "Stop"
-
 param (
   [Parameter(Mandatory)]
   [string]$LatestAgentVersion,
@@ -9,6 +6,9 @@ param (
   [Parameter(Mandatory)]
   [switch]$Wait
 )
+
+$ProgressPreference = 'SilentlyContinue'
+$ErrorActionPreference = "Stop"
 
 ## Add detailed error handling helper function
 function Write-ExceptionDetails {
