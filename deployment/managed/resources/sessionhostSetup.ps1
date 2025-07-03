@@ -340,7 +340,7 @@ foreach ($script in $scripts) {
     & {
       $ErrorActionPreference = "Continue"
       Set-StrictMode -Off
-      $scriptpath
+      $scriptPath
     }
   
     if (!$?) {
