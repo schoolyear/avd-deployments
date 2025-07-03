@@ -1,4 +1,14 @@
+$ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = "Stop"
+
+param (
+  [Parameter(Mandatory)]
+  [string]$LatestAgentVersion,
+  [Parameter(Mandatory)]
+  [string]$MsiDownloadUrl,
+  [Parameter(Mandatory)]
+  [switch]$Wait
+)
 
 ## Add detailed error handling helper function
 function Write-ExceptionDetails {
@@ -45,6 +55,204 @@ function Write-ExceptionDetails {
     Write-Host "Line: $($ErrorRecord.InvocationInfo.Line)" -ForegroundColor Yellow
   }
 }
+
+### Auto-update VDI ###
+
+# Compare-SemVer accepts 2 SemVer versions. 
+# Returns -1, 0, 1 if Version1 is less than, equal to or greater than version 2 respectively
+# Throws an exception if unable to convert string input to a proper SemVer 
+function Compare-SemVer {
+  param (
+    [Parameter(Mandatory)]
+    [string]$Version1,
+    
+    [Parameter(Mandatory)]
+    [string]$Version2
+  )
+  
+  # Convert string versions to System.Version objects
+  $v1 = [System.Version]$Version1
+  $v2 = [System.Version]$Version2
+  
+  if ($v1 -eq $v2) {
+    return 0
+  }
+
+  if ($v1 -lt $v2) {
+    return -1
+  }
+
+  return 1
+}
+
+# Gets the current version by reading the build-metadata.json file
+function Get-CurrentVersion {
+  $buildMetadataFile = Join-Path -Path $schoolyearBrowserInstallationFolderName -ChildPath "shell\resources\build-metadata.json"
+  if (!(Test-Path $buildMetadataFile)) {
+    throw "Could not find metadata file: $buildMetadataFile"
+  }
+
+  $jsonContent = Get-Content -Path $buildMetadataFile -Raw | ConvertFrom-Json
+  $version = $jsonContent.version
+
+  return $version
+}
+
+function Kill-SchoolyearExamsProcess {
+  Write-Host "Trying to kill vdi agent executable if it is running"
+    
+  $process = Get-Process -Name $appExecutable.Replace(".exe", "") -ErrorAction SilentlyContinue
+  if ($process) {
+    $process | Stop-Process -Force
+    Write-Host "Successfully killed $appExecutable"
+  }
+  else {
+    Write-Host "$appExecutable is not running"
+  }
+}
+
+function Update-VdiAgentMsi {
+  param (
+    [string]$Version,
+    [string]$MsiDownloadUrl,
+    [switch]$Wait
+  )
+    
+  $vdiProvider = "avd"
+  $filename = "schoolyear-exams-browser-win-${Version}.msi"
+
+  # Download the MSI
+  $msiPath = Join-Path $programDataPath $filename
+  Invoke-WebRequest -Uri $MsiDownloadUrl -OutFile $msiPath
+    
+  # Kill the app executable if it's running
+  Kill-SchoolyearExamsProcess
+    
+  if ($Wait) {
+    # Execute msiexec and wait for it to finish
+    Write-Host "Installing MSI and waiting for it to finish"
+    $process = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`"" -Wait -PassThru
+    if ($process.ExitCode -ne 0) {
+      throw "msiexec failed with exit code: $($process.ExitCode)"
+    }
+            
+    Write-Host "msiexec finished but the service was not restarted"
+  }
+  else {
+    # Start msiexec without waiting
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msiPath`" /quiet VDIPROVIDER=`"$vdiProvider`"" -NoNewWindow
+    Write-Host "Installing MSI (not waiting for completion)"
+  }
+}
+
+function Auto-UpdateVdiAgent {
+  param (
+    [string]$LatestAgentVersion,
+    [string]$MsiDownloadUrl,
+    [switch]$Wait
+  )
+    
+  Write-Host "Starting auto-update check for VDI agent"
+    
+  # Get current version
+  $currentVersion = Get-CurrentVersion
+
+  # Compare with SkipAutoUpdateMinVersion
+  $cmpRes = Compare-SemVer -Version1 $SkipAutoUpdateMinVersion -Version2 $currentVersion
+  if ($cmpRes -in @(0, 1)) {
+    Write-Host "Current version is $currentVersion while min auto update version is $SkipAutoUpdateMinVersion, skipping auto-update"
+    return
+  }
+
+  # Compare versions with Latest Version
+  $cmpRes = Compare-SemVer -Version1 $LatestAgentVersion -Version2 $currentVersion
+  if ($cmpRes -in @(0, -1)) {
+    Write-Host "Agent version is up to date: $currentVersion"
+    return
+  }
+    
+  Write-Host "Update needed: Current version $currentVersion, latest version $LatestAgentVersion"
+
+  Write-Host "Updating full MSI to version: $LatestAgentVersion"
+  Update-VdiAgentMsi -Version $LatestAgentVersion -MsiDownloadUrl $MsiDownloadUrl -Wait $Wait
+  Write-Host "Successfully started MSI update to version: $LatestAgentVersion"
+}
+
+# Skip auto-update if the currently installed version is less than or equal to this version
+$SkipAutoUpdateMinVersion = "3.10.0"
+
+# VDI Agent Auto-Update
+# This script checks for the latest VDI agent version and updates the agent if it detects that the 
+# currently installed version is older than the latest
+
+try {
+  $schoolyearInstallationBaseFolder = "C:\Program Files\Schoolyear"
+  if (!(Test-Path $schoolyearInstallationBaseFolder)) {
+    Write-Host "Could not find 64bit installation folder"
+
+    $schoolyearInstallationBaseFolder = "C:\Program Files (x86)\Schoolyear"
+    if (!(Test-Path $schoolyearInstallationBaseFolder)) {
+      throw "Could not find 32bit installation folder either, exiting"
+    }
+  }
+
+  # We try to find the installation path.
+  # We have 4 distinct environments and we really don't want to pass the 
+  # environment as a parameter, so we can enumerate all of them and check
+  # for existance. First one we find is our path
+  $schoolyearBrowserInstallationFolderNames = @(
+    "Schoolyear Browser Development (confidential)",
+    "Schoolyear Browser Testing",
+    "Schoolyear Browser Preview",
+    "Schoolyear Browser"
+  )
+
+  $schoolyearBrowserInstallationFolderName = $null
+  foreach ($folderName in $schoolyearBrowserInstallationFolderNames) {
+    $fullPath = Join-Path -Path $schoolyearInstallationBaseFolder -ChildPath $folderName
+
+    if (Test-Path $fullPath) {
+      $schoolyearBrowserInstallationFolderName = $fullPath
+      break
+    }
+  }
+
+  if (!$schoolyearBrowserInstallationFolderName) {
+    throw "Could not find schoolyear browser installation folder"
+  }
+
+  Write-Host "Found schoolyear browser installation folder: $schoolyearBrowserInstallationFolderName"
+
+  # Configuration
+  $programDataPath = Join-Path $env:ProgramData "Schoolyear"
+  $appExecutable = "schoolyear-exams.exe"
+
+  # Create necessary directories if they don't exist
+  if (-not (Test-Path $programDataPath)) {
+    New-Item -Path $programDataPath -ItemType Directory -Force | Out-Null
+  }
+
+  # Check if running as admin
+  $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+  $isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  
+  if (-not $isAdmin) {
+    throw "Auto-updating the vdi browser needs admin right"
+  }
+  
+  # Run the auto-update
+  Auto-UpdateVdiAgent -Wait $Wait -LatestAgentVersion $LatestAgentVersion -MsiDownloadUrl $MsiDownloadUrl
+  Write-Host "Auto-updating completed successfully" -ForegroundColor Green
+}
+catch {
+  Write-Host "Error while executing auto update vdi browser" -ForegroundColor Red
+  $_ | Write-ExceptionDetails
+  exit 1
+}
+
+### /Auto-update VDI ###
+
+### Sessionhost Setup ###
 
 $url = "http://169.254.169.254/metadata/instance/compute/userData?api-version=2021-01-01&format=text"
 $headers = @{
@@ -152,4 +360,20 @@ New-NetFirewallRule -DisplayName "Allow health service monitor outbound" -Remote
   
 Set-NetFirewallProfile -Profile Domain, Private, Public -DefaultOutboundAction Block
 
+### /Sessionhost Setup ###
+
+### Schedule Reboot ###
+
+try {
+  Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute 'Powershell' -Argument '-Command Restart-Computer -Force') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName 'reboot'
+}
+catch {
+  Write-Host "Error while trying to schedule reboot" -ForegroundColor Red
+  $_ | Write-ExceptionDetails
+  exit 1
+}
+
+### /Schedule Reboot ###
+
 Write-Host "[Done]" -ForegroundColor Green
+
