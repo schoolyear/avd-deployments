@@ -203,7 +203,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
           '${sessionhostSetupScriptLocation}'
         ]
 
-        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File sessionhostSetup.ps1 -LatestAgentVersion \'${latestAgentVersion}\' -MsiDownloadUrl \'${msiDownloadUrl}\' -Wait'
+        commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File sessionhostSetup.ps1 -LatestAgentVersion ${latestAgentVersion} -MsiDownloadUrl ${msiDownloadUrl} -Wait'
       }
     }
   }
