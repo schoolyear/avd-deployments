@@ -14,16 +14,6 @@ param studentsPerProxy int = 10
 @description('Minimum number of proxy VMs to deploy')
 param minProxyVms int = 2
 
-// NOTE: Added to replace {param, builtin, props}
-param internalServiceLinkIdsJSON string = '{}'
-// Example:
-// param licenseServerLinkServiceIds object = {
-//   matlab: '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/privateLinkServices/matlab-license-server-private-link-service'
-//   spss: '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/privateLinkServices/spss-license-server-private-link-service'
-// }
-// -> matlab will result in a domain of matlab.customerinternalservices.syavd.local
-// -> spss will result in a domain of spss.customerinternalservices.syavd.local
-param internalServicesPrivateDNSZoneName string = ''
 param vmCustomImageSourceId string
 param proxyRSAPublicKey string
 param sessionHostProxyWhitelist string
@@ -73,12 +63,6 @@ param resourceTypeNamePrefixNsg string
 param resourceTypeNamePrefixNic string
 param resourceTypeNamePrefixVm string
 param resourceTypeNamePrefixLb string
-
-// A map object of domain names - Azure Private Link Service Ids.
-// Each entry will create a Private Endpoint and connect to an existing Azure Private Link Services.
-// This is used to initiate connections to license servers and other customer provided internal services.
-// The Azure Private Link Services must be configured to auto-accept connections from the subscription in which the Private Services will be deployed.
-var internalServiceLinkIds = json(internalServiceLinkIdsJSON)
 
 var numProxyVms = min(max(
   (userCapacity + studentsPerProxy - 1) / studentsPerProxy,
