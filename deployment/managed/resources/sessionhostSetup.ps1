@@ -287,6 +287,23 @@ catch {
   exit 1
 }
 
+# Find AVD Endpoints ip range to whitelist
+$avdEndpointsIpRange = $userData.avdEndpointsIpRange
+if ([string]::IsNullOrEmpty($avdEndpointsIpRange)) {
+  Write-Error "avdEndpointsIpRange is empty"
+  exit 1
+}
+
+Write-Host "Open firewall to AVD endpoints subnet: $avdEndpointsIpRange"
+try {
+  New-NetFirewallRule -DisplayName "Allow all outbound to azure AVD endpoints $avdEndpointsIpRange" -Direction Outbound -RemoteAddress $avdEndpointsIpRange -Action Allow -Profile Any | Out-Null
+}
+catch {
+  Write-Host "Error while opening firewall to AVD endpoints subnet" -ForegroundColor Red
+  $_ | Write-ExceptionDetails
+  exit 1
+}
+
 # We map a local domain name to point to the LB private IP
 $hostsFilepath = "C:\Windows\System32\drivers\etc\hosts"
 $domain = "proxies.local"
@@ -354,10 +371,6 @@ foreach ($script in $scripts) {
   }
 }
 
-# Allow hardcoded IP addresses used by Azure
-New-NetFirewallRule -DisplayName "Allow metadata service outbound" -RemoteAddress 169.254.169.254 -Direction Outbound -Action Allow -Profile Any | Out-Null
-New-NetFirewallRule -DisplayName "Allow health service monitor outbound" -RemoteAddress 168.63.129.16 -Direction Outbound -Action Allow -Profile Any | Out-Null
-  
 Set-NetFirewallProfile -Profile Domain, Private, Public -DefaultOutboundAction Block
 
 ### /Sessionhost Setup ###
