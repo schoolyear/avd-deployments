@@ -373,7 +373,7 @@ foreach ($script in $scripts) {
 
 # set the default network profile to public
 Set-NetConnectionProfile -NetworkCategory Public
-# blobk all outbound traffic
+# block all outbound traffic
 Set-NetFirewallProfile -Profile Domain, Private, Public -DefaultOutboundAction Block
 
 ### /Sessionhost Setup ###
