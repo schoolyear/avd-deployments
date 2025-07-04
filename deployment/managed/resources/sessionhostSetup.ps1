@@ -337,6 +337,25 @@ Write-Host "Updated hosts file"
 
 ipconfig /flushdns
 
+$proxyBytes = [System.Text.Encoding]::UTF8.GetBytes("PROXY $($proxyLoadBalancerPrivateIpAddress):8080")
+$proxyStringBase64 = [Convert]::ToBase64String($proxyBytes)
+$matchingProxyBase64 = $proxyStringBase64.Replace('+', '-').Replace('/', '_').TrimEnd('=')
+$pacUrl = "http://${domain}:8080/proxy.pac?matchingProxyBase64=$matchingProxyBase64&defaultProxy=DIRECT"
+
+try {
+  Write-Host "Setting system proxy (LOCALSYSTEM)..."
+  bitsadmin /util /setieproxy LOCALSYSTEM AUTOSCRIPT "$pacUrl"
+  Write-Host "Setting system proxy (NETWORKSERVICE)..."
+  bitsadmin /util /setieproxy NETWORKSERVICE AUTOSCRIPT "$pacUrl"
+  Write-Host "Setting system proxy (LOCALSERVICE)..."
+  bitsadmin /util /setieproxy LOCALSERVICE AUTOSCRIPT "$pacUrl"
+}
+catch {
+  Write-Host "Error while setting system proxy" -ForegroundColor Red
+  $_ | Write-ExceptionDetails
+  exit 1
+}
+
 try {
   Write-Host "Setting default outbound action of all network profiles to [Allow]"
   Set-NetFirewallProfile -Profile Domain, Private, Public -DefaultOutboundAction Allow
