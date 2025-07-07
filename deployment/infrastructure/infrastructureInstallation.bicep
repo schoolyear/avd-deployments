@@ -118,6 +118,7 @@ module imageBuildingResources 'imageBuildingResources.bicep' = {
     storageAccountContainerName: storageAccountContainerName
     imageBuilderCustomRoleName: imageBuilderCustomRoleName
     managedIdentityName: managedIdentityName
+    appRegistrationServicePrincipalId: appRegistrationServicePrincipalId
   }
 }
 
