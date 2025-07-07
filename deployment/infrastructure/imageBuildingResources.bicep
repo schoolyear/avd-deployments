@@ -12,6 +12,7 @@ param storageAccountBlobServiceName string
 param storageAccountContainerName string
 param imageBuilderCustomRoleName string
 param managedIdentityName string
+param appRegistrationServicePrincipalId string
 
 resource imageGallery 'Microsoft.Compute/galleries@2022-03-03' = {
   name: imageGalleryName
@@ -96,6 +97,18 @@ resource managedIdentityStorageBlobDataReaderRoleAssignment 'Microsoft.Authoriza
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataReaderRoleDefinitionId)
     principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// 'Storage Blob Data Reader' role to the app registration service principal
+resource appRegistrationServicePrincipalStorageBlobDataReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(tenant().tenantId, appRegistrationServicePrincipalId, storageBlobDataReaderRoleDefinitionId)
+  scope: storageAccount
+
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataReaderRoleDefinitionId)
+    principalId: appRegistrationServicePrincipalId
     principalType: 'ServicePrincipal'
   }
 }
