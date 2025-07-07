@@ -57,7 +57,7 @@ jobs:
         run: mkdir -p out
 
       - name: Copy autoUpdateVdiBrowser.ps1 to output directory
-        run: cp deployment/managed/resources/autoUpdateVdiBrowser.ps1 out/
+        run: cp deployment/templates/autoUpdateVdiBrowser.ps1 out/
 
       - name: Copy uiFormDefinition.json to output directory
         run: cp deployment/infrastructure/uiFormDefinition.json out/
