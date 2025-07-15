@@ -397,18 +397,5 @@ Set-NetFirewallProfile -Profile Domain, Private, Public -DefaultOutboundAction B
 
 ### /Sessionhost Setup ###
 
-### Schedule Reboot ###
-
-try {
-  Register-ScheduledTask -Action (New-ScheduledTaskAction -Execute 'Powershell' -Argument '-Command Restart-Computer -Force') -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5)) -RunLevel Highest -User System -Force -TaskName 'reboot'
-}
-catch {
-  Write-Host "Error while trying to schedule reboot" -ForegroundColor Red
-  $_ | Write-ExceptionDetails
-  exit 1
-}
-
-### /Schedule Reboot ###
-
 Write-Host "[Done]" -ForegroundColor Green
 
