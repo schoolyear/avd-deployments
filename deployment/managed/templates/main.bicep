@@ -260,5 +260,6 @@ output vmCreationTemplateCommonInputParameters object = {
 // /subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/networkInterfaces/${vmName}-nic
 output vmCreationResourceUrls array = [
  'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Compute/virtualMachines/{{vmName}}?api-version=2021-04-01' 
- 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkInterfaces/{{vmName}}-nic?api-version=2021-04-01' 
+ 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkInterfaces/${resourceTypeNamePrefixNic}{{vmName}}?api-version=2021-04-01' 
+ 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkSecurityGroups/${resourceTypeNamePrefixNsg}{{vmName}}?api-version=2021-04-01' 
 ]
