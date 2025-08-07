@@ -21,6 +21,7 @@ param storageAccountBlobServiceName string
 param storageAccountContainerName string
 param imageBuilderCustomRoleName string
 param managedIdentityName string
+param appRegistrationCustomRoleName string
 
 // Network specific
 param networkRgName string
@@ -77,16 +78,156 @@ module keyVaultDeployment 'keyVaultDeployment.bicep' = {
   }
 }
 
-// https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged#owner
-var ownerRoleDefinitionId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
-// App Registration service principal ownership role Assignment
-resource appRegistrationServicePrincipalRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+// We can't really use a module for this, because Modules cannot be deployed at the subscription 
+// scope directly from a subscription-scoped template.
+// Custom role definition for your App Registration
+resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
+  name: guid(tenant().tenantId, subscription().subscriptionId, appRegistrationCustomRoleName)
+  properties: {
+    roleName: appRegistrationCustomRoleName
+    description: 'Custom role for the SY App Registration backend operations'
+    type: 'CustomRole'
+    permissions: [
+      {
+        actions: [
+          // Resource management
+          'Microsoft.Resources/subscriptions/resourceGroups/read'
+          'Microsoft.Resources/subscriptions/resourceGroups/write'
+          'Microsoft.Resources/subscriptions/resourceGroups/delete'
+          'Microsoft.Resources/deployments/*'
+          'Microsoft.Resources/deployments/operations/read'
+          
+          // Get resources by ID (general read access)
+          'Microsoft.Resources/subscriptions/resources/read'
+          'Microsoft.Resources/subscriptions/resourceGroups/resources/read'
+          
+          // Compute Gallery (for image versions)
+          'Microsoft.Compute/galleries/read'
+          'Microsoft.Compute/galleries/images/read'
+          'Microsoft.Compute/galleries/images/versions/read'
+          
+          // Storage account operations
+          'Microsoft.Storage/storageAccounts/read'
+          'Microsoft.Storage/storageAccounts/write'
+          'Microsoft.Storage/storageAccounts/delete'
+          'Microsoft.Storage/storageAccounts/blobServices/read'
+          'Microsoft.Storage/storageAccounts/blobServices/containers/read'
+          'Microsoft.Storage/storageAccounts/blobServices/containers/write'
+          'Microsoft.Storage/storageAccounts/blobServices/containers/delete'
+          'Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey/action'
+          
+          // AVD specific operations - ALL PERMISSIONS
+          'Microsoft.DesktopVirtualization/hostPools/*'
+          'Microsoft.DesktopVirtualization/workspaces/*'
+          'Microsoft.DesktopVirtualization/applicationGroups/*'
+
+          // VM actions for AVD session hosts
+          'Microsoft.Compute/virtualMachines/read'
+          'Microsoft.Compute/virtualMachines/write'
+          'Microsoft.Compute/virtualMachines/delete'
+          'Microsoft.Compute/virtualMachines/restart/action'
+          'Microsoft.Compute/virtualMachines/start/action'
+          'Microsoft.Compute/virtualMachines/deallocate/action'
+          'Microsoft.Compute/virtualMachines/powerOff/action'
+          
+          // VM Extensions
+          'Microsoft.Compute/virtualMachines/extensions/read'
+          'Microsoft.Compute/virtualMachines/extensions/write'
+          'Microsoft.Compute/virtualMachines/extensions/delete'
+          
+          // Role assignments for VM user roles
+          'Microsoft.Authorization/roleAssignments/read'
+          'Microsoft.Authorization/roleAssignments/write'
+          'Microsoft.Authorization/roleAssignments/delete'
+          'Microsoft.Authorization/roleDefinitions/read'
+          'Microsoft.Authorization/permissions/read'
+          'Microsoft.Authorization/providerOperations/read'
+          
+          // Network resources (if needed)
+          'Microsoft.Network/virtualNetworks/read'
+          'Microsoft.Network/virtualNetworks/subnets/read'
+          'Microsoft.Network/networkInterfaces/read'
+          'Microsoft.Network/networkInterfaces/write'
+          'Microsoft.Network/networkInterfaces/delete'
+          'Microsoft.Network/networkInterfaces/join/action'
+
+          // Private Endpoints
+          'Microsoft.Network/privateEndpoints/read'
+          'Microsoft.Network/privateEndpoints/write'
+          'Microsoft.Network/privateEndpoints/delete'
+          'Microsoft.Network/privateEndpoints/privateDnsZoneGroups/read'
+          'Microsoft.Network/privateEndpoints/privateDnsZoneGroups/write'
+          'Microsoft.Network/privateEndpoints/privateDnsZoneGroups/delete'
+
+          // Public IP Addresses
+          'Microsoft.Network/publicIPAddresses/read'
+          'Microsoft.Network/publicIPAddresses/write'
+          'Microsoft.Network/publicIPAddresses/delete'
+
+          // Load Balancers
+          'Microsoft.Network/loadBalancers/read'
+          'Microsoft.Network/loadBalancers/write'
+          'Microsoft.Network/loadBalancers/delete'
+
+          // Load balancer backend pool join action (for network interfaces)
+          'Microsoft.Network/loadBalancers/backendAddressPools/join/action'
+
+          // Subnet join actions (for private endpoints and load balancers)
+          'Microsoft.Network/virtualNetworks/subnets/join/action'
+          
+          // Public IP join actions (for load balancers)
+          'Microsoft.Network/publicIPAddresses/join/action'
+
+          // Network Security Groups
+          'Microsoft.Network/networkSecurityGroups/read'
+          'Microsoft.Network/networkSecurityGroups/write'
+          'Microsoft.Network/networkSecurityGroups/delete'
+
+          // Network Security Group join action (for network interfaces)
+          'Microsoft.Network/networkSecurityGroups/join/action'
+
+          // DNS Zone operations (needed for deleting extra exam resources)
+          'Microsoft.Network/dnsZones/A/read'
+          'Microsoft.Network/dnsZones/A/write'
+          'Microsoft.Network/dnsZones/A/delete'
+          
+          // Private DNS Zones (needed for private endpoints) - ALL PERMISSIONS
+          'Microsoft.Network/privateDnsZones/*'
+          
+          // Monitoring and logging
+          'Microsoft.Insights/*/read'
+          'Microsoft.Support/*'
+
+          // Read quotas
+          'Microsoft.Compute/locations/usages/read'
+          'Microsoft.Network/locations/usages/read'
+          'Microsoft.Storage/locations/usages/read'
+          'Microsoft.Quota/quotas/read'
+          'Microsoft.Quota/usages/read'
+        ]
+        notActions: []
+        dataActions: [
+          // Storage blob data access
+          'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read'
+          'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write'
+          'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete'
+        ]
+        notDataActions: []
+      }
+    ]
+    assignableScopes: [
+      subscription().id
+    ]
+  }
+}
+
+resource appRegistrationServicePrincipalCustomRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(tenant().tenantId, subscription().id, appRegistrationServicePrincipalId, appRegistrationCustomRole.id)
   scope: subscription()
 
-  name: guid(tenant().tenantId, subscription().id, appRegistrationServicePrincipalId, ownerRoleDefinitionId)
   properties: {
     principalId: appRegistrationServicePrincipalId
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', ownerRoleDefinitionId)
+    roleDefinitionId: appRegistrationCustomRole.id
     principalType: 'ServicePrincipal'
   }
 }

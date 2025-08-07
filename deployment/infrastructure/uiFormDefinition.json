@@ -414,6 +414,33 @@
                   }
                 }
               ]
+            },
+            {
+              "name": "appRegistrationSection",
+              "type": "Microsoft.Common.Section",
+              "label": "App Registration",
+              "elements": [
+                {
+                  "name": "explainer",
+                  "type": "Microsoft.Common.InfoBox",
+                  "options": {
+                    "style": "Info",
+                    "text": "This template will create a custom role for the app registration service principal. This role provides the necessary permissions to deploy and delete exam environments."
+                  }
+                },
+                {
+                  "name": "appRegistrationCustomRoleName",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "App registration custom role name",
+                  "toolTip": "A custom role will be created for the app registration service principal to manage exam deployments. You can configure the name of the role here.",
+                  "defaultValue": "syavd-appregistration",
+                  "constraints": {
+                    "required": true,
+                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{1,62}[a-zA-Z0-9]$",
+                    "validationMessage": "Must be 3-64 letters, numbers, and hyphens. Start and end with letter or number. Can't use consecutive hyphens."
+                  }
+                }
+              ]
             }
           ]
         },
@@ -466,7 +493,6 @@
         "avdEndpointsSubnetName": "[steps('network').vnetSection.avdSubnetName]",
         "avdEndpointsSubnetCIDR": "[steps('network').vnetSection.avdSubnetCIDR]",
         "tagsByResource": "[steps('tags').tags]",
-
         "imageBuildingResourceGroupName": "[steps('imagebuilding').resourceGroupName]",
         "imageGalleryName": "[steps('imagebuilding').gallerySection.galleryName]",
         "imageDefinitionName": "[steps('imagebuilding').gallerySection.imageName]",
@@ -475,9 +501,8 @@
         "storageAccountContainerName": "[steps('imagebuilding').storageSection.containerName]",
         "imageBuilderCustomRoleName": "[steps('imagebuilding').identitySection.roleName]",
         "managedIdentityName": "[steps('imagebuilding').identitySection.managedIdentityName]",
-
-        "appRegistrationName": "[parameters('appRegistrationName')]",
         "appRegistrationServicePrincipalId": "[parameters('appRegistrationServicePrincipalId')]",
+        "appRegistrationCustomRoleName": "[steps('imagebuilding').appRegistrationSection.appRegistrationCustomRoleName]",
         "privatelinkZoneName": "privatelink.wvd.microsoft.com"
       }
     }
