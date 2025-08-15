@@ -1,5 +1,6 @@
 .idea/
 out/
+out.*
 *.local
 local.*
 images/local*

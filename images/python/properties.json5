@@ -1,0 +1,10 @@
+// These links accomodate installing packages. Please note packages that use Path variables do not work without additional changes to the build
+
+{
+  whitelistedHosts: {
+    "files.pythonhosted.org:443": {},
+    "pythonhosted.org:443": {},
+    "pypi.python.org:443": {},
+    "pypi.org:443": {},
+  }
+}

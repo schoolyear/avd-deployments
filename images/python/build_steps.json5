@@ -1,0 +1,29 @@
+// this file describes the steps performed during image building
+//
+// this file gets merged with the building_steps.json from all the other steps (first layer executed first)
+// to deviate from the default ordering, you can specify an ordering preference by placing the step in the "pre" or "post" list
+//
+// by default, you should put your installation steps in the "default" list
+//
+// the steps must be formatted as Image Template Customizers: https://learn.microsoft.com/en-us/azure/templates/microsoft.virtualmachineimages/imagetemplates?pivots=deployment-language-arm-template#imagetemplatecustomizer-objects-1
+{
+  // if you need to execute steps before any `default` steps are executed
+  // "Run main", was placed in the "pre step" since we noticed azure builds sometimes fail without reason, this was easier with troubleshooting
+  pre: [
+  {
+    name: "Run main",
+    type: "PowerShell",
+    inline: [
+      "C:\\imagebuild_resources\\python\\main.ps1"
+    ],
+    runAsSystem: true,
+    runElevated: true
+  }
+  ],
+  // the default place to put your building steps
+  default: [
+
+  ],
+  // if you need to execute steps after all `default` steps are executed
+  post: []
+}
