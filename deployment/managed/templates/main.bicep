@@ -183,14 +183,9 @@ module proxyDeployment 'proxyDeployment.bicep' = {
 output publicIps array = publicIps
 output proxyConfig object = {
   domains: [
-    // Proxy traffic related to the hostpool of this exam
+    // Proxy all traffic
     {
-      matcher: '*-*-*-*-*.*.wvd.microsoft.com'
-      proxy: proxyDeployment.outputs.proxyDnsDeploymentDomain
-    }
-    // Proxy traffic related to global unrelated hostpools in order for the trusted proxy to block it
-    {
-      matcher: '*rdgateway*.wvd.microsoft.com'
+      matcher: '*'
       proxy: proxyDeployment.outputs.proxyDnsDeploymentDomain
     }
   ]
