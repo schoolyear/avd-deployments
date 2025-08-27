@@ -22,7 +22,8 @@
                   "Microsoft.ContainerInstance",
                   "Microsoft.Network",
                   "Microsoft.Resources",
-                  "Microsoft.Authorization"
+                  "Microsoft.Authorization",
+                  "Microsoft.DesktopVirtualization"
                 ]
               },
               "subscription": {
@@ -34,7 +35,8 @@
                   "Microsoft.ContainerInstance",
                   "Microsoft.Network",
                   "Microsoft.Resources",
-                  "Microsoft.Authorization"
+                  "Microsoft.Authorization",
+                  "Microsoft.DesktopVirtualization"
                 ]
               }
             },
