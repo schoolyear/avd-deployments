@@ -1,12 +1,10 @@
 param location string
 
 param imageGalleryTags object
-param imageDefinitionTags object
 param storageAccountTags object
 param managedIdentityTags object
 
 param imageGalleryName string
-param imageDefinitionName string
 param storageAccountName string
 param storageAccountBlobServiceName string
 param storageAccountContainerName string
@@ -18,30 +16,6 @@ resource imageGallery 'Microsoft.Compute/galleries@2022-03-03' = {
   name: imageGalleryName
   location: location
   tags: imageGalleryTags
-}
-
-resource imageDefinition 'Microsoft.Compute/galleries/images@2022-03-03' = {
-  name: imageDefinitionName
-  parent: imageGallery
-  location: location
-  tags: imageDefinitionTags
-
-  properties: {
-    osType: 'Windows'
-    osState: 'Generalized'
-    identifier: {
-      publisher: 'avd-deployments'
-      offer: 'office365'
-      sku: 'standard'
-    }
-    hyperVGeneration: 'V2'
-    features: [
-      {
-        name: 'SecurityType'
-        value: 'TrustedLaunchSupported'
-      }
-    ]
-  }
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {

@@ -15,7 +15,6 @@ param dnsZoneName string
 param keyVaultName string
 param imageBuildingResourceGroupName string
 param imageGalleryName string
-param imageDefinitionName string
 param storageAccountName string
 param storageAccountBlobServiceName string
 param storageAccountContainerName string
@@ -240,7 +239,6 @@ resource imageBuildingResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-
 
 // Image building resources
 var imageGalleryTags = tagsByResourceWithVersion[?'Microsoft.Compute/galleries'] ?? {}
-var imageDefinitionTags = tagsByResourceWithVersion[?'Microsoft.Compute/galleries/images'] ?? {}
 var storageAccountTags = tagsByResourceWithVersion[?'Microsoft.Storage/storageAccounts'] ?? {}
 var managedIdentityTags = tagsByResourceWithVersion[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
 module imageBuildingResources 'imageBuildingResources.bicep' = {
@@ -249,11 +247,9 @@ module imageBuildingResources 'imageBuildingResources.bicep' = {
   params: {
     location: location
     imageGalleryTags: imageGalleryTags
-    imageDefinitionTags: imageDefinitionTags
     storageAccountTags: storageAccountTags
     managedIdentityTags: managedIdentityTags
     imageGalleryName: imageGalleryName
-    imageDefinitionName: imageDefinitionName
     storageAccountName: storageAccountName
     storageAccountBlobServiceName: storageAccountBlobServiceName
     storageAccountContainerName: storageAccountContainerName

@@ -306,7 +306,7 @@
                   "type": "Microsoft.Common.InfoBox",
                   "options": {
                     "style": "Info",
-                    "text": "Images used in AVD will be stored in an Image Gallery. The gallery can contain multiple image definitions. To get you started, this template creates one by default. If you want to create more images yourself later, you can through the Azure Portal."
+                    "text": "Images used in AVD will be stored in an Image Gallery. The gallery can contain multiple image definitions. You will be asked to create a new Image Definition when building a new image."
                   }
                 },
                 {
@@ -319,18 +319,6 @@
                     "required": true,
                     "regex": "^[a-zA-Z0-9][a-zA-Z0-9.]{0,78}[a-zA-Z0-9]$",
                     "validationMessage": "Must be 1-80 Alphanumerics and periods. Start and end with alphanumeric."
-                  }
-                },
-                {
-                  "name": "imageName",
-                  "type": "Microsoft.Common.TextBox",
-                  "label": "Default image name",
-                  "toolTip": "A new image version will be created to get started quickly. This is usually an Office 365 image. You can configure the name of the resource here.",
-                  "defaultValue": "image-office365",
-                  "constraints": {
-                    "required": true,
-                    "regex": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}[a-zA-Z0-9]$",
-                    "validationMessage": "Must be 1-80 Alphanumerics, underscores, hyphens, and periods. Start and end with alphanumeric."
                   }
                 }
               ]
@@ -458,7 +446,6 @@
                 "Microsoft.Network/dnsZones",
                 "Microsoft.KeyVault/vaults",
                 "Microsoft.Compute/galleries",
-                "Microsoft.Compute/galleries/images",
                 "Microsoft.Storage/storageAccounts",
                 "Microsoft.ManagedIdentity/userAssignedIdentities",
                 "Microsoft.Network/publicIPAddresses",
@@ -497,7 +484,6 @@
         "tagsByResource": "[steps('tags').tags]",
         "imageBuildingResourceGroupName": "[steps('imagebuilding').resourceGroupName]",
         "imageGalleryName": "[steps('imagebuilding').gallerySection.galleryName]",
-        "imageDefinitionName": "[steps('imagebuilding').gallerySection.imageName]",
         "storageAccountName": "[steps('imagebuilding').storageSection.storageAccountName]",
         "storageAccountBlobServiceName": "default",
         "storageAccountContainerName": "[steps('imagebuilding').storageSection.containerName]",
