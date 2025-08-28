@@ -423,7 +423,7 @@
                   "type": "Microsoft.Common.TextBox",
                   "label": "App registration custom role name",
                   "toolTip": "A custom role will be created for the app registration service principal to manage exam deployments. You can configure the name of the role here.",
-                  "defaultValue": "syavd-appregistration",
+                  "defaultValue": "[concat('syavd-appregistration-', substring(steps('basics').resourceScope.subscription.subscriptionId, 0, 4))]",
                   "constraints": {
                     "required": true,
                     "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{1,62}[a-zA-Z0-9]$",
