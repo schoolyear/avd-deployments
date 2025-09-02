@@ -62,6 +62,19 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-
   tags: managedIdentityTags
 }
 
+// 'Managed Identity Operator' role to the managed identity
+var managedIdentityOperatorRoleDefinitionId = 'f1a07417-d97a-45cb-824c-7a7467783830'
+resource managedIdentityOperatorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(tenant().tenantId, managedIdentity.id, managedIdentityOperatorRoleDefinitionId)
+  scope: managedIdentity
+
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', managedIdentityOperatorRoleDefinitionId)
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // 'Storage Blob Data Reader' role to the managed identity
 var storageBlobDataReaderRoleDefinitionId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
 resource managedIdentityStorageBlobDataReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
