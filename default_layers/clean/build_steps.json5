@@ -10,17 +10,10 @@
       "type": "PowerShell"
     },
     {
-      "destination": "C:\\AVDImage\\windowsOptimization.ps1",
-      "name": "avdBuiltInScript_windowsOptimization",
-      "sha256Checksum": "3a84266be0a3fcba89f2adf284f3cc6cc2ac41242921010139d6e9514ead126f",
-      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2023-11-20/WindowsOptimization.ps1",
-      "type": "File"
-    },
-    {
       "inline": [
-        "C:\\AVDImage\\windowsOptimization.ps1 -Optimizations \"RemoveOneDrive\",\"RemoveLegacyIE\",\"Edge\",\"DiskCleanup\",\"Services\",\"Autologgers\",\"WindowsMediaPlayer\",\"ScheduledTasks\",\"DefaultUserSettings\""
+        "C:\\imagebuild_resources\\clean\\WindowsOptimization.ps1 -Optimizations \"All\""
       ],
-      "name": "avdBuiltInScript_windowsOptimization-parameter",
+      "name": "windowsOptimization",
       "runAsSystem": true,
       "runElevated": true,
       "type": "PowerShell"
