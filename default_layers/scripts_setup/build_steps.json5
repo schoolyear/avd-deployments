@@ -11,7 +11,11 @@
         "if (Test-Path -path \"C:\\imagebuild_resources\\user_scripts\") {Copy-Item -Path \"C:\\imagebuild_resources\\user_scripts\\*\" -Destination \"C:\\UserScripts\" -Recurse}",
         "if (!(Test-Path -path \"C:\\SessionhostScripts\")) {New-Item \"C:\\SessionhostScripts\" -Type Directory}",
         "if (Test-Path -path \"C:\\imagebuild_resources\\sessionhost_setup_scripts\") {Copy-Item -Path \"C:\\imagebuild_resources\\sessionhost_setup_scripts\\*\" -Destination \"C:\\SessionhostScripts\" -Recurse}",
-        "Copy-Item -Path \"C:\\imagebuild_resources\\scripts_setup\\sessionhost_setup.ps1\" -Destination \"C:\\SessionhostScripts\""
+        "Copy-Item -Path \"C:\\imagebuild_resources\\scripts_setup\\sessionhost_setup.ps1\" -Destination \"C:\\SessionhostScripts\"",
+        // AIB is more stable when pausing after copying files
+        "Write-Host 'Starting sleep for copying scripts'",
+        "Start-Sleep -Seconds 180",
+        "Write-Host 'Sleep ended.'"
       ],
       runAsSystem: true,
       runElevated: true
