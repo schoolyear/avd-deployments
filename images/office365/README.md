@@ -9,6 +9,7 @@ avdcli image package \
     -l default_layers/vdi_browser \
     -l default_layers/scripts_setup \
     -l default_layers/network_lockdown \
+    -l default_layers/windows_update \
     -l images/office365 \
     --overwrite
 ```
