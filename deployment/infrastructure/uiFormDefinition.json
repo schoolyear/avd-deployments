@@ -45,7 +45,7 @@
               "type": "Microsoft.Common.InfoBox",
               "options": {
                 "style": "Warning",
-                "text": "It is strongly recommended to <b>not</b> use West Europe for large VM deployments, due to limited resource availability. It is fine to use West Europe for AVD Metadata."
+                "text": "<b>Schoolyear advice:</b> <br><br> It is strongly recommended to <b>not</b> use West Europe for large VM deployments, due to limited resource availability. It is fine to use West Europe for AVD Metadata."
               }
             },
             {
@@ -69,10 +69,18 @@
           "label": "Base infrastructure",
           "elements": [
             {
+              "name": "explainer",
+              "type": "Microsoft.Common.InfoBox",
+              "options": {
+                "style": "Warning",
+                "text": "<b>Schoolyear advice:</b> <br><br>Schoolyear partly controls how this form is displayed to you. Therefore, most tooltips contain additional tips and information specific to the Schoolyear implementation and tailored to you.<br><br>Typically, if a name or setting is prefilled; it can be used as is without needing any changes. The most common exception to this is an Azure naming policy conflict. However, in that case, the deployment which follows this form will fail visibly. "
+              }
+            },
+            {
               "name": "resourceGroupName",
               "type": "Microsoft.Common.TextBox",
               "label": "Base resource group name",
-              "toolTip": "A new resource group for base infrastructure will be deployed. You can configure the name of the resource group here.",
+              "toolTip": "A new resource group for base infrastructure will be deployed. The resources inside this resource group are shared between all exams. You can change the default name here.",
               "defaultValue": "rg-sy-base",
               "constraints": {
                 "required": true
@@ -82,7 +90,7 @@
               "name": "dnsZoneName",
               "type": "Microsoft.Common.TextBox",
               "label": "AVD subdomain",
-              "placeholder": "schoolyearavd.contoso.com",
+              "placeholder": "prod.schoolyearavd.contoso.com",
               "toolTip": "Schoolyear AVD requires a subdomain hosted by your organisation. Later, you will need to request a wildcard certificate on this subdomain.",
               "constraints": {
                 "required": true,
@@ -116,7 +124,7 @@
               "name": "resourceGroupName",
               "type": "Microsoft.Common.TextBox",
               "label": "Network resource group",
-              "toolTip": "A new resource group for network resources will be deployed. You can configure the name of the resource group here.",
+              "toolTip": "A new resource group for network resources will be deployed. You can change the default name of this resource group here.",
               "defaultValue": "rg-sy-exams-network",
               "constraints": {
                 "required": true
@@ -126,7 +134,7 @@
               "name": "natName",
               "type": "Microsoft.Common.TextBox",
               "label": "NAT name",
-              "toolTip": "A new NAT will be deployed to route outgoing traffic. You can configure the name of the NAT resource here.",
+              "toolTip": "A new NAT will be deployed to route outgoing traffic. You can change the default name of this NAT resource here.",
               "defaultValue": "nat-sy",
               "constraints": {
                 "required": true,
@@ -138,7 +146,7 @@
               "name": "natIpName",
               "type": "Microsoft.Common.TextBox",
               "label": "NAT IP address name",
-              "toolTip": "A new public IP will be created for outgoing traffic. You can configure the name of the IP address resource here.",
+              "toolTip": "A new public IP will be created for outgoing traffic. You can change the default name of the IP address resource here.",
               "defaultValue": "ip-sy-nat",
               "constraints": {
                 "required": true,
@@ -163,7 +171,7 @@
                   "name": "vnetName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "VNet name",
-                  "toolTip": "A new VNet will be created. You can configure the name of the resource here.",
+                  "toolTip": "A new VNet will be created. You can change the default name of the resource here.",
                   "defaultValue": "vnet-sy",
                   "constraints": {
                     "required": true,
@@ -188,14 +196,14 @@
                   "type": "Microsoft.Common.InfoBox",
                   "options": {
                     "style": "Error",
-                    "text": "Manually verify that the subnets you configure here are in the VNet's address space and do not overlap with each other. This is not validated automatically, but it will result in a deployment failure."
+                    "text": "Manually verify that the subnets you configure here are in the VNet's address space and do not overlap with each other. This is not validated automatically, but it will result in a deployment failure. The default values do not overlap."
                   }
                 },
                 {
                   "name": "sessionhostsSubnetName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Sessionhosts subnet",
-                  "toolTip": "The VNet will have a subnet dedicated to sessionhosts. You can configure the name of the subnet here.",
+                  "toolTip": "The VNet will have a subnet dedicated to sessionhosts. You can change the default name of the subnet here.",
                   "defaultValue": "sessionhosts",
                   "constraints": {
                     "required": true,
@@ -224,7 +232,7 @@
                   "name": "servicesSubnetName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Services subnet",
-                  "toolTip": "The VNet will have a subnet dedicated to network services. You can configure the name of the subnet here.",
+                  "toolTip": "The VNet will have a subnet dedicated to network services. You can change the default name of the subnet here.",
                   "defaultValue": "services",
                   "constraints": {
                     "required": true,
@@ -253,7 +261,7 @@
                   "name": "avdSubnetName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "AVD subnet",
-                  "toolTip": "The VNet will have a subnet dedicated to AVD services. You can configure the name of the subnet here.",
+                  "toolTip": "The VNet will have a subnet dedicated to AVD services. You can change the default name of the subnet here.",
                   "defaultValue": "avd-endpoints",
                   "constraints": {
                     "required": true,
@@ -265,7 +273,7 @@
                   "name": "avdSubnetCIDR",
                   "type": "Microsoft.Common.TextBox",
                   "label": "AVD subnet IP range",
-                  "subLabel": "Range must be 4x the number of the maximum concurrent exams",
+                  "subLabel": "Range must be 4x the number of maximum concurrent exams",
                   "toolTip": "The VNet will have a subnet dedicated to AVD services. You can configure the IP range of the subnet here.",
                   "defaultValue": "10.0.18.0/24",
                   "constraints": {
@@ -290,7 +298,7 @@
               "name": "resourceGroupName",
               "type": "Microsoft.Common.TextBox",
               "label": "Image building resource group",
-              "toolTip": "A new resource group for image building will be deployed. You can configure the name of the resource group here.",
+              "toolTip": "A new resource group for image building will be deployed. You can change the default name of the resource group here.",
               "defaultValue": "rg-sy-imagebuilding",
               "constraints": {
                 "required": true
@@ -313,7 +321,7 @@
                   "name": "galleryName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Gallery name",
-                  "toolTip": "A new Image Gallery will be created. You can configure the name of the resource here.",
+                  "toolTip": "A new Image Gallery will be created. You can change the default name of the resource here.",
                   "defaultValue": "sigsyavd",
                   "constraints": {
                     "required": true,
@@ -357,7 +365,7 @@
                   "name": "containerName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Container name",
-                  "toolTip": "A new container will be created in the storage account. You can configure the name of the resource here.",
+                  "toolTip": "A new container will be created in the storage account. You can change the default name of the resource here.",
                   "defaultValue": "resources",
                   "constraints": {
                     "required": true,
@@ -384,6 +392,7 @@
                   "name": "managedIdentityName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Managed Identity name",
+                  "toolTip": "You can change the default name of the resource here.",
                   "defaultValue": "mi-sy-imagebuilder",
                   "constraints": {
                     "required": true,
@@ -395,7 +404,7 @@
                   "name": "roleName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "Custom role name",
-                  "toolTip": "A new role will be created to assign to the managed identity. You can configure the name of the role here.",
+                  "toolTip": "A new role will be created to assign to the managed identity. You can change the default name of the role here.",
                   "defaultValue": "[concat('syavd-imagebuilder-', substring(steps('basics').resourceScope.subscription.subscriptionId, 0, 4))]",
                   "constraints": {
                     "required": true,
@@ -422,7 +431,7 @@
                   "name": "appRegistrationCustomRoleName",
                   "type": "Microsoft.Common.TextBox",
                   "label": "App registration custom role name",
-                  "toolTip": "A custom role will be created for the app registration service principal to manage exam deployments. You can configure the name of the role here.",
+                  "toolTip": "A custom role will be created for the app registration service principal to manage exam deployments. You can change the default name of the role here.",
                   "defaultValue": "[concat('syavd-appregistration-', substring(steps('basics').resourceScope.subscription.subscriptionId, 0, 4))]",
                   "constraints": {
                     "required": true,
