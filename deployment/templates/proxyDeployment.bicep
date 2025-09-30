@@ -72,9 +72,9 @@ resource proxyVMs 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in ran
         createOption: 'FromImage'
       }
       imageReference: {
-        publisher: 'Canonical'
-        offer: 'UbuntuServer'
-        sku: '18.04-LTS'
+        publisher: 'canonical'
+        offer: 'ubuntu-24_04-lts'
+        sku: 'server-gen1'
         version: 'latest'
       }
     }
