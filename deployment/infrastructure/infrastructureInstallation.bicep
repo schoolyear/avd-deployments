@@ -38,7 +38,7 @@ param servicesSubnetCIDR string
 param privatelinkZoneName string
 
 // NOTE: Will be baked in with each release
-var version = '0.0.0'
+var version = '<<BAKED-IN>>'
 var versionTag = {
   Version: version
 }

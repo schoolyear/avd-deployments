@@ -25,9 +25,8 @@ param latestAgentVersion string
 param msiDownloadUrl string
 
 // NOTE: will be baked in with each release
-var templateVersion = '0.0.0'
-// NOTE: will be baked in with each release
-var autoUpdateScriptLocation = ''
+var templateVersion = '<<BAKED-IN>>'
+var autoUpdateScriptLocation = '<<BAKED-IN>>'
 
 @secure()
 param vmAdminPassword string = newGuid()

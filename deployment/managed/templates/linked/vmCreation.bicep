@@ -35,8 +35,8 @@ param latestAgentVersion string
 param msiDownloadUrl string
 
 // NOTE: will be baked in with each release
-var templateVersion = '0.0.0'
-var sessionhostSetupScriptLocation = ''
+var templateVersion = '<<BAKED-IN>>'
+var sessionhostSetupScriptLocation = '<<BAKED-IN>>'
 
 @secure()
 param vmAdminPassword string = newGuid()

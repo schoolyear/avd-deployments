@@ -13,7 +13,6 @@ param dnsZoneResourceGroup string
 param proxyLoadBalancerPublicIpAddress string
 param dnsZoneName string
 param proxyInstallScriptUrl string
-param proxyInstallScriptName string
 param hostpoolId string
 param workspaceId string
 param sessionHostProxyWhitelist string
@@ -28,6 +27,7 @@ param proxyVmAdminPassword string = newGuid()
 param tags object
 
 var disableSsh = empty(sshPubKey) ? true : false
+var proxyInstallScriptName = last(split(proxyInstallScriptUrl, '/'))
 
 resource proxyVMs 'Microsoft.Compute/virtualMachines@2023-03-01' = [for i in range(0, length(proxyNicIDs)): {
   name: '${proxyVmName}-${i}'

@@ -27,31 +27,36 @@ jobs:
       - name: Bake version in templates
         id: template_versioning
         run: |
-          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/main.bicep
-          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/main.bicep
-          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreation.bicep
-          sed -i "s/var templateVersion = '0.0.0'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/linked/vmCreation.bicep
+          sed -i "s/var templateVersion = '<<BAKED-IN>>'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/main.bicep
+          sed -i "s/var templateVersion = '<<BAKED-IN>>'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/main.bicep
+          sed -i "s/var templateVersion = '<<BAKED-IN>>'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreation.bicep
+          sed -i "s/var templateVersion = '<<BAKED-IN>>'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/linked/vmCreation.bicep
 
       - name: Bake version in infrastructure installation script
         id: template_versioning_infrastructure_installation
         run: |
-          sed -i "s/var version = '0.0.0'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureInstallation.bicep
+          sed -i "s/var version = '<<BAKED-IN>>'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureInstallation.bicep
 
       - name: Link vmCreationTemplateUri in main templates
         id: vmcreationuri_link
         run: |
-          sed -i "s|\[\[param:vmCreationTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreation.json|" deployment/templates/main.bicep
-          sed -i "s|\[\[param:vmCreationTemplateUri\]\]|https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/managed-vmCreation.json|" deployment/managed/templates/main.bicep
+          sed -i "s|var vmCreationTemplateUri = '<<BAKED-IN>>'|var vmCreationTemplateUri = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/vmCreation.json'|" deployment/templates/main.bicep
+          sed -i "s|var vmCreationTemplateUri = '<<BAKED-IN>>'|var vmCreationTemplateUri = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/managed-vmCreation.json'|" deployment/managed/templates/main.bicep
+
+      - name: Link proxy installation script in main managed template
+        id: proxyInstallationUrl_link
+        run: |
+          sed -i "s|var proxyInstallScriptUrl = '<<BAKED-IN>>'|var proxyInstallScriptUrl = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/proxy_installation.sh'|" deployment/managed/templates/main.bicep
 
       - name: Link autoUpdateScript in vm deployment template
         id: autoupdatescript_link
         run: |
-          sed -i "s|var autoUpdateScriptLocation = ''|var autoUpdateScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/autoUpdateVdiBrowser.ps1'|" deployment/templates/linked/vmCreation.bicep
+          sed -i "s|var autoUpdateScriptLocation = '<<BAKED-IN>>'|var autoUpdateScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/autoUpdateVdiBrowser.ps1'|" deployment/templates/linked/vmCreation.bicep
 
       - name: Link sessionhostSetup script in vm deployment template (managed only)
         id: sessionhostSetup_link
         run: |
-          sed -i "s|var sessionhostSetupScriptLocation = ''|var sessionhostSetupScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/sessionhostSetup.ps1'|" deployment/managed/templates/linked/vmCreation.bicep
+          sed -i "s|var sessionhostSetupScriptLocation = '<<BAKED-IN>>'|var sessionhostSetupScriptLocation = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/sessionhostSetup.ps1'|" deployment/managed/templates/linked/vmCreation.bicep
 
       - name: Output directory
         run: mkdir -p out
@@ -64,6 +69,9 @@ jobs:
 
       - name: Copy sessionhostSetup.ps1 to output directory
         run: cp deployment/managed/resources/sessionhostSetup.ps1 out/
+
+      - name: Copy proxy_installation.sh to output directory
+        run: cp deployment/managed/resources/proxy_installation.sh out/
 
       - name: Build main deployment template
         uses: Azure/bicep-build-action@v1.0.0
@@ -119,5 +127,6 @@ jobs:
             out/managed-vmCreation.json
             out/uiFormDefinition.json
             out/sessionhostSetup.ps1
+            out/proxy_installation.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

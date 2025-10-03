@@ -40,8 +40,8 @@ var numProxyVms = min(max(
 ), 10)
 
 // NOTE: will be baked in with each release
-var templateVersion = '0.0.0'
-var vmCreationTemplateUri = '[[param:vmCreationTemplateUri]]'
+var templateVersion = '<<BAKED-IN>>'
+var vmCreationTemplateUri = '<<BAKED-IN>>'
 
 // all resources are deployed in the region of the resource group
 // the region in which the resource group is created, is configured in the AVD add-on in the Schoolyear admin dashboard

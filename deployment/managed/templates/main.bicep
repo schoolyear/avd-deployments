@@ -70,8 +70,9 @@ var numProxyVms = min(max(
 ), 10)
 
 // NOTE: will be baked in with each release
-var templateVersion = '0.0.0'
-var vmCreationTemplateUri = '[[param:vmCreationTemplateUri]]'
+var templateVersion = '<<BAKED-IN>>'
+var vmCreationTemplateUri = '<<BAKED-IN>>'
+var proxyInstallScriptUrl = '<<BAKED-IN>>'
 
 var shortExamId = substring(examId, 0, 6)
 
@@ -80,12 +81,9 @@ var vmNumberOfInstances = userCapacity
 var vmNamePrefix = '${resourceTypeNamePrefixVm}${shortExamId}'
 var vmComputerNamePrefix = 'syvm${shortExamId}'
 
-var proxyInstallScriptUrl = 'https://raw.githubusercontent.com/schoolyear/avd-deployments/main/deployment/proxy_installation.sh'
-var proxyInstallScriptName = 'proxy_installation.sh'
-var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
-
 // Proxy DNS deployment
 var proxyDnsEntryDeploymentName = 'proxy-dns-entry'
+var trustedProxyBinaryUrl = 'https://install.exams.schoolyear.app/trusted-proxy/latest-linux-amd64'
 
 // Keyvault
 var keyVaultRoleAssignmentDeploymentName = 'keyvaultRoleAssignment'
@@ -167,7 +165,6 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     proxyLoadBalancerPublicIpAddress: proxyNetwork.outputs.proxyLoadBalancerPublicIpAddress
     dnsZoneName: dnsZoneName
     proxyInstallScriptUrl: proxyInstallScriptUrl
-    proxyInstallScriptName: proxyInstallScriptName
     hostpoolId: avdDeployment.outputs.hostpoolId
     workspaceId: avdDeployment.outputs.workspaceId
     sessionHostProxyWhitelist: sessionHostProxyWhitelist
