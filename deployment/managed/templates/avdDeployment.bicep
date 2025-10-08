@@ -148,8 +148,9 @@ resource privateEndpointFeedZoneLink 'Microsoft.Network/privateEndpoints/private
   }
 }
 
-output workspaceId string = workSpace.properties.objectId
+output workspaceObjectId string = workSpace.properties.objectId
 output hostpoolId string = hostpool.properties.objectId
 output hostpoolName string = hostpool.name
 output hostpoolRegistrationToken string = reference(hostpoolName).registrationInfo.token
 output appGroupId string = appGroup.id
+output appGroupObjectId string = appGroup.properties.objectId
