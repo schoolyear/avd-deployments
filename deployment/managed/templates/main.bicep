@@ -166,7 +166,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     dnsZoneName: dnsZoneName
     proxyInstallScriptUrl: proxyInstallScriptUrl
     hostpoolId: avdDeployment.outputs.hostpoolId
-    workspaceId: avdDeployment.outputs.workspaceId
+    workspaceId: avdDeployment.outputs.workspaceObjectId
     sessionHostProxyWhitelist: sessionHostProxyWhitelist
     trustedProxySecret: trustedProxySecret
     apiBaseUrl: apiBaseUrl
