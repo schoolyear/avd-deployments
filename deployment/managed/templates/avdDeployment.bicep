@@ -59,6 +59,13 @@ resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-03'
   }
 }
 
+// Used only to fetch the objectId of the desktop
+// Azure will always create a default one with the name 'SessionDesktop'
+resource sessionDesktop 'Microsoft.DesktopVirtualization/applicationgroups/desktops@2024-04-03' existing = {
+    parent: appGroup
+    name: 'SessionDesktop'
+}
+
 resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-03' = {
   name: workSpaceName
   location: avdMetadataLocation
@@ -153,4 +160,4 @@ output hostpoolId string = hostpool.properties.objectId
 output hostpoolName string = hostpool.name
 output hostpoolRegistrationToken string = reference(hostpoolName).registrationInfo.token
 output appGroupId string = appGroup.id
-output appGroupObjectId string = appGroup.properties.objectId
+output appGroupSessionDesktopObjectId string = sessionDesktop.properties.objectId

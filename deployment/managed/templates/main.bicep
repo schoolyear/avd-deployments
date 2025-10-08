@@ -195,7 +195,7 @@ output hostpoolName string = avdDeployment.outputs.hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
 output appGroupId string = avdDeployment.outputs.appGroupId
-output appGroupObjectId string = avdDeployment.outputs.appGroupObjectId
+output appGroupSessionDesktopObjectId string = avdDeployment.outputs.appGroupSessionDesktopObjectId
 output workspaceObjectId string = avdDeployment.outputs.workspaceObjectId
 
 // Will be used by the BE to prefix vm names
