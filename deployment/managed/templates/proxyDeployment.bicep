@@ -136,7 +136,7 @@ resource proxyCustomScriptExt 'Microsoft.Compute/virtualMachines/extensions@2020
       ]
     }
     protectedSettings: {
-      commandToExecute: 'bash ${proxyInstallScriptName} "${hostpoolId}.*.wvd.microsoft.com:*,${workspaceId}.*.wvd.microsoft.com:*,!*.*.wvd.microsoft.com:*,!*rdgateway*.wvd.microsoft.com,*:*" "${sessionHostProxyWhitelist}" "${trustedProxySecret}" "${apiBaseUrl}" "${trustedProxyBinaryUrl}" "${keyVaultName}" "${keyVaultCertificateName}" "${ipRangesWhitelist}" "${proxyDnsEntryDeployment.outputs.domain}"'
+      commandToExecute: 'bash ${proxyInstallScriptName} "${hostpoolId}.*.wvd.microsoft.com:*,${workspaceId}.*.wvd.microsoft.com:*,!*.*.wvd.microsoft.com:*,!*rdgateway*.wvd.microsoft.com:*,*:*" "${sessionHostProxyWhitelist}" "${trustedProxySecret}" "${apiBaseUrl}" "${trustedProxyBinaryUrl}" "${keyVaultName}" "${keyVaultCertificateName}" "${ipRangesWhitelist}" "${proxyDnsEntryDeployment.outputs.domain}"'
     }
   }
 }]
