@@ -41,7 +41,7 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2024-04-03' = {
       registrationTokenOperation: 'Update'
     }
     vmTemplate: '{"domain":"","galleryImageOffer":"office-365","galleryImagePublisher":"microsoftwindowsdesktop","galleryImageSKU":"win10-22h2-avd-m365-g2","imageType":"Gallery","customImageId":null,"namePrefix":"fp1","osDiskType":"Premium_LRS","vmSize":{"id":"Standard_D2s_v5","cores":2,"ram":8},"galleryItemId":"microsoftwindowsdesktop.office-365win10-22h2-avd-m365-g2","hibernate":false,"diskSizeGB":128,"securityType":"Standard","secureBoot":false,"vTPM":false,"vmInfrastructureType":"Cloud","virtualProcessorCount":null,"memoryGB":null,"maximumMemoryGB":null,"minimumMemoryGB":null,"dynamicMemoryConfig":false}'
-    customRdpProperty: 'drivestoredirect:s:*;audiomode:i:0;videoplaybackmode:i:1;redirectclipboard:i:1;redirectprinters:i:1;devicestoredirect:s:*;redirectcomports:i:1;redirectsmartcards:i:1;usbdevicestoredirect:s:*;enablecredsspsupport:i:1;redirectwebauthn:i:1;use multimon:i:1;enablerdsaadauth:i:1;'
+    customRdpProperty: 'drivestoredirect:s:;audiomode:i:0;videoplaybackmode:i:1;redirectclipboard:i:0;redirectprinters:i:0;devicestoredirect:s:*;redirectcomports:i:0;redirectsmartcards:i:0;usbdevicestoredirect:s:;enablecredsspsupport:i:1;redirectwebauthn:i:1;use multimon:i:0;enablerdsaadauth:i:1;screen mode id:i:1;displayconnectionbar:i:0;keyboardhook:i:0;use multimon:i:0'
 
     publicNetworkAccess: 'Disabled'
     managementType: 'Standard'
@@ -59,13 +59,20 @@ resource appGroup 'Microsoft.DesktopVirtualization/applicationgroups@2024-04-03'
   }
 }
 
+// Used only to fetch the objectId of the desktop
+// Azure will always create a default one with the name 'SessionDesktop'
+resource sessionDesktop 'Microsoft.DesktopVirtualization/applicationgroups/desktops@2024-04-03' existing = {
+    parent: appGroup
+    name: 'SessionDesktop'
+}
+
 resource workSpace 'Microsoft.DesktopVirtualization/workspaces@2024-04-03' = {
   name: workSpaceName
   location: avdMetadataLocation
 
   properties: {
     applicationGroupReferences: [appGroup.id]
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     friendlyName: 'Safe Exam Workspace'
   }
 }
@@ -149,7 +156,8 @@ resource privateEndpointFeedZoneLink 'Microsoft.Network/privateEndpoints/private
   ]
 }
 
-output workspaceId string = workSpace.properties.objectId
+output workspaceObjectId string = workSpace.properties.objectId
 output hostpoolId string = hostpool.properties.objectId
 output hostpoolRegistrationToken string = reference(hostpoolName).registrationInfo.token
 output appGroupId string = appGroup.id
+output appGroupSessionDesktopObjectId string = sessionDesktop.properties.objectId

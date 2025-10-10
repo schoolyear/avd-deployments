@@ -178,7 +178,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     proxyInstallScriptUrl: proxyInstallScriptUrl
     proxyInstallScriptName: proxyInstallScriptName
     hostpoolId: avdDeployment.outputs.hostpoolId
-    workspaceId: avdDeployment.outputs.workspaceId
+    workspaceId: avdDeployment.outputs.workspaceObjectId
     sessionHostProxyWhitelist: sessionHostProxyWhitelist
     trustedProxySecret: trustedProxySecret
     apiBaseUrl: apiBaseUrl
@@ -211,6 +211,8 @@ output hostpoolName string = hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
 output appGroupId string = avdDeployment.outputs.appGroupId
+output appGroupSessionDesktopObjectId string = avdDeployment.outputs.appGroupSessionDesktopObjectId
+output workspaceObjectId string = avdDeployment.outputs.workspaceObjectId
 
 // Will be used by the BE to prefix vm names
 // like:
