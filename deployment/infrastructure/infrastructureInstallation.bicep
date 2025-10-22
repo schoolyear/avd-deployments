@@ -37,6 +37,11 @@ param servicesSubnetName string
 param servicesSubnetCIDR string
 param privatelinkZoneName string
 
+// Needed from the Function app to configure the Function
+param functionAppTargetGroupId string
+param appServicePlanName string
+param functionAppName string
+
 // NOTE: Will be baked in with each release
 var version = '<<BAKED-IN>>'
 var versionTag = {
@@ -75,6 +80,21 @@ module keyVaultDeployment 'keyVaultDeployment.bicep' = {
   params: {
     keyVaultName: keyVaultName 
     keyVaultTags: keyVaultTags
+  }
+}
+
+// Function App Deployment
+var appServicePlanTags = tagsByResourceWithVersion[?'Microsoft.Web/serverfarms@2023-01-01'] ?? versionTag
+var functionAppTags = tagsByResourceWithVersion[?'Microsoft.Web/sites@2023-01-01'] ?? versionTag
+module functionAppDeployment 'functionAppDeployment.bicep' = {
+  scope: baseResourceGroup
+
+  params: {
+    targetGroupId: functionAppTargetGroupId
+    appServicePlanName: appServicePlanName
+    appServicePlanTags: appServicePlanTags
+    functionAppName: functionAppName
+    functionAppTags: functionAppTags
   }
 }
 
@@ -312,6 +332,21 @@ output installationOutput object = {
   storage_account_name: imageBuildingResources.outputs.storageAccountName
   storage_account_container_name: imageBuildingResources.outputs.storageAccountContainerName
   avd_metadata_location: avdMetadataLocation
+  
+  // function app related
+  function_app: {
+    name: functionAppDeployment.outputs.functionAppName
+    app_service_plan_name: functionAppDeployment.outputs.appServicePlanName
+    // functions
+    add_device_to_group_function_name: functionAppDeployment.outputs.functionAppAddDeviceToGroupFunctionName
+    add_device_to_group_invoke_url: functionAppDeployment.outputs.functionAppAddDeviceToGroupInvokeUrl
+    add_devices_to_group_batch_function_name: functionAppDeployment.outputs.functionAppAddDevicesToGroupBatchFunctionName
+    add_devices_to_group_batch_invoke_url: functionAppDeployment.outputs.functionAppAddDevicesToGroupBatchInvokeUrl
+    remove_device_from_group_function_name: functionAppDeployment.outputs.functionAppRemoveDeviceFromGroupFunctionName
+    remove_device_from_group_invoke_url: functionAppDeployment.outputs.functionAppRemoveDeviceFromGroupInvokeUrl
+    remove_devices_from_group_batch_function_name: functionAppDeployment.outputs.functionAppRemoveDevicesFromGroupBatchFunctionName
+    remove_devices_from_group_batch_invoke_url: functionAppDeployment.outputs.functionAppRemoveDevicesFromGroupBatchInvokeUrl
+  }
 
   tags_by_resource: tagsByResourceWithVersion
   

@@ -61,6 +61,36 @@
               "scope": {
                 "subscriptionId": "[steps('basics').resourceScope.subscription.subscriptionId]"
               }
+            },
+            {
+              "name": "appServicePlanName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "App Service Plan name",
+              "toolTip": "The name for the App Service Plan that will host the Function App.",
+              "defaultValue": "asp-sy-functionapp",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}[a-zA-Z0-9]$",
+                "validationMessage": "Must be 1-40 characters: alphanumerics and hyphens. Start and end with alphanumeric."
+              }
+            },
+            {
+              "name": "functionAppName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Function App name",
+              "toolTip": "The name for the Function App. This must be globally unique across Azure.",
+              "placeholder": "func-sy-deployment",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$",
+                "validationMessage": "Must be 2-60 characters: lowercase letters, numbers, and hyphens. Start and end with lowercase letter or number."
+              },
+              "infoMessages": [
+                {
+                  "text": "This name must be globally unique across all of Azure",
+                  "style": "Warning"
+                }
+              ]
             }
           ]
         },
@@ -500,7 +530,10 @@
         "managedIdentityName": "[steps('imagebuilding').identitySection.managedIdentityName]",
         "appRegistrationServicePrincipalId": "[parameters('appRegistrationServicePrincipalId')]",
         "appRegistrationCustomRoleName": "[steps('imagebuilding').appRegistrationSection.appRegistrationCustomRoleName]",
-        "privatelinkZoneName": "privatelink.wvd.microsoft.com"
+        "privatelinkZoneName": "privatelink.wvd.microsoft.com",
+        "functionAppTargetGroupId": "[parameters('functionAppTargetGroupId')]",
+        "appServicePlanName": "[steps('base').appServicePlanName]",
+        "functionAppName": "[steps('base').functionAppName]"
       }
     }
   }

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json",
+  "view": {
+    "kind": "Form",
+    "properties": {
+      "title": "Schoolyear AVD V2 Update",
+      "steps": [
+        {
+          "name": "basics",
+          "label": "Basics",
+          "elements": [
+            {
+              "name": "resourceScope",
+              "type": "Microsoft.Common.ResourceScope",
+              "instanceDetailsLabel": "Subscription Selection",
+              "subscription": {
+                "resourceProviders": [
+                  "Microsoft.Web",
+                  "Microsoft.Resources"
+                ]
+              }
+            },
+            {
+              "name": "explainer",
+              "type": "Microsoft.Common.InfoBox",
+              "options": {
+                "style": "Error",
+                "text": "It is essential that you select the proper <b>Subscription</b> you previously used for the Schoolyear AVD installation, failing to do so will result in a failed upgrade."
+              }
+            }
+          ]
+        },
+        {
+          "name": "functionApp",
+          "label": "Function App Configuration",
+          "elements": [
+            {
+              "name": "appServicePlanName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "App Service Plan name",
+              "toolTip": "The name for the App Service Plan that will host the Function App.",
+              "defaultValue": "asp-sy-functionapp",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}[a-zA-Z0-9]$",
+                "validationMessage": "Must be 1-40 characters: alphanumerics and hyphens. Start and end with alphanumeric."
+              }
+            },
+            {
+              "name": "functionAppName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Function App name",
+              "toolTip": "The name for the Function App. This must be globally unique across Azure.",
+              "placeholder": "func-sy-deployment",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$",
+                "validationMessage": "Must be 2-60 characters: lowercase letters, numbers, and hyphens. Start and end with lowercase letter or number."
+              },
+              "infoMessages": [
+                {
+                  "text": "This name must be globally unique across all of Azure",
+                  "style": "Warning"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tags",
+          "label": "Tags",
+          "elements": [
+            {
+              "name": "tags",
+              "type": "Microsoft.Common.TagsByResource",
+              "resources": [
+                "Microsoft.Web/serverfarms",
+                "Microsoft.Web/sites"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "outputs": {
+      "kind": "Subscription",
+      "location": "[steps('basics').resourceScope.location.name]",
+      "subscriptionId": "[steps('basics').resourceScope.subscription.id]",
+      "parameters": {
+        "tagsByResource": "[steps('tags').tags]",
+        "baseResourceGroupName": "parameters('baseResourceGroupName')",
+        "functionAppTargetGroupId": "parameters('functionAppTargetGroupId')",
+        "appServicePlanName": "[steps('functionApp').appServicePlanName]",
+        "functionAppName": "[steps('functionApp').functionAppName]"
+      }
+    }
+  }
+}

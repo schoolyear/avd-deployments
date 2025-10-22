@@ -18,11 +18,13 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: Extract major version from version
-        id: get_major_version
+      - name: Extract major & minor version from version string
+        id: get_major_minor_version
         run: |
           MAJOR_VERSION=$(echo ${{ env.VERSION }} | sed -E 's/v([0-9]+)\..*/\1/')
           echo "MAJOR_VERSION=$MAJOR_VERSION" >> $GITHUB_ENV
+          MINOR_VERSION=$(echo ${{ env.VERSION }} | sed -E 's/v[0-9]+\.([0-9]+)\..*/\1/')
+          echo "MINOR_VERSION=$MINOR_VERSION" >> $GITHUB_ENV
 
       - name: Bake version in templates
         id: template_versioning
@@ -32,10 +34,11 @@ jobs:
           sed -i "s/var templateVersion = '<<BAKED-IN>>'/var templateVersion = '${{ env.VERSION }}'/" deployment/templates/linked/vmCreation.bicep
           sed -i "s/var templateVersion = '<<BAKED-IN>>'/var templateVersion = '${{ env.VERSION }}'/" deployment/managed/templates/linked/vmCreation.bicep
 
-      - name: Bake version in infrastructure installation script
-        id: template_versioning_infrastructure_installation
+      - name: Bake version in infrastructure installation & update scripts
+        id: template_versioning_infrastructure_installation_and_update
         run: |
           sed -i "s/var version = '<<BAKED-IN>>'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureInstallation.bicep
+          sed -i "s/var version = '<<BAKED-IN>>'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureUpdate.bicep
 
       - name: Link vmCreationTemplateUri in main templates
         id: vmcreationuri_link
@@ -66,6 +69,9 @@ jobs:
 
       - name: Copy uiFormDefinition.json to output directory
         run: cp deployment/infrastructure/uiFormDefinition.json out/
+
+      - name: Copy uiFormDefinitionUpdate.json to output directory
+        run: cp deployment/infrastructure/uiFormDefinitionUpdate.json out/
 
       - name: Copy sessionhostSetup.ps1 to output directory
         run: cp deployment/managed/resources/sessionhostSetup.ps1 out/
@@ -103,6 +109,12 @@ jobs:
           bicepFilePath: deployment/infrastructure/infrastructureInstallation.bicep
           outputFilePath: out/v${{ env.MAJOR_VERSION }}-infrastructure-installation.json
 
+      - name: Build infrastructure update
+        uses: Azure/bicep-build-action@v1.0.0
+        with:
+          bicepFilePath: deployment/infrastructure/infrastructureUpdate.bicep
+          outputFilePath: out/v${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}-infrastructure-update.json
+
       - name: Create GitHub Release for v0 and v1
         if: env.MAJOR_VERSION == '0' || env.MAJOR_VERSION == '1'
         uses: softprops/action-gh-release@v1
@@ -123,9 +135,11 @@ jobs:
             out/vmCreation.json
             out/autoUpdateVdiBrowser.ps1
             out/v${{ env.MAJOR_VERSION }}-infrastructure-installation.json
+            out/v${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}-infrastructure-update.json
             out/managed-main.json
             out/managed-vmCreation.json
             out/uiFormDefinition.json
+            out/uiFormDefinitionUpdate.json
             out/sessionhostSetup.ps1
             out/proxy_installation.sh
         env:
