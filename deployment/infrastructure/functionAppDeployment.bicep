@@ -6,9 +6,7 @@ param functionAppName string
 param functionAppTags object
 
 param FunctionAppAddDeviceToGroupFunctionName string = 'AddDeviceToGroup'
-param FunctionAppAddDevicesToGroupBatchFunctionName string = 'AddDevicesToGroupBatch'
-param FunctionAppRemoveDeviceFromGroupFunctionName string = 'RemoveDeviceFromGroup'
-param FunctionAppRemoveDevicesFromGroupBatchFunctionName string = 'RemoveDevicesFromGroupBatch'
+param FunctionAppRemoveDevicesFromGroupBasedOnPrefixName string = 'RemoveDevicesFromGroupBasedOnPrefix'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appServicePlanName
@@ -87,8 +85,8 @@ resource addDeviceToGroupFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
   }
 }
 
-resource addDevicesToGroupBatchFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
-  name: FunctionAppAddDevicesToGroupBatchFunctionName
+resource removeDevicesFromGroupBasedOnPrefixFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
+  name: FunctionAppRemoveDevicesFromGroupBasedOnPrefixName
   parent: functionApp
   properties: {
     config: {
@@ -110,76 +108,15 @@ resource addDevicesToGroupBatchFunction 'Microsoft.Web/sites/functions@2021-01-1
       ]
     }
     files: {
-      'run.ps1': loadTextContent('./addDevicesToGroupBatch.ps1')
+      'run.ps1': loadTextContent('./removeDevicesFromGroupBasedOnPrefix.ps1')
     }
   }
 }
-
-resource removeDeviceFromGroupFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
-  name: FunctionAppRemoveDeviceFromGroupFunctionName
-  parent: functionApp
-  properties: {
-    config: {
-      bindings: [
-        {
-          authLevel: 'anonymous'
-          type: 'httpTrigger'
-          direction: 'in'
-          name: 'Request'
-          methods: [
-            'post'
-          ]
-        }
-        {
-          type: 'http'
-          direction: 'out'
-          name: 'Response'
-        }
-      ]
-    }
-    files: {
-      'run.ps1': loadTextContent('./removeDeviceFromGroup.ps1')
-    }
-  }
-}
-
-resource removeDevicesFromGroupBatchFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
-  name: FunctionAppRemoveDevicesFromGroupBatchFunctionName
-  parent: functionApp
-  properties: {
-    config: {
-      bindings: [
-        {
-          authLevel: 'anonymous'
-          type: 'httpTrigger'
-          direction: 'in'
-          name: 'Request'
-          methods: [
-            'post'
-          ]
-        }
-        {
-          type: 'http'
-          direction: 'out'
-          name: 'Response'
-        }
-      ]
-    }
-    files: {
-      'run.ps1': loadTextContent('./removeDevicesFromGroupBatch.ps1')
-    }
-  }
-}
-
 
 output appServicePlanName string = appServicePlan.name
 output functionAppName string = functionApp.name
 // functions
 output functionAppAddDeviceToGroupFunctionName string = addDeviceToGroupFunction.name
 output functionAppAddDeviceToGroupInvokeUrl string = addDeviceToGroupFunction.properties.invoke_url_template
-output functionAppAddDevicesToGroupBatchFunctionName string = addDevicesToGroupBatchFunction.name
-output functionAppAddDevicesToGroupBatchInvokeUrl string = addDevicesToGroupBatchFunction.properties.invoke_url_template
-output functionAppRemoveDeviceFromGroupFunctionName string = removeDeviceFromGroupFunction.name
-output functionAppRemoveDeviceFromGroupInvokeUrl string = removeDeviceFromGroupFunction.properties.invoke_url_template
-output functionAppRemoveDevicesFromGroupBatchFunctionName string = removeDevicesFromGroupBatchFunction.name
-output functionAppRemoveDevicesFromGroupBatchInvokeUrl string = removeDevicesFromGroupBatchFunction.properties.invoke_url_template
+output functionAppRemoveDevicesFromGroupBasedOnPrefixFunctionName string = removeDevicesFromGroupBasedOnPrefixFunction.name
+output functionAppRemoveDevicesFromGroupBasedOnPrefixInvokeUrl string = removeDevicesFromGroupBasedOnPrefixFunction.properties.invoke_url_template

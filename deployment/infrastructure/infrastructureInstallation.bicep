@@ -340,12 +340,8 @@ output installationOutput object = {
     // functions
     add_device_to_group_function_name: functionAppDeployment.outputs.functionAppAddDeviceToGroupFunctionName
     add_device_to_group_invoke_url: functionAppDeployment.outputs.functionAppAddDeviceToGroupInvokeUrl
-    add_devices_to_group_batch_function_name: functionAppDeployment.outputs.functionAppAddDevicesToGroupBatchFunctionName
-    add_devices_to_group_batch_invoke_url: functionAppDeployment.outputs.functionAppAddDevicesToGroupBatchInvokeUrl
-    remove_device_from_group_function_name: functionAppDeployment.outputs.functionAppRemoveDeviceFromGroupFunctionName
-    remove_device_from_group_invoke_url: functionAppDeployment.outputs.functionAppRemoveDeviceFromGroupInvokeUrl
-    remove_devices_from_group_batch_function_name: functionAppDeployment.outputs.functionAppRemoveDevicesFromGroupBatchFunctionName
-    remove_devices_from_group_batch_invoke_url: functionAppDeployment.outputs.functionAppRemoveDevicesFromGroupBatchInvokeUrl
+    remove_devices_from_group_based_on_prefix_function_name: functionAppDeployment.outputs.functionAppRemoveDevicesFromGroupBasedOnPrefixFunctionName
+    remove_devices_from_group_based_on_prefix_invoke_url: functionAppDeployment.outputs.functionAppRemoveDevicesFromGroupBasedOnPrefixInvokeUrl
   }
 
   tags_by_resource: tagsByResourceWithVersion

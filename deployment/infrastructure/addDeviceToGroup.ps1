@@ -3,12 +3,26 @@ using namespace System.Net
 # Input bindings are passed in via param block.
 param($Request, $TriggerMetadata)
 
+# Read the deviceName from the request
+$deviceName = $Request.Query.deviceName
+if ([String]::IsNullOrEmpty($deviceName)) {
+  Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+      StatusCode = [HttpStatusCode]::BadRequest
+      Body       = @{
+        error     = "query param 'deviceName' cannot be empty"
+        errorCode = 1
+      } | ConvertTo-Json
+      Headers    = @{ "Content-Type" = "application/json" }
+    })
+  return
+}
+
 # Configuration
 $maxRetries = 3
 $secondsDelayBetweenRetries = 5
 
 # Get access token using the managed identity
-$resourceUri = "https://graph.microsoft.com"
+$resourceUri = [uri]::EscapeDataString("https://graph.microsoft.com")
 $tokenAuthUri = $env:IDENTITY_ENDPOINT + "?resource=" + $resourceUri + "&api-version=2019-08-01"
 $retryCount = 0
 
@@ -25,7 +39,7 @@ while ($retryCount -lt $maxRetries) {
           StatusCode = [HttpStatusCode]::InternalServerError
           Body       = @{
             error     = "Failed to request access token from Azure (after $maxRetries attempts): $_"
-            errorCode = 1
+            errorCode = 2
           } | ConvertTo-Json
           Headers    = @{ "Content-Type" = "application/json" }
         })
@@ -36,20 +50,6 @@ while ($retryCount -lt $maxRetries) {
 }
 
 $accessToken = $tokenResponse.access_token
-
-# Read the deviceName from the request
-$deviceName = $Request.Query.deviceName
-if ([String]::IsNullOrEmpty($deviceName)) {
-  Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
-      StatusCode = [HttpStatusCode]::BadRequest
-      Body       = @{
-        error     = "query param 'deviceName' cannot be empty"
-        errorCode = 2
-      } | ConvertTo-Json
-      Headers    = @{ "Content-Type" = "application/json" }
-    })
-  return
-}
 
 # Find device by name
 $searchUri = "https://graph.microsoft.com/v1.0/devices?`$filter=displayName eq '$deviceName'"
