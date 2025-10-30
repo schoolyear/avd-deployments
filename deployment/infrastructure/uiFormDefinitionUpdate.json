@@ -88,8 +88,8 @@
       "subscriptionId": "[steps('basics').resourceScope.subscription.id]",
       "parameters": {
         "tagsByResource": "[steps('tags').tags]",
-        "baseResourceGroupName": "parameters('baseResourceGroupName')",
-        "functionAppTargetGroupId": "parameters('functionAppTargetGroupId')",
+        "baseResourceGroupName": "[parameters('baseResourceGroupName')]",
+        "functionAppTargetGroupId": "[parameters('functionAppTargetGroupId')]",
         "appServicePlanName": "[steps('functionApp').appServicePlanName]",
         "functionAppName": "[steps('functionApp').functionAppName]"
       }
