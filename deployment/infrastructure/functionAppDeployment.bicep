@@ -6,7 +6,7 @@ param functionAppName string
 param functionAppTags object
 
 param FunctionAppAddDeviceToGroupFunctionName string = 'AddDeviceToGroup'
-param FunctionAppRemoveDevicesFromGroupBasedOnPrefixName string = 'RemoveDevicesFromGroupBasedOnPrefix'
+param FunctionAppDeleteDevicesBasedOnPrefixName string = 'DeleteDevicesBasedOnPrefix'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appServicePlanName
@@ -85,8 +85,8 @@ resource addDeviceToGroupFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
   }
 }
 
-resource removeDevicesFromGroupBasedOnPrefixFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
-  name: FunctionAppRemoveDevicesFromGroupBasedOnPrefixName
+resource deleteDevicesBasedOnPrefixFunction 'Microsoft.Web/sites/functions@2021-01-15' = {
+  name: FunctionAppDeleteDevicesBasedOnPrefixName
   parent: functionApp
   properties: {
     config: {
@@ -108,7 +108,7 @@ resource removeDevicesFromGroupBasedOnPrefixFunction 'Microsoft.Web/sites/functi
       ]
     }
     files: {
-      'run.ps1': loadTextContent('./removeDevicesFromGroupBasedOnPrefix.ps1')
+      'run.ps1': loadTextContent('./deleteDevicesBasedOnPrefix.ps1')
     }
   }
 }
@@ -118,5 +118,5 @@ output functionAppName string = functionApp.name
 // functions
 output functionAppAddDeviceToGroupFunctionName string = addDeviceToGroupFunction.name
 output functionAppAddDeviceToGroupInvokeUrl string = addDeviceToGroupFunction.properties.invoke_url_template
-output functionAppRemoveDevicesFromGroupBasedOnPrefixFunctionName string = removeDevicesFromGroupBasedOnPrefixFunction.name
-output functionAppRemoveDevicesFromGroupBasedOnPrefixInvokeUrl string = removeDevicesFromGroupBasedOnPrefixFunction.properties.invoke_url_template
+output functionAppDeleteDevicesBasedOnPrefixFunctionName string = deleteDevicesBasedOnPrefixFunction.name
+output functionAppDeleteDevicesBasedOnPrefixInvokeUrl string = deleteDevicesBasedOnPrefixFunction.properties.invoke_url_template

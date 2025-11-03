@@ -4,13 +4,15 @@ using namespace System.Net
 # Input bindings are passed in via param block.
 param($Request, $TriggerMetadata)
 
+$schoolyearDeviceNamePrefix = "syvm"
+
 # Read deviceNamePrefix from request
 $deviceNamePrefix = $Request.Query.deviceNamePrefix
-if ([string]::IsNullOrEmpty($deviceNamePrefix)) {
+if (!$deviceNamePrefix.startsWith($schoolyearDeviceNamePrefix)) {
   Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
       StatusCode = [HttpStatusCode]::BadRequest
       Body       = @{
-        error     = "query param 'deviceNamePrefix' cannot be empty"
+        error     = "query param 'deviceNamePrefix' must start with '$schoolyearDeviceNamePrefix'"
         errorCode = 1
       } | ConvertTo-Json
       Headers    = @{ "Content-Type" = "application/json" }
@@ -21,7 +23,6 @@ if ([string]::IsNullOrEmpty($deviceNamePrefix)) {
 # Configuration
 $maxRetries = 3
 $secondsDelayBetweenRetries = 5
-$groupId = $env:TARGET_GROUP_ID
 
 # Get access token using the managed identity
 $resourceUri = [uri]::EscapeDataString("https://graph.microsoft.com")
@@ -95,7 +96,7 @@ do {
 } while ($uri)
 
 # Split devices in batches and do Microsoft.Graph Json Batch requests
-# to remove all devices from group
+# to delete all devices
 $failedDevices = @()
 
 $batchSize = 20
@@ -112,7 +113,7 @@ for ($i = 0; $i -lt $deviceIds.Count; $i += $batchSize) {
     $requests += @{
       id     = "$requestId"
       method = "DELETE"
-      url    = "/groups/$groupId/members/$deviceId/`$ref"
+      url    = "/devices/$deviceId"
     }
     $requestId++
   }
@@ -134,7 +135,7 @@ for ($i = 0; $i -lt $deviceIds.Count; $i += $batchSize) {
         Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::InternalServerError
             Body       = @{
-              error     = "Failed to batch remove devices (after $maxRetries attempts): $_"
+              error     = "Failed to batch delete devices (after $maxRetries attempts): $_"
               errorCode = 4
             }
             Headers    = @{ "Content-Type" = "application/json" }
@@ -161,7 +162,7 @@ if ($failedDevices.Count -gt 0) {
   Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
       StatusCode = [HttpStatusCode]::MultiStatus
       Body       = @{
-        message         = "Some devices failed to be removed"
+        message         = "Some devices failed to be deleted"
         failedDevices = $failedDevices
       } | ConvertTo-Json -Depth 10
       Headers    = @{ "Content-Type" = "application/json" }
@@ -171,7 +172,7 @@ else {
   Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
       StatusCode = [HttpStatusCode]::OK
       Body       = @{
-        message = "Successfully removed devices from group"
+        message = "Successfully deleted devices from group"
       } | ConvertTo-Json
       Headers    = @{ "Content-Type" = "application/json" }
     })
