@@ -14,10 +14,7 @@
               "type": "Microsoft.Common.ResourceScope",
               "instanceDetailsLabel": "Subscription Selection",
               "subscription": {
-                "resourceProviders": [
-                  "Microsoft.Web",
-                  "Microsoft.Resources"
-                ]
+                "resourceProviders": ["Microsoft.Web", "Microsoft.Resources"]
               }
             },
             {
@@ -25,7 +22,16 @@
               "type": "Microsoft.Common.InfoBox",
               "options": {
                 "style": "Error",
-                "text": "It is essential that you select the proper <b>Subscription</b> you previously used for the Schoolyear AVD installation, failing to do so will result in a failed upgrade."
+                "text": "<b>Schoolyear advice - Important:</b> <br><br> It is essential that you select the <b>Subscription</b> you previously used for the Schoolyear AVD installation, failing to do so will result in a failed upgrade."
+              }
+            },
+            {
+              "name": "acknowledgeRisk",
+              "type": "Microsoft.Common.CheckBox",
+              "label": "I confirm that I have selected the correct subscription used for the initial Schoolyear AVD installation",
+              "constraints": {
+                "required": true,
+                "validationMessage": "You must acknowledge that you have selected the correct subscription before proceeding."
               }
             }
           ]
@@ -73,10 +79,7 @@
             {
               "name": "tags",
               "type": "Microsoft.Common.TagsByResource",
-              "resources": [
-                "Microsoft.Web/serverfarms",
-                "Microsoft.Web/sites"
-              ]
+              "resources": ["Microsoft.Web/serverfarms", "Microsoft.Web/sites"]
             }
           ]
         }
