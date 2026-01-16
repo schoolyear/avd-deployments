@@ -63,6 +63,8 @@
     "enterpriseregistration.windows.net:443":{},
     "policykeyservice.dc.ad.msft.net:443": {},
 
+    // Office seems to now also require this to properly activate
+    "licensing.m365.svc.cloud.microsoft:443": {},
 
     // exceptions
     // - `*.wvd.microsoft.com` carries RDP traffic and should not go through the session host proxy. It is whitelisted separately in the firewall
