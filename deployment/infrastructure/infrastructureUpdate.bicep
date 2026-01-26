@@ -76,7 +76,7 @@ resource vmLoginCustomRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' 
 }
 
 output installationOutput object = {
-  vm_login_custom_role_id: vmLoginCustomRole.id
+  vm_login_custom_role_id: vmLoginCustomRole.name
   // function app related
   function_app: {
     name: functionAppDeployment.outputs.functionAppName

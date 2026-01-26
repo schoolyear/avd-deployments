@@ -379,7 +379,7 @@ output installationOutput object = {
   storage_account_name: imageBuildingResources.outputs.storageAccountName
   storage_account_container_name: imageBuildingResources.outputs.storageAccountContainerName
   avd_metadata_location: avdMetadataLocation
-  vm_login_custom_role_id: vmLoginCustomRole.id
+  vm_login_custom_role_id: vmLoginCustomRole.name
 
   // function app related
   function_app: {
