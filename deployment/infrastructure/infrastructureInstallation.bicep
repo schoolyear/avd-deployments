@@ -21,6 +21,7 @@ param storageAccountContainerName string
 param imageBuilderCustomRoleName string
 param managedIdentityName string
 param appRegistrationCustomRoleName string
+param vmLoginCustomRoleName string
 
 // Network specific
 param networkRgName string
@@ -66,7 +67,7 @@ var dnsZoneTags = tagsByResourceWithVersion[?'Microsoft.Network/dnsZones'] ?? ve
 module dnsZone 'dnsDeployment.bicep' = {
   scope: baseResourceGroup
 
-  params : {
+  params: {
     dnsZoneName: dnsZoneName
     dnsZoneTags: dnsZoneTags
   }
@@ -78,7 +79,7 @@ module keyVaultDeployment 'keyVaultDeployment.bicep' = {
   scope: baseResourceGroup
 
   params: {
-    keyVaultName: keyVaultName 
+    keyVaultName: keyVaultName
     keyVaultTags: keyVaultTags
   }
 }
@@ -116,16 +117,16 @@ resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022
           'Microsoft.Resources/subscriptions/resourceGroups/delete'
           'Microsoft.Resources/deployments/*'
           'Microsoft.Resources/deployments/operations/read'
-          
+
           // Get resources by ID (general read access)
           'Microsoft.Resources/subscriptions/resources/read'
           'Microsoft.Resources/subscriptions/resourceGroups/resources/read'
-          
+
           // Compute Gallery (for image versions)
           'Microsoft.Compute/galleries/read'
           'Microsoft.Compute/galleries/images/read'
           'Microsoft.Compute/galleries/images/versions/read'
-          
+
           // Storage account operations
           'Microsoft.Storage/storageAccounts/read'
           'Microsoft.Storage/storageAccounts/write'
@@ -135,7 +136,7 @@ resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022
           'Microsoft.Storage/storageAccounts/blobServices/containers/write'
           'Microsoft.Storage/storageAccounts/blobServices/containers/delete'
           'Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey/action'
-          
+
           // AVD specific operations - ALL PERMISSIONS
           'Microsoft.DesktopVirtualization/hostPools/*'
           'Microsoft.DesktopVirtualization/workspaces/*'
@@ -149,12 +150,12 @@ resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022
           'Microsoft.Compute/virtualMachines/start/action'
           'Microsoft.Compute/virtualMachines/deallocate/action'
           'Microsoft.Compute/virtualMachines/powerOff/action'
-          
+
           // VM Extensions
           'Microsoft.Compute/virtualMachines/extensions/read'
           'Microsoft.Compute/virtualMachines/extensions/write'
           'Microsoft.Compute/virtualMachines/extensions/delete'
-          
+
           // Role assignments for VM user roles
           'Microsoft.Authorization/roleAssignments/read'
           'Microsoft.Authorization/roleAssignments/write'
@@ -162,7 +163,7 @@ resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022
           'Microsoft.Authorization/roleDefinitions/read'
           'Microsoft.Authorization/permissions/read'
           'Microsoft.Authorization/providerOperations/read'
-          
+
           // Network resources (if needed)
           'Microsoft.Network/virtualNetworks/read'
           'Microsoft.Network/virtualNetworks/subnets/read'
@@ -194,7 +195,7 @@ resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022
 
           // Subnet join actions (for private endpoints and load balancers)
           'Microsoft.Network/virtualNetworks/subnets/join/action'
-          
+
           // Public IP join actions (for load balancers)
           'Microsoft.Network/publicIPAddresses/join/action'
 
@@ -210,10 +211,10 @@ resource appRegistrationCustomRole 'Microsoft.Authorization/roleDefinitions@2022
           'Microsoft.Network/dnsZones/A/read'
           'Microsoft.Network/dnsZones/A/write'
           'Microsoft.Network/dnsZones/A/delete'
-          
+
           // Private DNS Zones (needed for private endpoints) - ALL PERMISSIONS
           'Microsoft.Network/privateDnsZones/*'
-          
+
           // Monitoring and logging
           'Microsoft.Insights/*/read'
           'Microsoft.Support/*'
@@ -317,6 +318,52 @@ module networkResources 'network.bicep' = {
   }
 }
 
+// We can't really use a module for this, because Modules cannot be deployed at the subscription 
+// scope directly from a subscription-scoped template.
+// Custom role definition for Assigning VM Login roles to users
+// This is a combination of 2 roles:
+// Virtual Machine User Login: https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/compute#virtual-machine-user-login
+// Desktop Virtualization User: https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/compute#desktop-virtualization-user
+resource vmLoginCustomRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
+  name: guid(tenant().tenantId, subscription().subscriptionId, vmLoginCustomRoleName)
+  properties: {
+    roleName: vmLoginCustomRoleName
+    description: 'Custom role for allowing users to log into the VMs. We use this role instead of doing 2 role assignments in the backend (Virtual Machine User Login & Desktop Virtualization User).'
+    type: 'CustomRole'
+    permissions: [
+      {
+        actions: [
+          // Virtual Machine User Login
+          'Microsoft.Network/publicIPAddresses/read'
+          'Microsoft.Network/virtualNetworks/read'
+          'Microsoft.Network/loadBalancers/read'
+          'Microsoft.Network/networkInterfaces/read'
+          'Microsoft.Compute/virtualMachines/*/read'
+          'Microsoft.HybridCompute/machines/*/read'
+          'Microsoft.HybridConnectivity/endpoints/listCredentials/action'
+
+          // Desktop Virtualization User
+          // no 'actions' are specified for this role
+        ]
+        notActions: []
+        dataActions: [
+          // Virtual Machine User Login
+          'Microsoft.Compute/virtualMachines/login/action'
+          'Microsoft.HybridCompute/machines/login/action'
+
+          // Desktop Virtualization User
+          'Microsoft.DesktopVirtualization/applicationGroups/useApplications/action'
+          'Microsoft.DesktopVirtualization/appAttachPackages/useApplications/action'
+        ]
+        notDataActions: []
+      }
+    ]
+    assignableScopes: [
+      subscription().id
+    ]
+  }
+}
+
 output installationOutput object = {
   // infra config needed by the BE
   tenant_id: tenant().tenantId
@@ -332,7 +379,8 @@ output installationOutput object = {
   storage_account_name: imageBuildingResources.outputs.storageAccountName
   storage_account_container_name: imageBuildingResources.outputs.storageAccountContainerName
   avd_metadata_location: avdMetadataLocation
-  
+  vm_login_custom_role_id: vmLoginCustomRole.id
+
   // function app related
   function_app: {
     name: functionAppDeployment.outputs.functionAppName
@@ -345,7 +393,7 @@ output installationOutput object = {
   }
 
   tags_by_resource: tagsByResourceWithVersion
-  
+
   virtual_networks: {
     '${networkResourceGroup.location}': {
       name: vnetName

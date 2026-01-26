@@ -73,6 +73,24 @@
           ]
         },
         {
+          "name": "vmLoginRole",
+          "label": "Custom VM Login role Configuration",
+          "elements": [
+            {
+              "name": "vmLoginCustomRoleName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "VM login custom role name",
+              "toolTip": "This is a custom role that allows users to login and use AVD virtual machines. Will be used by Schoolyear to grant individual access to sessionhosts. You can change the default name of the role here.",
+              "defaultValue": "[concat('syavd-vmlogin-', substring(steps('basics').resourceScope.subscription.subscriptionId, 0, 4))]",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9-]{1,62}[a-zA-Z0-9]$",
+                "validationMessage": "Must be 3-64 letters, numbers, and hyphens. Start and end with letter or number. Can't use consecutive hyphens."
+              }
+            }
+          ]
+        },
+        {
           "name": "tags",
           "label": "Tags",
           "elements": [
@@ -94,7 +112,8 @@
         "baseResourceGroupName": "[parameters('baseResourceGroupName')]",
         "functionAppTargetGroupId": "[parameters('functionAppTargetGroupId')]",
         "appServicePlanName": "[steps('functionApp').appServicePlanName]",
-        "functionAppName": "[steps('functionApp').functionAppName]"
+        "functionAppName": "[steps('functionApp').functionAppName]",
+        "vmLoginCustomRoleName": "[steps('vmLoginRole').vmLoginCustomRoleName]"
       }
     }
   }
