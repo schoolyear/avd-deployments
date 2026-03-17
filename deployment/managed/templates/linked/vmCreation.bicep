@@ -132,46 +132,10 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
     licenseType: 'Windows_Client'
   }
 
-  resource dsc 'extensions' = {
-    name: 'Microsoft.PowerShell.DSC'
-    location: location
-    tags: tags
-
-    properties: {
-      publisher: 'Microsoft.Powershell'
-      type: 'DSC'
-      typeHandlerVersion: '2.73'
-      autoUpgradeMinorVersion: true
-      settings: {
-        modulesUrl: artifactsLocation
-        configurationFunction: 'Configuration.ps1\\AddSessionHost'
-        properties: {
-          hostPoolName: hostPoolName
-          registrationInfoTokenCredential: {
-            UserName: 'PLACEHOLDER_DO_NOT_USE'
-            Password: 'PrivateSettingsRef:RegistrationInfoToken'
-          }
-          aadJoin: true
-          aadJoinPreview: false
-          UseAgentDownloadEndpoint: true
-        }
-      }
-      protectedSettings: {
-        Items: {
-          registrationInfoToken: hostPoolToken
-        }
-      }
-    }
-  }
-
   resource aadLogin 'extensions' = {
     name: 'AADLoginForWindows'
     location: location
     tags: tags
-
-    dependsOn: [
-      dsc
-    ]
 
     properties: {
       publisher: 'Microsoft.Azure.ActiveDirectory'
@@ -204,6 +168,42 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
         ]
 
         commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File sessionhostSetup.ps1 -LatestAgentVersion ${latestAgentVersion} -MsiDownloadUrl ${msiDownloadUrl} -Wait'
+      }
+    }
+  }
+
+  resource dsc 'extensions' = {
+    name: 'Microsoft.PowerShell.DSC'
+    location: location
+    tags: tags
+
+    dependsOn: [
+      sessionhostSetup
+    ]
+
+    properties: {
+      publisher: 'Microsoft.Powershell'
+      type: 'DSC'
+      typeHandlerVersion: '2.73'
+      autoUpgradeMinorVersion: true
+      settings: {
+        modulesUrl: artifactsLocation
+        configurationFunction: 'Configuration.ps1\\AddSessionHost'
+        properties: {
+          hostPoolName: hostPoolName
+          registrationInfoTokenCredential: {
+            UserName: 'PLACEHOLDER_DO_NOT_USE'
+            Password: 'PrivateSettingsRef:RegistrationInfoToken'
+          }
+          aadJoin: true
+          aadJoinPreview: false
+          UseAgentDownloadEndpoint: true
+        }
+      }
+      protectedSettings: {
+        Items: {
+          registrationInfoToken: hostPoolToken
+        }
       }
     }
   }
