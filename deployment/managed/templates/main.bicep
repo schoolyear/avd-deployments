@@ -10,8 +10,6 @@ param tokenExpirationTime string = dateTimeAdd(utcNow(), 'P1D')
 param vmAdminUser string = 'syadmin'
 param proxyAdminUsername string = 'syuser'
 param numProxyVms int
-param roleAssignmentNames array
-
 param vmCustomImageSourceId string
 param proxyRSAPublicKey string
 param sessionHostProxyWhitelist string
@@ -20,6 +18,7 @@ param dnsZoneName string
 param keyVaultResourceGroup string
 param keyVaultName string
 param keyVaultCertificateName string
+param keyVaultRoleAssignmentNames array
 // Proxy servers
 // User may pass a string of ip CIDRs for the proxy to whitelist
 // SECURITY: only do this for ranges reserved for Chromebooks that are exclusively run the Schoolyear client
@@ -147,13 +146,13 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     proxyVmName: proxyVmName
     proxyVmSize: proxyVmSize
     proxyNicIDs: proxyNetwork.outputs.proxyNicIDs
-    roleAssignmentNames: roleAssignmentNames
     proxyAdminUsername: proxyAdminUsername
     sshPubKey: proxyRSAPublicKey
     keyVaultRoleAssignmentDeploymentName: keyVaultRoleAssignmentDeploymentName
     examId: examId
     keyVaultResourceGroup: keyVaultResourceGroup
     keyVaultName: keyVaultName
+    keyVaultRoleAssignmentNames: keyVaultRoleAssignmentNames
     proxyDnsEntryDeploymentName: proxyDnsEntryDeploymentName
     dnsZoneResourceGroup: dnsZoneResourceGroup
     proxyLoadBalancerPublicIpAddress: proxyNetwork.outputs.proxyLoadBalancerPublicIpAddress

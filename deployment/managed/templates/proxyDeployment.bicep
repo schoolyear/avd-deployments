@@ -2,13 +2,13 @@ param location string
 param proxyVmName string
 param proxyVmSize string
 param proxyNicIDs array
-param roleAssignmentNames array
 param proxyAdminUsername string
 param sshPubKey string
 param keyVaultRoleAssignmentDeploymentName string
 param examId string
 param keyVaultResourceGroup string
 param keyVaultName string
+param keyVaultRoleAssignmentNames array
 param proxyDnsEntryDeploymentName string
 param dnsZoneResourceGroup string
 param proxyLoadBalancerPublicIpAddress string
@@ -97,7 +97,7 @@ module keyVaultRoleAssignmentDeployments 'keyVaultRoleAssignmentDeployment.bicep
     scope: resourceGroup(keyVaultResourceGroup)
 
     params: {
-      roleAssignmentName: roleAssignmentNames[i]
+      roleAssignmentName: keyVaultRoleAssignmentNames[i]
       proxyPrincipalId: proxyVMs[i].identity.principalId
       keyVaultResourceGroup: keyVaultResourceGroup
       keyVaultName: keyVaultName
