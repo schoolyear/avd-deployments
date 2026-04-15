@@ -9,11 +9,7 @@ param entraClientId string
 param tokenExpirationTime string = dateTimeAdd(utcNow(), 'P1D')
 param vmAdminUser string = 'syadmin'
 param proxyAdminUsername string = 'syuser'
-@description('Number of students that can be supported by a single proxy VM')
-param studentsPerProxy int = 10
-@description('Minimum number of proxy VMs to deploy')
-param minProxyVms int = 2
-
+param numProxyVms int
 param vmCustomImageSourceId string
 param proxyRSAPublicKey string
 param sessionHostProxyWhitelist string
@@ -22,6 +18,7 @@ param dnsZoneName string
 param keyVaultResourceGroup string
 param keyVaultName string
 param keyVaultCertificateName string
+param keyVaultRoleAssignmentNames array
 // Proxy servers
 // User may pass a string of ip CIDRs for the proxy to whitelist
 // SECURITY: only do this for ranges reserved for Chromebooks that are exclusively run the Schoolyear client
@@ -63,11 +60,6 @@ param resourceTypeNamePrefixNsg string
 param resourceTypeNamePrefixNic string
 param resourceTypeNamePrefixVm string
 param resourceTypeNamePrefixLb string
-
-var numProxyVms = min(max(
-  (userCapacity + studentsPerProxy - 1) / studentsPerProxy,
-  minProxyVms
-), 10)
 
 // NOTE: will be baked in with each release
 var templateVersion = '<<BAKED-IN>>'
@@ -148,7 +140,7 @@ module proxyNetwork 'proxyNetwork.bicep' = {
 
 module proxyDeployment 'proxyDeployment.bicep' = {
   name: 'proxyDeployment'
-  
+
   params: {
     location: location
     proxyVmName: proxyVmName
@@ -160,6 +152,7 @@ module proxyDeployment 'proxyDeployment.bicep' = {
     examId: examId
     keyVaultResourceGroup: keyVaultResourceGroup
     keyVaultName: keyVaultName
+    keyVaultRoleAssignmentNames: keyVaultRoleAssignmentNames
     proxyDnsEntryDeploymentName: proxyDnsEntryDeploymentName
     dnsZoneResourceGroup: dnsZoneResourceGroup
     proxyLoadBalancerPublicIpAddress: proxyNetwork.outputs.proxyLoadBalancerPublicIpAddress
@@ -187,10 +180,6 @@ output proxyConfig object = {
     }
   ]
 }
-output resourceUrlsToDelete array = [
-  ...proxyDeployment.outputs.keyVaultRoleAssignmentDeploymentResourceUrls
-  proxyDeployment.outputs.proxyDnsEntryDeploymentResourceUrl
-]
 output hostpoolName string = avdDeployment.outputs.hostpoolName
 output vmNumberOfInstances int = vmNumberOfInstances
 output templateVersion string = templateVersion
@@ -216,8 +205,8 @@ output vmCreationTemplateUri string = vmCreationTemplateUri
 // all of these are going to be passed to the vmCreation template
 // and do not change per vm
 output vmCreationTemplateCommonInputParameters object = {
-  location:  location
-  vmTags:  {
+  location: location
+  vmTags: {
     apiBaseUrl: apiBaseUrl
     examId: examId
     instanceId: instanceId
@@ -234,11 +223,11 @@ output vmCreationTemplateCommonInputParameters object = {
   vmSize: vmSize
   vmAdminUser: vmAdminUser
   vmDiskType: 'Premium_LRS'
-  vmImageId:  vmCustomImageSourceId
-  artifactsLocation:  'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip'
-  hostPoolName:  avdDeployment.outputs.hostpoolName
-  hostPoolToken:  avdDeployment.outputs.hostpoolRegistrationToken
-  sessionhostsSubnetId:  sessionhostsSubnetId
+  vmImageId: vmCustomImageSourceId
+  artifactsLocation: 'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02566.260.zip'
+  hostPoolName: avdDeployment.outputs.hostpoolName
+  hostPoolToken: avdDeployment.outputs.hostpoolRegistrationToken
+  sessionhostsSubnetId: sessionhostsSubnetId
   sessionhostsSubnetIpRange: sessionhostsSubnetIpRange
   tags: tagsWithVersion
   resourceTypeNamePrefixNsg: resourceTypeNamePrefixNsg
@@ -253,7 +242,7 @@ output vmCreationTemplateCommonInputParameters object = {
 // /subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Compute/virtualMachines/${vmName}
 // /subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/networkInterfaces/${vmName}-nic
 output vmCreationResourceUrls array = [
- 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Compute/virtualMachines/{{vmName}}?api-version=2021-04-01' 
- 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkInterfaces/${resourceTypeNamePrefixNic}{{vmName}}?api-version=2021-04-01' 
- 'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkSecurityGroups/${resourceTypeNamePrefixNsg}{{vmName}}?api-version=2021-04-01' 
+  'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Compute/virtualMachines/{{vmName}}?api-version=2021-04-01'
+  'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkInterfaces/${resourceTypeNamePrefixNic}{{vmName}}?api-version=2021-04-01'
+  'https://management.azure.com/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/networkSecurityGroups/${resourceTypeNamePrefixNsg}{{vmName}}?api-version=2021-04-01'
 ]
