@@ -91,13 +91,56 @@
           ]
         },
         {
+          "name": "backupStorage",
+          "label": "Backup Storage",
+          "elements": [
+            {
+              "name": "explainer",
+              "type": "Microsoft.Common.InfoBox",
+              "options": {
+                "style": "Info",
+                "text": "A storage account will be created to store student exam session backup files. Files are stored under the path <code>examID/workspaceID/deviceID</code> and are automatically deleted after 30 days."
+              }
+            },
+            {
+              "name": "backupStorageAccountName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Backup storage account name",
+              "placeholder": "sybackups",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-z0-9]{3,24}$",
+                "validationMessage": "Please enter a valid Storage Account name. The name must be 3-24 characters long, and may contain only lowercase letters and numbers."
+              },
+              "infoMessages": [
+                {
+                  "text": "This name must be globally unique, across all of Azure",
+                  "style": "Warning"
+                }
+              ]
+            },
+            {
+              "name": "backupStorageContainerName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Backup container name",
+              "toolTip": "The name of the blob container that will hold backup files. You can change the default name here.",
+              "defaultValue": "backups",
+              "constraints": {
+                "required": true,
+                "regex": "^(?!.*--)[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$",
+                "validationMessage": "Must be 3-63 lowercase letters, numbers, and hyphens. Start and end with letter or number. Can't use consecutive hyphens."
+              }
+            }
+          ]
+        },
+        {
           "name": "tags",
           "label": "Tags",
           "elements": [
             {
               "name": "tags",
               "type": "Microsoft.Common.TagsByResource",
-              "resources": ["Microsoft.Web/serverfarms", "Microsoft.Web/sites"]
+              "resources": ["Microsoft.Web/serverfarms", "Microsoft.Web/sites", "Microsoft.Storage/storageAccounts"]
             }
           ]
         }
@@ -113,7 +156,11 @@
         "functionAppTargetGroupId": "[parameters('functionAppTargetGroupId')]",
         "appServicePlanName": "[steps('functionApp').appServicePlanName]",
         "functionAppName": "[steps('functionApp').functionAppName]",
-        "vmLoginCustomRoleName": "[steps('vmLoginRole').vmLoginCustomRoleName]"
+        "vmLoginCustomRoleName": "[steps('vmLoginRole').vmLoginCustomRoleName]",
+        "backupStorageAccountName": "[steps('backupStorage').backupStorageAccountName]",
+        "backupStorageBlobServiceName": "default",
+        "backupStorageContainerName": "[steps('backupStorage').backupStorageContainerName]",
+        "appRegistrationServicePrincipalId": "[parameters('appRegistrationServicePrincipalId')]"
       }
     }
   }

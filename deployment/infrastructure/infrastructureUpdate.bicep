@@ -3,6 +3,10 @@ targetScope = 'subscription'
 param tagsByResource object
 param baseResourceGroupName string
 param vmLoginCustomRoleName string
+param backupStorageAccountName string
+param backupStorageBlobServiceName string
+param backupStorageContainerName string
+param appRegistrationServicePrincipalId string
 
 // Needed from the Function app to configure the Function
 param functionAppTargetGroupId string
@@ -39,7 +43,22 @@ module functionAppDeployment 'functionAppDeployment.bicep' = {
   }
 }
 
-// We can't really use a module for this, because Modules cannot be deployed at the subscription 
+// Backup Storage Deployment
+var backupStorageAccountTags = tagsByResourceWithVersion[?'Microsoft.Storage/storageAccounts'] ?? versionTag
+module backupStorageDeployment 'backupStorage.bicep' = {
+  scope: baseResourceGroup
+
+  params: {
+    location: baseResourceGroup.location
+    storageAccountTags: backupStorageAccountTags
+    storageAccountName: backupStorageAccountName
+    storageAccountBlobServiceName: backupStorageBlobServiceName
+    storageAccountContainerName: backupStorageContainerName
+    appRegistrationServicePrincipalId: appRegistrationServicePrincipalId
+  }
+}
+
+// We can't really use a module for this, because Modules cannot be deployed at the subscription
 // scope directly from a subscription-scoped template.
 // Custom role definition for Assigning VM Login roles to users
 resource vmLoginCustomRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
@@ -77,6 +96,8 @@ resource vmLoginCustomRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' 
 
 output installationOutput object = {
   vm_login_custom_role_id: vmLoginCustomRole.name
+  backup_storage_account_name: backupStorageDeployment.outputs.storageAccountName
+  backup_storage_container_name: backupStorageDeployment.outputs.storageAccountContainerName
   // function app related
   function_app: {
     name: functionAppDeployment.outputs.functionAppName
