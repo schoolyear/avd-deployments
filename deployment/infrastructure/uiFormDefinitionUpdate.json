@@ -22,7 +22,7 @@
               "type": "Microsoft.Common.InfoBox",
               "options": {
                 "style": "Error",
-                "text": "<b>Schoolyear advice - Important:</b> <br><br> It is essential that you select the <b>Subscription</b> you previously used for the Schoolyear AVD installation, failing to do so will result in a failed upgrade."
+                "text": "**Schoolyear advice - Important:**\n\nIt is essential that you select the **Subscription** you previously used for the Schoolyear AVD installation, failing to do so will result in a failed upgrade."
               }
             },
             {
@@ -99,7 +99,7 @@
               "type": "Microsoft.Common.InfoBox",
               "options": {
                 "style": "Info",
-                "text": "A storage account will be created to store student exam session backup files. Files are stored under the path <code>examID/workspaceID/deviceID</code> and are automatically deleted after 30 days."
+                "text": "A storage account will be created to store student exam session backup files. Files are stored under the path `examID/workspaceID/deviceID` and are automatically deleted after 30 days."
               }
             },
             {

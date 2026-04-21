@@ -45,7 +45,7 @@
               "type": "Microsoft.Common.InfoBox",
               "options": {
                 "style": "Warning",
-                "text": "<b>Schoolyear advice:</b> <br><br> It is strongly recommended to <b>not</b> use West Europe for large VM deployments, due to limited resource availability. It is fine to use West Europe for AVD Metadata."
+                "text": "**Schoolyear advice:**\n\nIt is strongly recommended to **not** use West Europe for large VM deployments, due to limited resource availability. It is fine to use West Europe for AVD Metadata."
               }
             },
             {
@@ -73,7 +73,7 @@
               "type": "Microsoft.Common.InfoBox",
               "options": {
                 "style": "Warning",
-                "text": "<b>Schoolyear advice:</b> <br><br>Schoolyear partly controls how this form is displayed to you. Therefore, most tooltips contain additional tips and information specific to the Schoolyear implementation and tailored to you.<br><br>Typically, if a name or setting is prefilled; it can be used as is without needing any changes. The most common exception to this is an Azure naming policy conflict. However, in that case, the deployment which follows this form will fail visibly. "
+                "text": "**Schoolyear advice:**\n\nSchoolyear partly controls how this form is displayed to you. Therefore, most tooltips contain additional tips and information specific to the Schoolyear implementation and tailored to you.\n\nTypically, if a name or setting is prefilled; it can be used as is without needing any changes. The most common exception to this is an Azure naming policy conflict. However, in that case, the deployment which follows this form will fail visibly."
               }
             },
             {
@@ -154,7 +154,7 @@
                   "type": "Microsoft.Common.InfoBox",
                   "options": {
                     "style": "Info",
-                    "text": "A storage account will be created in the base resource group to store student exam session backup files. Files are stored under the path <code>examID/workspaceID/deviceID</code> and are automatically deleted after 30 days."
+                    "text": "A storage account will be created in the base resource group to store student exam session backup files. Files are stored under the path `examID/workspaceID/deviceID` and are automatically deleted after 30 days."
                   }
                 },
                 {
@@ -250,7 +250,7 @@
                   "type": "Microsoft.Common.InfoBox",
                   "options": {
                     "style": "Warning",
-                    "text": "A new VNet will be deployed. This network will be used to connect the sessionhosts used during exams. If students need access to license servers or other internal services, <b>make sure you pick a network range that is still available within your organisation</b>."
+                    "text": "A new VNet will be deployed. This network will be used to connect the sessionhosts used during exams. If students need access to license servers or other internal services, **make sure you pick a network range that is still available within your organisation**."
                   }
                 },
                 {
