@@ -15,15 +15,22 @@
               "instanceDetailsLabel": "Regions",
               "location": {
                 "resourceTypes": [
-                  "Microsoft.VirtualMachineImages",
-                  "Microsoft.Storage",
-                  "Microsoft.Compute",
-                  "Microsoft.KeyVault",
-                  "Microsoft.ContainerInstance",
-                  "Microsoft.Network",
-                  "Microsoft.Resources",
-                  "Microsoft.Authorization",
-                  "Microsoft.DesktopVirtualization"
+                  "Microsoft.Resources/resourceGroups",
+                  "Microsoft.KeyVault/vaults",
+                  "Microsoft.Web/serverfarms",
+                  "Microsoft.Web/sites",
+                  "Microsoft.Compute/galleries",
+                  "Microsoft.Storage/storageAccounts",
+                  "Microsoft.ManagedIdentity/userAssignedIdentities",
+                  "Microsoft.Network/virtualNetworks",
+                  "Microsoft.Network/publicIPAddresses",
+                  "Microsoft.Network/natGateways",
+                  "Microsoft.Network/loadBalancers",
+                  "Microsoft.Network/networkSecurityGroups",
+                  "Microsoft.Network/networkInterfaces",
+                  "Microsoft.Network/privateEndpoints",
+                  "Microsoft.Compute/virtualMachines",
+                  "Microsoft.VirtualMachineImages/imageTemplates"
                 ]
               },
               "subscription": {
