@@ -3,7 +3,7 @@
   "view": {
     "kind": "Form",
     "properties": {
-      "title": "Schoolyear AVD v2",
+      "title": "Schoolyear AVD v2.2",
       "steps": [
         {
           "name": "basics",
