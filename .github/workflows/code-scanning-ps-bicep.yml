@@ -1,0 +1,61 @@
+name: "Code Scanning (PowerShell & Bicep)"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  scan-powershell:
+    name: Scan PowerShell
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run PSScriptAnalyzer
+        uses: microsoft/psscriptanalyzer-action@v1.0
+        with:
+          path: .\
+          recurse: true
+          output: results-powershell.sarif
+        continue-on-error: true
+
+      - name: Upload PowerShell scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results-powershell.sarif
+          category: powershell
+
+  scan-bicep:
+    name: Scan Bicep
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Bicep Linter & Combine SARIF
+        uses: maikvandergaag/action-biceplint@v1.0.0
+        with:
+          allfiles: true
+          create-sarif: true
+          markdown-report: false
+          sarif-output-path: bicep-lint.sarif
+
+      - name: Upload Bicep scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bicep-lint.sarif
+          category: bicep
