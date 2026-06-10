@@ -188,7 +188,7 @@ else
   exit 53
 fi
 
-if [ "$TRUSTED_PROXY_FQDN" -ne "" ]; then
+if [ -n "$TRUSTED_PROXY_FQDN" ]; then
   SCLIENT_OUTPUT=$(echo -n | openssl s_client -connect 127.0.0.1:$TRUSTED_PROXY_PORT -servername "$TRUSTED_PROXY_FQDN" -verify_hostname "$TRUSTED_PROXY_FQDN" -verify_return_error)
   echo "Trusted Proxy connection test:"
   echo "$SCLIENT_OUTPUT"
@@ -197,6 +197,11 @@ if [ "$TRUSTED_PROXY_FQDN" -ne "" ]; then
     echo "Certificate verification succeeded."
   else
     echo "Certificate verification failed."
+    if echo "$SCLIENT_OUTPUT" | grep -q "Verify return code:"; then
+      echo "Verify return code: $(echo "$SCLIENT_OUTPUT" | sed -n 's/^.*Verify return code:[[:space:]]*//p' | tail -n 1)"
+    else
+      echo "No verify return code found in openssl output."
+    fi
     exit 57
   fi
 fi
