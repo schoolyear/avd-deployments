@@ -55,7 +55,7 @@ jobs:
           sarif-output-path: bicep-lint.sarif
 
       - name: Upload Bicep scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: bicep-lint.sarif
           category: bicep
