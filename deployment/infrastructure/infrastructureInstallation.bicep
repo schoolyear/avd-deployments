@@ -48,11 +48,23 @@ param functionAppTargetGroupId string
 param appServicePlanName string
 param functionAppName string
 
+// Function App storage account
+param functionAppStorageAccountName string
+param functionAppStorageBlobServiceName string
+param functionAppStorageContainerName string
+
+// Function App package deploy identity
+param functionAppPackageDeployIdentityName string
+
 // NOTE: Will be baked in with each release
 var version = '<<BAKED-IN>>'
 var versionTag = {
   Version: version
 }
+
+// Function App package
+// NOTE: Will be baked in with each release
+var functionAppPackageUrl = '<<BAKED-IN>>'
 
 // Always append the version to already provided tags
 var tagsByResourceWithVersion = reduce(items(tagsByResource), {}, (acc, item) => union(acc, {
@@ -89,6 +101,20 @@ module keyVaultDeployment 'keyVaultDeployment.bicep' = {
   }
 }
 
+// Function App Storage Deployment
+var functionAppStorageAccountTags = tagsByResourceWithVersion[?'Microsoft.Storage/storageAccounts'] ?? versionTag
+module functionAppStorageDeployment 'functionAppStorage.bicep' = {
+  scope: baseResourceGroup
+
+  params: {
+    location: baseResourceGroup.location
+    storageAccountTags: functionAppStorageAccountTags
+    storageAccountName: functionAppStorageAccountName
+    storageAccountBlobServiceName: functionAppStorageBlobServiceName
+    storageAccountContainerName: functionAppStorageContainerName
+  }
+}
+
 // Function App Deployment
 var appServicePlanTags = tagsByResourceWithVersion[?'Microsoft.Web/serverfarms@2023-01-01'] ?? versionTag
 var functionAppTags = tagsByResourceWithVersion[?'Microsoft.Web/sites@2023-01-01'] ?? versionTag
@@ -101,6 +127,23 @@ module functionAppDeployment 'functionAppDeployment.bicep' = {
     appServicePlanTags: appServicePlanTags
     functionAppName: functionAppName
     functionAppTags: functionAppTags
+    functionAppStorageAccountName: functionAppStorageDeployment.outputs.storageAccountName
+    functionAppStorageBlobEndpoint: functionAppStorageDeployment.outputs.storageAccountBlobEndpoint
+    functionAppStorageContainerName: functionAppStorageDeployment.outputs.storageAccountContainerName
+  }
+}
+
+// Function App Package Deployment
+var functionAppPackageDeployIdentityTags = tagsByResourceWithVersion[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? versionTag
+module functionAppPackageDeployment 'functionAppPackageDeployment.bicep' = {
+  scope: baseResourceGroup
+
+  params: {
+    location: baseResourceGroup.location
+    managedIdentityTags: functionAppPackageDeployIdentityTags
+    managedIdentityName: functionAppPackageDeployIdentityName
+    functionAppName: functionAppDeployment.outputs.functionAppName
+    packageUrl: functionAppPackageUrl
   }
 }
 
@@ -407,6 +450,8 @@ output installationOutput object = {
   function_app: {
     name: functionAppDeployment.outputs.functionAppName
     app_service_plan_name: functionAppDeployment.outputs.appServicePlanName
+    storage_account_name: functionAppStorageDeployment.outputs.storageAccountName
+    storage_container_name: functionAppStorageDeployment.outputs.storageAccountContainerName
     // functions
     add_device_to_group_function_name: functionAppDeployment.outputs.functionAppAddDeviceToGroupFunctionName
     add_device_to_group_invoke_url: functionAppDeployment.outputs.functionAppAddDeviceToGroupInvokeUrl
