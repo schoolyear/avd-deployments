@@ -196,62 +196,6 @@
               ]
             },
             {
-              "name": "functionAppStorageSection",
-              "type": "Microsoft.Common.Section",
-              "label": "Function App Storage",
-              "elements": [
-                {
-                  "name": "explainer",
-                  "type": "Microsoft.Common.InfoBox",
-                  "options": {
-                    "style": "Info",
-                    "text": "A storage account will be created in the base resource group for the Function App's runtime storage and deployment package."
-                  }
-                },
-                {
-                  "name": "functionAppStorageAccountName",
-                  "type": "Microsoft.Common.TextBox",
-                  "label": "Function App storage account name",
-                  "placeholder": "syfuncstorage",
-                  "constraints": {
-                    "required": true,
-                    "regex": "^[a-z0-9]{3,24}$",
-                    "validationMessage": "Please enter a valid Storage Account name. The name must be 3-24 characters long, and may contain only lowercase letters and numbers."
-                  },
-                  "infoMessages": [
-                    {
-                      "text": "This name must be globally unique, across all of Azure",
-                      "style": "Warning"
-                    }
-                  ]
-                },
-                {
-                  "name": "functionAppStorageContainerName",
-                  "type": "Microsoft.Common.TextBox",
-                  "label": "Function App deployment package container name",
-                  "toolTip": "The name of the blob container that will hold the Function App's deployment package. You can change the default name here.",
-                  "defaultValue": "deployment-package",
-                  "constraints": {
-                    "required": true,
-                    "regex": "^(?!.*--)[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$",
-                    "validationMessage": "Must be 3-63 lowercase letters, numbers, and hyphens. Start and end with letter or number. Can't use consecutive hyphens."
-                  }
-                }
-              ]
-            },
-            {
-              "name": "functionAppPackageDeployIdentityName",
-              "type": "Microsoft.Common.TextBox",
-              "label": "Function App package deploy identity name",
-              "toolTip": "A managed identity used to deploy the Function App's code package during installation and updates. You can change the default name of the resource here.",
-              "defaultValue": "id-sy-functionapp-deploy",
-              "constraints": {
-                "required": true,
-                "regex": "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,126}[a-zA-Z0-9]$",
-                "validationMessage": "Please enter a valid Managed Identity name. The name must be 3-128 characters long, and may contain alphanumerics, hyphens, and underscores. Start with a letter or number."
-              }
-            },
-            {
               "name": "vmLoginCustomRoleName",
               "type": "Microsoft.Common.TextBox",
               "label": "VM login custom role name",
@@ -656,11 +600,7 @@
         "privatelinkZoneName": "privatelink.wvd.microsoft.com",
         "functionAppTargetGroupId": "[parameters('functionAppTargetGroupId')]",
         "appServicePlanName": "[steps('base').appServicePlanName]",
-        "functionAppName": "[steps('base').functionAppName]",
-        "functionAppStorageAccountName": "[steps('base').functionAppStorageSection.functionAppStorageAccountName]",
-        "functionAppStorageBlobServiceName": "default",
-        "functionAppStorageContainerName": "[steps('base').functionAppStorageSection.functionAppStorageContainerName]",
-        "functionAppPackageDeployIdentityName": "[steps('base').functionAppPackageDeployIdentityName]"
+        "functionAppName": "[steps('base').functionAppName]"
       }
     }
   }
