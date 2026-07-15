@@ -51,6 +51,12 @@ jobs:
           sed -i "s/var version = '<<BAKED-IN>>'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureInstallation.bicep
           sed -i "s/var version = '<<BAKED-IN>>'/var version = '${{ env.VERSION }}'/" deployment/infrastructure/infrastructureUpdate.bicep
 
+      - name: Link functionapp package URL in infrastructure installation & update scripts
+        id: functionapp_package_url_link
+        run: |
+          sed -i "s|var functionAppPackageUrl = '<<BAKED-IN>>'|var functionAppPackageUrl = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/functionapp-package.zip'|" deployment/infrastructure/infrastructureInstallation.bicep
+          sed -i "s|var functionAppPackageUrl = '<<BAKED-IN>>'|var functionAppPackageUrl = 'https://github.com/schoolyear/avd-deployments/releases/download/${{ env.VERSION }}/functionapp-package.zip'|" deployment/infrastructure/infrastructureUpdate.bicep
+
       - name: Link vmCreationTemplateUri in main templates
         id: vmcreationuri_link
         run: |
@@ -89,6 +95,14 @@ jobs:
 
       - name: Copy proxy_installation.sh to output directory
         run: cp deployment/managed/resources/proxy_installation.sh out/
+
+      - name: Build functionapp deployment package
+        run: |
+          mkdir -p out/functionapp-package
+          cp deployment/infrastructure/functionapp-package/host.json out/functionapp-package/
+          cp -r deployment/infrastructure/functionapp-package/AddDeviceToGroup out/functionapp-package/
+          cp -r deployment/infrastructure/functionapp-package/DeleteDevicesBasedOnPrefix out/functionapp-package/
+          cd out/functionapp-package && zip -r ../functionapp-package.zip .
 
       - name: Build main deployment template
         uses: Azure/bicep-build-action@v1.0.0
@@ -155,6 +169,7 @@ jobs:
             out/uiFormDefinitionUpdate.json
             out/sessionhostSetup.ps1
             out/proxy_installation.sh
+            out/functionapp-package.zip
 
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
         env:
