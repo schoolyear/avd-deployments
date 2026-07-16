@@ -14,7 +14,7 @@
               "type": "Microsoft.Common.ResourceScope",
               "instanceDetailsLabel": "Subscription Selection",
               "subscription": {
-                "resourceProviders": ["Microsoft.Web", "Microsoft.Resources"]
+                "resourceProviders": ["Microsoft.Web"]
               }
             },
             {

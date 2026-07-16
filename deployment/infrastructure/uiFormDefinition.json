@@ -43,7 +43,9 @@
                   "Microsoft.Network",
                   "Microsoft.Resources",
                   "Microsoft.Authorization",
-                  "Microsoft.DesktopVirtualization"
+                  "Microsoft.DesktopVirtualization",
+                  "Microsoft.ManagedIdentity",
+                  "Microsoft.Web"
                 ]
               }
             },
