@@ -254,6 +254,18 @@
               }
             },
             {
+              "name": "functionAppPackageDeployScriptName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Function App package deploy script name",
+              "toolTip": "A deployment script resource used to upload the Function App's code package during installation and updates. This resource is only visible for one day due to its retention period. You can change the default name of the resource here.",
+              "defaultValue": "deploy-functionapp-package",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,258}[a-zA-Z0-9]$",
+                "validationMessage": "Please enter a valid Deployment Script name. The name must be 3-260 characters long, and may contain alphanumerics, hyphens, and underscores. Start and end with a letter or number."
+              }
+            },
+            {
               "name": "vmLoginCustomRoleName",
               "type": "Microsoft.Common.TextBox",
               "label": "VM login custom role name",
@@ -662,7 +674,8 @@
         "functionAppStorageAccountName": "[steps('base').functionAppStorageSection.functionAppStorageAccountName]",
         "functionAppStorageBlobServiceName": "default",
         "functionAppStorageContainerName": "[steps('base').functionAppStorageSection.functionAppStorageContainerName]",
-        "functionAppPackageDeployIdentityName": "[steps('base').functionAppPackageDeployIdentityName]"
+        "functionAppPackageDeployIdentityName": "[steps('base').functionAppPackageDeployIdentityName]",
+        "functionAppPackageDeployScriptName": "[steps('base').functionAppPackageDeployScriptName]"
       }
     }
   }

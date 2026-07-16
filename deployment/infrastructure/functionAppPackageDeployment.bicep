@@ -4,6 +4,7 @@ param functionAppName string
 param packageUrl string
 
 param managedIdentityName string
+param deploymentScriptName string
 
 resource deployIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
   name: managedIdentityName
@@ -30,7 +31,7 @@ resource deployIdentityWebsiteContributorRoleAssignment 'Microsoft.Authorization
 // (az functionapp deployment source config-zip) - a raw blob upload to the
 // deployment storage container is not picked up by the platform.
 resource packageDeployScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'deploy-functionapp-package'
+  name: deploymentScriptName
   location: location
   kind: 'AzureCLI'
   identity: {
@@ -74,3 +75,6 @@ resource packageDeployScript 'Microsoft.Resources/deploymentScripts@2023-08-01' 
     deployIdentityWebsiteContributorRoleAssignment
   ]
 }
+
+output managedIdentityName string = deployIdentity.name
+output managedIdentityId string = deployIdentity.id

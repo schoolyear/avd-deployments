@@ -185,6 +185,18 @@
                 "regex": "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,126}[a-zA-Z0-9]$",
                 "validationMessage": "Please enter a valid Managed Identity name. The name must be 3-128 characters long, and may contain alphanumerics, hyphens, and underscores. Start with a letter or number."
               }
+            },
+            {
+              "name": "functionAppPackageDeployScriptName",
+              "type": "Microsoft.Common.TextBox",
+              "label": "Function App package deploy script name",
+              "toolTip": "A deployment script resource used to upload the Function App's code package during installation and updates. This resource is only visible for one day due to its retention period. You can change the default name of the resource here.",
+              "defaultValue": "deploy-functionapp-package",
+              "constraints": {
+                "required": true,
+                "regex": "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,258}[a-zA-Z0-9]$",
+                "validationMessage": "Please enter a valid Deployment Script name. The name must be 3-260 characters long, and may contain alphanumerics, hyphens, and underscores. Start and end with a letter or number."
+              }
             }
           ]
         },
@@ -219,6 +231,7 @@
         "functionAppStorageBlobServiceName": "default",
         "functionAppStorageContainerName": "[steps('functionAppStorage').functionAppStorageContainerName]",
         "functionAppPackageDeployIdentityName": "[steps('functionAppStorage').functionAppPackageDeployIdentityName]",
+        "functionAppPackageDeployScriptName": "[steps('functionAppStorage').functionAppPackageDeployScriptName]",
         "appRegistrationServicePrincipalId": "[parameters('appRegistrationServicePrincipalId')]"
       }
     }

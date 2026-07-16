@@ -20,6 +20,7 @@ param functionAppStorageContainerName string
 
 // Function App package deploy identity
 param functionAppPackageDeployIdentityName string
+param functionAppPackageDeployScriptName string
 
 // NOTE: Will be baked in with each release
 var version = '<<BAKED-IN>>'
@@ -81,6 +82,7 @@ module functionAppPackageDeployment 'functionAppPackageDeployment.bicep' = {
     location: baseResourceGroup.location
     managedIdentityTags: functionAppPackageDeployIdentityTags
     managedIdentityName: functionAppPackageDeployIdentityName
+    deploymentScriptName: functionAppPackageDeployScriptName
     functionAppName: functionAppDeployment.outputs.functionAppName
     packageUrl: functionAppPackageUrl
   }
@@ -147,6 +149,8 @@ output installationOutput object = {
     app_service_plan_name: functionAppDeployment.outputs.appServicePlanName
     storage_account_name: functionAppStorageDeployment.outputs.storageAccountName
     storage_container_name: functionAppStorageDeployment.outputs.storageAccountContainerName
+    package_deploy_identity_name: functionAppPackageDeployment.outputs.managedIdentityName
+    package_deploy_identity_id: functionAppPackageDeployment.outputs.managedIdentityId
     // functions
     add_device_to_group_function_name: functionAppDeployment.outputs.functionAppAddDeviceToGroupFunctionName
     add_device_to_group_invoke_url: functionAppDeployment.outputs.functionAppAddDeviceToGroupInvokeUrl
